@@ -157,6 +157,121 @@ describe('Charges Routes', () => {
       expect(Number(response.body.data.amount)).toBe(1200);
       expect(response.body.data.status).toBe('PAID');
     });
+
+    it('should return 404 for non-existent charge', async () => {
+      const response = await request(app)
+        .put('/api/charges/00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          amount: 1200,
+        });
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should update charge with partial data', async () => {
+      const response = await request(app)
+        .put(`/api/charges/${charge.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          description: 'Updated description',
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.description).toBe('Updated description');
+    });
+  });
+
+  describe('POST /api/charges with different charge types', () => {
+    it('should create LATE_FEE charge', async () => {
+      const response = await request(app)
+        .post('/api/charges')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          propertyId: testProperty.id,
+          type: 'LATE_FEE',
+          description: 'Late payment fee',
+          amount: 50,
+          dueDate: '2024-01-01',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.type).toBe('LATE_FEE');
+    });
+
+    it('should create charge with leaseId', async () => {
+      const testUnit = await prisma.unit.create({
+        data: {
+          propertyId: testProperty.id,
+          name: 'Unit 1',
+        },
+      });
+
+      const testTenant = await prisma.tenant.create({
+        data: {
+          organizationId: testOrg.id,
+          firstName: 'John',
+          lastName: 'Doe',
+          email: 'john@example.com',
+          status: 'ACTIVE',
+        },
+      });
+
+      const testLease = await prisma.lease.create({
+        data: {
+          organizationId: testOrg.id,
+          unitId: testUnit.id,
+          startDate: new Date('2024-01-01'),
+          endDate: new Date('2024-12-31'),
+          rentAmount: 1000,
+          rentDueDay: 1,
+          status: 'ACTIVE',
+          tenants: {
+            create: {
+              tenantId: testTenant.id,
+              isPrimary: true,
+            },
+          },
+        },
+      });
+
+      const response = await request(app)
+        .post('/api/charges')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          leaseId: testLease.id,
+          type: 'RENT',
+          description: 'Monthly rent',
+          amount: 1000,
+          dueDate: '2024-01-01',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.leaseId).toBe(testLease.id);
+    });
+
+    it('should create charge with unitId', async () => {
+      const testUnit = await prisma.unit.create({
+        data: {
+          propertyId: testProperty.id,
+          name: 'Unit 1',
+        },
+      });
+
+      const response = await request(app)
+        .post('/api/charges')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          unitId: testUnit.id,
+          type: 'UTILITY',
+          description: 'Utility charge',
+          amount: 100,
+          dueDate: '2024-01-01',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.unitId).toBe(testUnit.id);
+    });
   });
 });
 

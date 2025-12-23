@@ -65,6 +65,25 @@ describe('Organizations Routes', () => {
 
       expect(response.status).toBe(400);
     });
+
+    it('should generate unique slug when slug exists', async () => {
+      // Create first org with name that will generate similar slug
+      await request(app)
+        .post('/api/organizations')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: 'Test Organization' });
+
+      // Create second org with similar name
+      const response = await request(app)
+        .post('/api/organizations')
+        .set('Authorization', `Bearer ${token}`)
+        .send({ name: 'Test Organization' });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.slug).toBeDefined();
+      // Slug should be unique (includes timestamp)
+      expect(response.body.data.slug).toContain('test-organization');
+    });
   });
 
   describe('GET /api/organizations', () => {

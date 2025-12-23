@@ -147,6 +147,162 @@ describe('Screening Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data.length).toBeGreaterThan(0);
     });
+
+    it('should filter by status', async () => {
+      await prisma.screeningRequest.create({
+        data: {
+          organizationId: testOrg.id,
+          tenantId: testTenant.id,
+          externalRequestId: 'ext-123',
+          status: 'COMPLETED',
+        },
+      });
+
+      const response = await request(app)
+        .get('/api/screening?status=COMPLETED')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.data[0].status).toBe('COMPLETED');
+    });
+  });
+
+  describe('GET /api/screening/:id', () => {
+    let screeningRequest: any;
+
+    beforeEach(async () => {
+      screeningRequest = await prisma.screeningRequest.create({
+        data: {
+          organizationId: testOrg.id,
+          tenantId: testTenant.id,
+          externalRequestId: 'ext-123',
+          status: 'PENDING',
+        },
+      });
+    });
+
+    it('should return screening request by id', async () => {
+      const response = await request(app)
+        .get(`/api/screening/${screeningRequest.id}`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.id).toBe(screeningRequest.id);
+    });
+
+    it('should return 404 for non-existent screening request', async () => {
+      const response = await request(app)
+        .get('/api/screening/00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe('POST /api/screening/:id/adverse-action', () => {
+    let screeningRequest: any;
+
+    beforeEach(async () => {
+      screeningRequest = await prisma.screeningRequest.create({
+        data: {
+          organizationId: testOrg.id,
+          tenantId: testTenant.id,
+          externalRequestId: 'ext-123',
+          status: 'COMPLETED',
+          recommendation: 'DECLINED',
+          creditScore: 500,
+        },
+      });
+    });
+
+    it('should send adverse action notice for declined recommendation', async () => {
+      const response = await request(app)
+        .post(`/api/screening/${screeningRequest.id}/adverse-action`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.message).toContain('Adverse action notice sent');
+
+      // Verify record was updated
+      const updated = await prisma.screeningRequest.findUnique({
+        where: { id: screeningRequest.id },
+      });
+      expect(updated?.adverseActionSent).toBe(true);
+    });
+
+    it('should send adverse action notice for borderline recommendation', async () => {
+      const borderlineRequest = await prisma.screeningRequest.create({
+        data: {
+          organizationId: testOrg.id,
+          tenantId: testTenant.id,
+          externalRequestId: 'ext-456',
+          status: 'COMPLETED',
+          recommendation: 'BORDERLINE',
+        },
+      });
+
+      const response = await request(app)
+        .post(`/api/screening/${borderlineRequest.id}/adverse-action`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+    });
+
+    it('should return 400 for approved recommendation', async () => {
+      const approvedRequest = await prisma.screeningRequest.create({
+        data: {
+          organizationId: testOrg.id,
+          tenantId: testTenant.id,
+          externalRequestId: 'ext-789',
+          status: 'COMPLETED',
+          recommendation: 'APPROVED',
+        },
+      });
+
+      const response = await request(app)
+        .post(`/api/screening/${approvedRequest.id}/adverse-action`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(400);
+      expect(response.body.error.message).toContain('DECLINED or BORDERLINE');
+    });
+
+    it('should return 400 if tenant has no email', async () => {
+      const tenantWithoutEmail = await prisma.tenant.create({
+        data: {
+          organizationId: testOrg.id,
+          firstName: 'Jane',
+          lastName: 'Doe',
+          status: 'PROSPECT',
+        },
+      });
+
+      const requestWithoutEmail = await prisma.screeningRequest.create({
+        data: {
+          organizationId: testOrg.id,
+          tenantId: tenantWithoutEmail.id,
+          externalRequestId: 'ext-999',
+          status: 'COMPLETED',
+          recommendation: 'DECLINED',
+        },
+      });
+
+      const response = await request(app)
+        .post(`/api/screening/${requestWithoutEmail.id}/adverse-action`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(400);
+      expect(response.body.error.message).toContain('contact information');
+    });
+
+    it('should return 404 for non-existent screening request', async () => {
+      const response = await request(app)
+        .post('/api/screening/00000000-0000-0000-0000-000000000000/adverse-action')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(404);
+    });
   });
 });
 

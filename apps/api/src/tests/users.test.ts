@@ -91,6 +91,46 @@ describe('Users Routes', () => {
 
       expect(response.status).toBe(400);
     });
+
+    it('should add existing user to organization if user exists but not in org', async () => {
+      const existingUser = await createTestUser({
+        email: 'existing@example.com',
+        name: 'Existing User',
+      });
+
+      const response = await request(app)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          name: 'Existing User',
+          email: 'existing@example.com',
+          role: 'MANAGER',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.email).toBe('existing@example.com');
+      expect(response.body.data.role).toBe('MANAGER');
+      expect(response.body.data.message).toContain('Existing user added');
+    });
+
+    it('should return 400 if user already exists in organization', async () => {
+      const existingUser = await createTestUser({
+        email: 'existing@example.com',
+      });
+      await createTestMembership(existingUser.id, testOrg.id, 'VIEWER');
+
+      const response = await request(app)
+        .post('/api/users')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          name: 'Existing User',
+          email: 'existing@example.com',
+          role: 'MANAGER',
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error.message).toContain('already a member');
+    });
   });
 
   describe('POST /api/users/add-existing', () => {
@@ -174,11 +214,38 @@ describe('Users Routes', () => {
     });
 
     it('should prevent removing last OWNER', async () => {
-      const response = await request(app)
-        .delete(`/api/users/${testUser.id}`)
+      // Create a second OWNER so we can test removing the first one
+      const secondOwner = await createTestUser({
+        email: 'secondowner@example.com',
+      });
+      await createTestMembership(secondOwner.id, testOrg.id, 'OWNER');
+      const secondOwnerToken = jwt.sign(
+        { userId: secondOwner.id, organizationId: testOrg.id },
+        env.JWT_SECRET
+      );
+
+      // Now try to remove the first OWNER (testUser) - should fail because it's the last one
+      // But first remove the second owner
+      await request(app)
+        .delete(`/api/users/${secondOwner.id}`)
         .set('Authorization', `Bearer ${token}`);
 
+      // Now testUser is the only OWNER, try to remove them using a different user
+      const adminUser = await createTestUser({
+        email: 'admin@example.com',
+      });
+      await createTestMembership(adminUser.id, testOrg.id, 'ADMIN');
+      const adminToken = jwt.sign(
+        { userId: adminUser.id, organizationId: testOrg.id },
+        env.JWT_SECRET
+      );
+
+      const response = await request(app)
+        .delete(`/api/users/${testUser.id}`)
+        .set('Authorization', `Bearer ${adminToken}`);
+
       expect(response.status).toBe(400);
+      expect(response.body.error.message).toContain('last OWNER');
     });
 
     it('should prevent self-removal', async () => {
@@ -187,6 +254,69 @@ describe('Users Routes', () => {
         .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(400);
+      expect(response.body.error.message).toContain('cannot remove yourself');
+    });
+
+    it('should allow removing non-OWNER user', async () => {
+      const nonOwnerUser = await createTestUser({
+        email: 'nonowner@example.com',
+      });
+      await createTestMembership(nonOwnerUser.id, testOrg.id, 'VIEWER');
+
+      const response = await request(app)
+        .delete(`/api/users/${nonOwnerUser.id}`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+    });
+
+    it('should allow removing OWNER if there are multiple OWNERs', async () => {
+      const secondOwner = await createTestUser({
+        email: 'secondowner@example.com',
+      });
+      await createTestMembership(secondOwner.id, testOrg.id, 'OWNER');
+
+      const response = await request(app)
+        .delete(`/api/users/${secondOwner.id}`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+    });
+  });
+
+  describe('PUT /api/users/:userId/role edge cases', () => {
+    let otherUser: any;
+
+    beforeEach(async () => {
+      otherUser = await createTestUser({
+        email: 'other@example.com',
+      });
+      await createTestMembership(otherUser.id, testOrg.id, 'VIEWER');
+    });
+
+    it('should allow changing role to OWNER', async () => {
+      const response = await request(app)
+        .put(`/api/users/${otherUser.id}/role`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          role: 'OWNER',
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.role).toBe('OWNER');
+    });
+
+    it('should prevent removing last OWNER when changing role', async () => {
+      // testUser is the only OWNER
+      const response = await request(app)
+        .put(`/api/users/${testUser.id}/role`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          role: 'ADMIN',
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error.message).toContain('last OWNER');
     });
   });
 });

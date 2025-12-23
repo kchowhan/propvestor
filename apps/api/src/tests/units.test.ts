@@ -105,6 +105,15 @@ describe('Units Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.data.id).toBe(unit.id);
+      expect(response.body.data.property).toBeDefined();
+    });
+
+    it('should return 404 for non-existent unit', async () => {
+      const response = await request(app)
+        .get('/api/units/00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(404);
     });
   });
 
@@ -133,6 +142,33 @@ describe('Units Routes', () => {
       expect(response.body.data.name).toBe('Updated Unit');
       expect(response.body.data.bedrooms).toBe(3);
     });
+
+    it('should return 404 for non-existent unit', async () => {
+      const response = await request(app)
+        .put('/api/units/00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          name: 'Updated Unit',
+        });
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should update unit with optional fields', async () => {
+      const response = await request(app)
+        .put(`/api/units/${unit.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          squareFeet: 1200,
+          marketRent: 1500,
+          status: 'UNDER_RENOVATION',
+        });
+
+      expect(response.status).toBe(200);
+      expect(Number(response.body.data.squareFeet)).toBe(1200);
+      expect(Number(response.body.data.marketRent)).toBe(1500);
+      expect(response.body.data.status).toBe('UNDER_RENOVATION');
+    });
   });
 
   describe('DELETE /api/units/:id', () => {
@@ -154,6 +190,47 @@ describe('Units Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.data.archivedAt).toBeDefined();
+    });
+
+    it('should return 404 for non-existent unit', async () => {
+      const response = await request(app)
+        .delete('/api/units/00000000-0000-0000-0000-000000000000')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(404);
+    });
+  });
+
+  describe('POST /api/properties/:propertyId/units edge cases', () => {
+    it('should return 404 for invalid property', async () => {
+      const response = await request(app)
+        .post('/api/properties/00000000-0000-0000-0000-000000000000/units')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          name: 'Unit 1',
+        });
+
+      expect(response.status).toBe(404);
+    });
+
+    it('should create unit with all optional fields', async () => {
+      const response = await request(app)
+        .post(`/api/properties/${testProperty.id}/units`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          name: 'Unit 3',
+          bedrooms: 2,
+          bathrooms: 1.5,
+          squareFeet: 1000,
+          marketRent: 1200,
+          status: 'VACANT',
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.bedrooms).toBe(2);
+      expect(response.body.data.bathrooms).toBe(1.5);
+      expect(Number(response.body.data.squareFeet)).toBe(1000);
+      expect(Number(response.body.data.marketRent)).toBe(1200);
     });
   });
 });

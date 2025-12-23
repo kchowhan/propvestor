@@ -7,9 +7,12 @@ import { env } from '../config/env.js';
 import { createTestUser, createTestOrganization, createTestMembership, cleanupTestData } from './setup.js';
 
 // Mock Stripe functions
+const mockFindBestPaymentMethod = vi.fn(() => Promise.resolve(null));
+const mockProcessPayment = vi.fn(() => Promise.resolve({ status: 'succeeded' }));
+
 vi.mock('../lib/stripe.js', () => ({
-  findBestPaymentMethodForCharge: vi.fn(() => Promise.resolve(null)),
-  processPayment: vi.fn(() => Promise.resolve({ status: 'succeeded' })),
+  findBestPaymentMethodForCharge: (...args: any[]) => mockFindBestPaymentMethod(...args),
+  processPayment: (...args: any[]) => mockProcessPayment(...args),
 }));
 
 const app = createApp();
@@ -158,6 +161,136 @@ describe('Billing Routes', () => {
         });
 
       expect(response.status).toBe(401);
+    });
+
+    it('should process payment when payment method is available', async () => {
+      // Mock finding a payment method
+      mockFindBestPaymentMethod.mockResolvedValueOnce({
+        paymentMethodId: 'pm_test_123',
+        tenantId: testTenant.id,
+        tenantName: 'John Doe',
+      });
+
+      // Mock successful payment
+      mockProcessPayment.mockResolvedValueOnce({
+        paymentIntentId: 'pi_test_123',
+        status: 'succeeded',
+      });
+
+      const response = await request(app)
+        .post('/api/billing/generate-monthly-rent')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          month: 2,
+          year: 2024,
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.paymentsProcessed).toBeGreaterThan(0);
+    });
+
+    it('should handle payment processing failure gracefully', async () => {
+      // Mock finding a payment method
+      mockFindBestPaymentMethod.mockResolvedValueOnce({
+        paymentMethodId: 'pm_test_123',
+        tenantId: testTenant.id,
+        tenantName: 'John Doe',
+      });
+
+      // Mock payment failure
+      mockProcessPayment.mockRejectedValueOnce(new Error('Payment failed'));
+
+      const response = await request(app)
+        .post('/api/billing/generate-monthly-rent')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          month: 3,
+          year: 2024,
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.created).toBeGreaterThan(0);
+      expect(response.body.data.paymentsFailed).toBeGreaterThan(0);
+    });
+
+    it('should handle payment status requires_action', async () => {
+      // Mock finding a payment method
+      mockFindBestPaymentMethod.mockResolvedValueOnce({
+        paymentMethodId: 'pm_test_123',
+        tenantId: testTenant.id,
+        tenantName: 'John Doe',
+      });
+
+      // Mock payment requiring action
+      mockProcessPayment.mockResolvedValueOnce({
+        paymentIntentId: 'pi_test_123',
+        status: 'requires_action',
+        clientSecret: 'pi_test_123_secret',
+      });
+
+      const response = await request(app)
+        .post('/api/billing/generate-monthly-rent')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          month: 4,
+          year: 2024,
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.paymentsProcessed).toBeGreaterThan(0);
+    });
+
+    it('should handle payment status processing', async () => {
+      // Mock finding a payment method
+      mockFindBestPaymentMethod.mockResolvedValueOnce({
+        paymentMethodId: 'pm_test_123',
+        tenantId: testTenant.id,
+        tenantName: 'John Doe',
+      });
+
+      // Mock payment processing
+      mockProcessPayment.mockResolvedValueOnce({
+        paymentIntentId: 'pi_test_123',
+        status: 'processing',
+      });
+
+      const response = await request(app)
+        .post('/api/billing/generate-monthly-rent')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          month: 5,
+          year: 2024,
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.paymentsProcessed).toBeGreaterThan(0);
+    });
+
+    it('should handle payment status failed', async () => {
+      // Mock finding a payment method
+      mockFindBestPaymentMethod.mockResolvedValueOnce({
+        paymentMethodId: 'pm_test_123',
+        tenantId: testTenant.id,
+        tenantName: 'John Doe',
+      });
+
+      // Mock payment failed
+      mockProcessPayment.mockResolvedValueOnce({
+        paymentIntentId: 'pi_test_123',
+        status: 'failed',
+      });
+
+      const response = await request(app)
+        .post('/api/billing/generate-monthly-rent')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          month: 6,
+          year: 2024,
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.paymentsFailed).toBeGreaterThan(0);
+      expect(response.body.data.paymentErrors).toBeDefined();
     });
   });
 });

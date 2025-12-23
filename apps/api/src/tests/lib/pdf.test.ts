@@ -76,6 +76,57 @@ describe('PDF Library', () => {
       await generateAndUploadLeasePdf(unknownStateData, 'test-org-id', 'test-lease-id');
       // Should not throw
     });
+
+    it('should handle template with optional fields', async () => {
+      const minimalData: LeaseTemplateData = {
+        organizationName: 'Test Org',
+        propertyName: 'Test Property',
+        propertyAddress: '123 Main St',
+        unitName: 'Unit 1',
+        state: 'CA',
+        startDate: '2024-01-01',
+        endDate: '2024-12-31',
+        rentAmount: '$1,000.00',
+        rentDueDay: 1,
+        tenants: [
+          {
+            firstName: 'John',
+            lastName: 'Doe',
+            isPrimary: true,
+          },
+        ],
+        generatedDate: '2024-01-01',
+      };
+
+      await expect(
+        generateAndUploadLeasePdf(minimalData, 'test-org-id', 'test-lease-id')
+      ).resolves.toBeDefined();
+    });
+
+    it('should use state-specific template for CA', async () => {
+      const caData = { ...templateData, state: 'CA' };
+      const result = await generateAndUploadLeasePdf(caData, 'test-org-id', 'test-lease-id');
+      expect(result).toBeDefined();
+    });
+
+    it('should use state-specific template for NY', async () => {
+      const nyData = { ...templateData, state: 'NY' };
+      const result = await generateAndUploadLeasePdf(nyData, 'test-org-id', 'test-lease-id');
+      expect(result).toBeDefined();
+    });
+
+    it('should use state-specific template for TX', async () => {
+      const txData = { ...templateData, state: 'TX' };
+      const result = await generateAndUploadLeasePdf(txData, 'test-org-id', 'test-lease-id');
+      expect(result).toBeDefined();
+    });
+
+    it('should normalize state codes', async () => {
+      const lowercaseData = { ...templateData, state: 'ca' };
+      await expect(
+        generateAndUploadLeasePdf(lowercaseData, 'test-org-id', 'test-lease-id')
+      ).resolves.toBeDefined();
+    });
   });
 });
 

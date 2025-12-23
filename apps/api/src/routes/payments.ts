@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
 import { parseBody } from '../validators/common.js';
+import { processPayment, getPaymentIntentStatus } from '../lib/stripe.js';
 
 export const paymentRouter = Router();
 
