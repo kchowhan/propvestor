@@ -9,7 +9,9 @@
     "prisma:generate": "npm --workspace apps/api run prisma:generate",
     "prisma:migrate": "npm --workspace apps/api run prisma:migrate",
     "prisma:studio": "npm --workspace apps/api run prisma:studio",
-    "seed": "npm --workspace apps/api run seed"
+    "seed": "npm --workspace apps/api run seed",
+    "seed:demo": "npm --workspace apps/api run seed:demo",
+    "cleanup": "npm --workspace apps/api run cleanup"
   },
   "devDependencies": {
     "prettier": "^3.2.5"
