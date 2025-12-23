@@ -21,8 +21,9 @@ export const apiFetch = async (path: string, options: FetchOptions = {}) => {
     // Handle network errors
     if (!res.ok) {
       let errorMessage = 'Request failed';
+      let errorData: any = null;
       try {
-        const errorData = await res.json();
+        errorData = await res.json();
         // Handle API error format: { error: { code, message, details } }
         if (errorData?.error) {
           errorMessage = errorData.error.message || `Error: ${errorData.error.code || 'UNKNOWN'}`;
@@ -36,8 +37,10 @@ export const apiFetch = async (path: string, options: FetchOptions = {}) => {
         errorMessage = `HTTP ${res.status}: ${res.statusText}`;
       }
       const error = new Error(errorMessage);
-      // Attach the full error data for debugging
-      (error as any).errorData = errorData;
+      // Attach the full error data for debugging (if available)
+      if (errorData) {
+        (error as any).errorData = errorData;
+      }
       throw error;
     }
 
