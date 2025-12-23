@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Residential Lease Agreement</title>
+  <style>
+    body {
+      font-family: 'Times New Roman', serif;
+      font-size: 11pt;
+      line-height: 1.6;
+      color: #000;
+      margin: 0;
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #000;
+      padding-bottom: 20px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 18pt;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .section {
+      margin-bottom: 20px;
+      page-break-inside: avoid;
+    }
+    .section-title {
+      font-weight: bold;
+      font-size: 12pt;
+      margin-bottom: 10px;
+      text-decoration: underline;
+    }
+    .section-number {
+      font-weight: bold;
+      display: inline;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    .info-item {
+      margin-bottom: 8px;
+    }
+    .info-label {
+      font-weight: bold;
+      display: inline-block;
+      min-width: 150px;
+    }
+    .tenants-list {
+      margin: 15px 0;
+    }
+    .tenant-item {
+      margin-bottom: 10px;
+      padding: 10px;
+      background-color: #f5f5f5;
+      border-left: 3px solid #333;
+    }
+    .signature-section {
+      margin-top: 40px;
+      page-break-inside: avoid;
+    }
+    .signature-line {
+      border-top: 1px solid #000;
+      margin-top: 60px;
+      width: 300px;
+      display: inline-block;
+    }
+    .terms {
+      margin-top: 30px;
+    }
+    .terms ol {
+      margin-left: 20px;
+    }
+    .terms li {
+      margin-bottom: 12px;
+    }
+    .terms ul {
+      margin-left: 20px;
+      margin-top: 8px;
+    }
+    .terms ul li {
+      margin-bottom: 8px;
+    }
+    .clause {
+      margin-bottom: 15px;
+    }
+    .clause-title {
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+    @media print {
+      body {
+        padding: 0;
+      }
+      .section {
+        page-break-inside: avoid;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>Residential Lease Agreement</h1>
+  </div>
+
+  <p style="text-align: center; margin-bottom: 30px;">
+    THIS AGREEMENT (hereinafter referred to as the "Lease Agreement") is made and entered into this 
+    <strong>{{generatedDate}}</strong>, by and between <strong>{{organizationName}}</strong> 
+    (hereinafter referred to as "Landlord") and the following tenant(s) (hereinafter referred to as "Tenant"):
+  </p>
+
+  <div class="tenants-list">
+    {{#each tenants}}
+    <div class="tenant-item">
+      <strong>{{firstName}} {{lastName}}</strong>
+      {{#if isPrimary}}<em>(Primary Tenant)</em>{{/if}}<br>
+      {{#if email}}Email: {{email}}{{/if}}{{#if phone}} | Phone: {{phone}}{{/if}}
+    </div>
+    {{/each}}
+  </div>
+
+  <p style="margin-top: 20px;">
+    For and in consideration of the covenants and obligations contained herein and other good and valuable consideration, 
+    the receipt and sufficiency of which is hereby acknowledged, the parties hereto hereby agree as follows:
+  </p>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">1. PROPERTY.</span></div>
+    <p>
+      Landlord owns certain real property and improvements located at <strong>{{propertyAddress}}</strong> 
+      (hereinafter referred to as the "Property"). The leased premises consist of <strong>{{propertyName}} - {{unitName}}</strong> 
+      (hereinafter referred to as the "Premises"). Landlord desires to lease the Premises to Tenant upon the terms and 
+      conditions contained herein. Tenant desires to lease the Premises from Landlord on the terms and conditions as contained herein.
+    </p>
+    {{#if bedrooms}}
+    <p>
+      <strong>Premises Details:</strong> {{bedrooms}} bedroom(s), 
+      {{#if bathrooms}}{{bathrooms}} bathroom(s){{/if}}{{#if squareFeet}}, {{squareFeet}} square feet{{/if}}.
+    </p>
+    {{/if}}
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">2. TERM.</span></div>
+    <p>
+      This Lease Agreement shall commence on <strong>{{date startDate}}</strong> and shall continue as a lease for term. 
+      The termination date shall be on <strong>{{date endDate}}</strong> at 11:59 PM. Upon termination date, Tenant shall be 
+      required to vacate the Premises unless one of the following circumstances occur:
+    </p>
+    <ol style="margin-left: 20px;">
+      <li>Landlord and Tenant formally extend this Lease Agreement in writing or create and execute a new, written, and signed Lease Agreement; or</li>
+      <li>Landlord willingly accepts new Rent from Tenant, which does not constitute past due Rent.</li>
+    </ol>
+    <p>
+      In the event that Landlord accepts new rent from Tenant after the termination date, a month-to-month tenancy shall be created. 
+      If at any time either party desires to terminate the month-to-month tenancy, such party may do so by providing to the other party 
+      written notice of intention to terminate at least 30 days prior to the desired date of termination of the month-to-month tenancy.
+    </p>
+    <p>
+      Notices to terminate may be given on any calendar day, irrespective of Commencement Date. Rent shall continue at the rate specified 
+      in this Lease Agreement, or as allowed by law. All other terms and conditions as outlined in this Lease Agreement shall remain in 
+      full force and effect. Time is of the essence for providing notice of termination (strict compliance with dates by which notice must 
+      be provided is required).
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">3. RENT.</span></div>
+    <p>
+      Tenant shall pay to Landlord the sum of <strong>{{currency rentAmount}}</strong> per month as Rent for the Term of the Agreement. 
+      Due date for Rent payment shall be the <strong>{{rentDueDay}}</strong> day of each calendar month and shall be considered advance 
+      payment for that month. Weekends and holidays do not delay or excuse Tenant's obligation to timely pay rent.
+    </p>
+    
+    <div class="clause">
+      <div class="clause-title">A. Delinquent Rent.</div>
+      <p>
+        If not paid on the {{rentDueDay}}, Rent shall be considered overdue and delinquent on the {{#if (eq rentDueDay 1)}}2nd{{else}}{{add rentDueDay 1}}{{/if}} 
+        day of each calendar month. If Tenant fails to timely pay any month's rent, Tenant will pay Landlord a late charge as allowed by law 
+        until rent is paid in full. Any waiver of late charges under this paragraph will not affect or diminish any other right or remedy 
+        Landlord may exercise for Tenant's failure to timely pay rent.
+      </p>
+    </div>
+
+    <div class="clause">
+      <div class="clause-title">B. Prorated Rent.</div>
+      <p>
+        In the event that the Commencement Date is not the {{rentDueDay}} of the calendar month, Rent payment remitted on the Commencement Date 
+        shall be prorated based on a 30-day period.
+      </p>
+    </div>
+
+    <div class="clause">
+      <div class="clause-title">C. Returned Checks.</div>
+      <p>
+        In the event that any payment by Tenant is returned for insufficient funds ("NSF") or if Tenant stops payment, Tenant will pay 
+        Landlord a fee as allowed by law for each such check, plus late charges, as described above, until Landlord has received payment. 
+        Furthermore, Landlord may require in writing that Tenant pay all future Rent payments by cash, money order, or cashier's check.
+      </p>
+    </div>
+
+    <div class="clause">
+      <div class="clause-title">D. Order in which funds are applied.</div>
+      <p>
+        Landlord will apply all funds received from Tenant first to any non-rent obligations of Tenant including late charges, returned check 
+        charges, charge-backs for repairs, brokerage fees, and periodic utilities, then to rent, regardless of any notations on a check.
+      </p>
+    </div>
+
+    <div class="clause">
+      <div class="clause-title">E. Rent Increases.</div>
+      <p>
+        There will be no rent increases through the Termination Date. If this lease is renewed automatically on a month to month basis, 
+        Landlord may increase the rent during the renewal period by providing written notice to Tenant that becomes effective the month 
+        following the 30th day after the notice is provided.
+      </p>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">4. SECURITY DEPOSIT.</span></div>
+    <p>
+      Upon execution of this Lease Agreement, Tenant shall deposit with Landlord the sum of 
+      {{#if depositAmount}}<strong>{{currency depositAmount}}</strong>{{else}}<strong>$__________</strong>{{/if}}, 
+      receipt of which is hereby acknowledged by Landlord, as security for any damage caused to the Premises during the term thereof.
+    </p>
+    <p>
+      <strong>REFUND OF SECURITY DEPOSIT.</strong> Upon termination of the tenancy, all funds held by the landlord as security deposit may be 
+      applied to the payment of accrued rent and the amount of damages that the landlord has suffered by reason of the tenant's noncompliance 
+      with the terms of this Lease Agreement or with any and all laws, ordinances, rules and orders of any and all governmental or 
+      quasi-governmental authorities affecting the cleanliness, use, occupancy and preservation of the Premises.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">5. USE OF PREMISES.</span></div>
+    <p>
+      The Premises shall be used and occupied solely by Tenant and Tenant's immediate family, exclusively, as a private single family dwelling, 
+      and no part of the Premises shall be used at any time during the term of this Lease Agreement by Tenant for the purpose of carrying on any 
+      business, profession, or trade of any kind, or for any purpose other than as a private single family dwelling. Tenant shall not allow any 
+      other person, other than Tenant's immediate family or transient relatives and friends who are guests of Tenant, to use or occupy the Premises 
+      without first obtaining Landlord's written consent to such use. Tenant shall comply with any and all laws, ordinances, rules and orders of 
+      any and all governmental or quasi-governmental authorities affecting the cleanliness, use, occupancy and preservation of the Premises.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">6. CONDITION OF PREMISES.</span></div>
+    <p>
+      Tenant stipulates, represents and warrants that Tenant has examined the Premises, and that they are at the time of this Lease in good order, 
+      repair, and in a safe, clean and tenable condition.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">7. ASSIGNMENT AND SUB-LETTING.</span></div>
+    <p>
+      Tenant shall not assign this Lease Agreement, or sub-let or grant any license to use the Premises or any part thereof without the prior 
+      written consent of Landlord. A consent by Landlord to one such assignment, sub-letting or license shall not be deemed to be a consent to any 
+      subsequent assignment, sub-letting or license. An assignment, sub-letting or license without the prior written consent of Landlord or an 
+      assignment or sub-letting by operation of law shall be absolutely null and void and shall, at Landlord's option, terminate this Lease Agreement.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">8. ALTERATIONS AND IMPROVEMENTS.</span></div>
+    <p>
+      Tenant shall make no alterations to the buildings or improvements on the Premises or construct any building or make any other improvements on 
+      the Premises without the prior written consent of Landlord. Any and all alterations, changes, and/or improvements built, constructed or placed on 
+      the Premises by Tenant shall, unless otherwise provided by written agreement between Landlord and Tenant, be and become the property of Landlord 
+      and remain on the Premises at the expiration or earlier termination of this Lease Agreement.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">9. NON-DELIVERY OF POSSESSION.</span></div>
+    <p>
+      In the event Landlord cannot deliver possession of the Premises to Tenant upon the commencement of the Lease term, through no fault of Landlord 
+      or its agents, then Landlord or its agents shall have no liability, but the rental herein provided shall abate until possession is given. 
+      Landlord or its agents shall have thirty (30) days in which to give possession, and if possession is tendered within such time, Tenant agrees 
+      to accept the demised Premises and pay the rental herein provided from that date. In the event possession cannot be delivered within such time, 
+      through no fault of Landlord or its agents, then this Lease Agreement and all rights hereunder shall terminate.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">10. HAZARDOUS MATERIALS.</span></div>
+    <p>
+      Tenant shall not keep on the Premises any item of a dangerous, flammable or explosive character that might unreasonably increase the danger of 
+      fire or explosion on the Premises or that might be considered hazardous or extra hazardous by any responsible insurance company.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">11. UTILITIES.</span></div>
+    <p>
+      Tenant shall be responsible for arranging for and paying for all utility services required on the Premises.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">12. MAINTENANCE, REPAIR, AND RULES.</span></div>
+    <p>
+      Tenant will, at its sole expense, keep and maintain the Premises and appurtenances in good and sanitary condition and repair during the term 
+      of this Lease Agreement and any renewal thereof. Without limiting the generality of the foregoing, Tenant shall:
+    </p>
+    <ol style="margin-left: 20px;">
+      <li>Not obstruct the driveways, sidewalks, courts, entry ways, stairs and/or halls, which shall be used for the purposes of ingress and egress only;</li>
+      <li>Keep all windows, glass, window coverings, doors, locks and hardware in good, clean order and repair;</li>
+      <li>Not obstruct or cover the windows or doors;</li>
+      <li>Not leave windows or doors in an open position during any inclement weather;</li>
+      <li>Not hang any laundry, clothing, sheets, etc., from any window, rail, porch or balcony;</li>
+      <li>Not deface the walls, woodwork or floors of the Premises, nor make any holes in the walls or woodwork without Landlord's consent;</li>
+      <li>Keep all plumbing fixtures in the Premises used by Tenant in a clean and sanitary condition;</li>
+      <li>Use all electrical, plumbing, sanitary, heating, ventilating, air-conditioning and other facilities and appliances in a reasonable manner;</li>
+      <li>Not destroy, deface, damage, impair or remove any part of the Premises or permit any person to do so;</li>
+      <li>Comply with all applicable laws, ordinances, rules and regulations of any governmental or quasi-governmental authority affecting the cleanliness, use, occupancy and preservation of the Premises.</li>
+    </ol>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">13. LANDLORD ACCESS.</span></div>
+    <p>
+      Tenant shall permit Landlord and Landlord's agents to enter the Premises at reasonable times and upon reasonable notice for the purpose of 
+      inspecting the Premises, performing necessary repairs and alterations, or showing the Premises to prospective purchasers, tenants, lenders, 
+      appraisers, or insurance agents. Landlord may exercise a contractual or statutory lien, leave written notice, or seize nonexempt property 
+      after default. Landlord may prominently display a "For Sale" or "For Lease" or similarly worded sign on the Property during the term of this 
+      Lease or any renewal period. If Tenant fails to permit reasonable access under this Paragraph, Tenant will be in default.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">14. SUBORDINATION OF LEASE.</span></div>
+    <p>
+      This Lease Agreement and Tenant's interest hereunder are and shall be subordinate, junior and inferior to any and all mortgages, liens or 
+      encumbrances now or hereafter placed on the Premises by Landlord, all advances made under any such mortgages, liens or encumbrances (including, 
+      but not limited to, future advances), the interest payable on such mortgages, liens or encumbrances and any and all renewals, extensions or 
+      modifications of such mortgages, liens or encumbrances.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">15. TENANT'S HOLD OVER.</span></div>
+    <p>
+      If Tenant remains in possession of the Premises with the consent of Landlord after the natural expiration of this Lease Agreement, a new 
+      tenancy from month-to-month shall be created between Landlord and Tenant which shall be subject to all of the terms and conditions hereof 
+      except that rent shall then be due and owing at {{currency rentAmount}} per month and except that such tenancy shall be terminable upon 
+      fifteen (15) days written notice served by either party.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">16. SURRENDER OF PREMISES.</span></div>
+    <p>
+      Upon the expiration of the term hereof, Tenant shall surrender the Premises in as good a state and condition as they were at the commencement 
+      of this Lease Agreement, reasonable use and wear and tear thereof and damages by the elements excepted.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">17. ANIMALS.</span></div>
+    <p>
+      <strong>THERE WILL BE NO ANIMALS</strong>, unless authorized by a separate written Pet Addendum to this Residential Lease Agreement. Tenant 
+      shall not permit any animal, including mammals, reptiles, birds, fish, rodents, or insects on the property, even temporarily, unless otherwise 
+      agreed by a separate written Pet Agreement. If tenant violates the pet restrictions of this Lease, Tenant will pay to Landlord a fee as allowed 
+      by law per day per animal for each day Tenant violates the animal restrictions as additional rent for any unauthorized animal. Landlord may remove 
+      or cause to be removed any unauthorized animal and deliver it to appropriate local authorities by providing at least 24-hour written notice to Tenant 
+      of Landlord's intention to remove the unauthorized animal. Landlord will not be liable for any harm, injury, death, or sickness to any unauthorized 
+      animal. Tenant is responsible and liable for any damage or required cleaning to the Property caused by any unauthorized animal and for all costs 
+      Landlord may incur in removing or causing any unauthorized animal to be removed.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">18. WATERBEDS.</span></div>
+    <p>
+      <strong>THERE WILL BE NO WATERBEDS</strong>, unless authorized by a separate written Waterbed Addendum to this Residential Lease Agreement.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">19. QUIET ENJOYMENT.</span></div>
+    <p>
+      Tenant, upon payment of all of the sums referred to herein as being payable by Tenant and Tenant's performance of all Tenant's agreements contained 
+      herein and Tenant's observance of all rules and regulations, shall and may peacefully and quietly have, hold and enjoy said Premises for the term hereof.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">20. INDEMNIFICATION.</span></div>
+    <p>
+      Landlord shall not be liable for any damage or injury of or to the Tenant, Tenant's family, guests, invitees, agents or employees or to any person 
+      entering the Premises or the building of which the Premises are a part or to goods or equipment, or in the structure or equipment of the structure 
+      of which the Premises are a part, and Tenant hereby agrees to indemnify, defend and hold Landlord harmless from any and all claims or assertions of 
+      every kind and nature.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">21. DEFAULT.</span></div>
+    <p>
+      If Landlord breaches this Lease, Tenant may seek any relief provided by law. If Tenant fails to comply with any of the material provisions of this 
+      Lease Agreement, other than the covenant to pay rent, or of any present rules and regulations or any that may be hereafter prescribed by Landlord, 
+      or materially fails to comply with any duties imposed on Tenant by statute, within seven (7) days after delivery of written notice by Landlord 
+      specifying the non-compliance and indicating the intention of Landlord to terminate the Lease by reason thereof, Landlord may terminate this Lease 
+      Agreement. If Tenant fails to pay rent when due and the default continues for seven (7) days thereafter, Landlord may, at Landlord's option, declare 
+      the entire balance of rent payable hereunder to be immediately due and payable and may exercise any and all rights and remedies available to Landlord 
+      at law or in equity or may immediately terminate this Lease Agreement.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">22. ABANDONMENT.</span></div>
+    <p>
+      If at any time during the term of this Lease Agreement Tenant abandons the Premises or any part thereof, Landlord may, at Landlord's option, obtain 
+      possession of the Premises in the manner provided by law, and without becoming liable to Tenant for damages or for any payment of any kind whatever. 
+      Landlord may, at Landlord's discretion, as agent for Tenant, relet the Premises, or any part thereof, for the whole or any part thereof, for the whole 
+      or any part of the then unexpired term, and may receive and collect all rent payable by virtue of such reletting, and, at Landlord's option, hold Tenant 
+      liable for any difference between the rent that would have been payable under this Lease Agreement during the balance of the unexpired term, if this 
+      Lease Agreement had continued in force, and the net rent for such period realized by Landlord by means of such reletting. If Landlord's right of reentry 
+      is exercised following abandonment of the Premises by Tenant, then Landlord shall consider any personal property belonging to Tenant and left on the 
+      Premises to also have been abandoned, in which case Landlord may dispose of all such personal property in any manner Landlord shall deem proper and 
+      Landlord is hereby relieved of all liability for doing so.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">23. ATTORNEYS' FEES.</span></div>
+    <p>
+      Should it become necessary for Landlord to employ an attorney to enforce any of the conditions or covenants hereof, including the collection of 
+      rentals or gaining possession of the Premises, Tenant agrees to pay all expenses so incurred, including a reasonable attorneys' fee.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">24. RECORDING OF LEASE AGREEMENT.</span></div>
+    <p>
+      Tenant shall not record this Lease Agreement on the Public Records of any public office. In the event that Tenant shall record this Lease Agreement, 
+      this Lease Agreement shall, at Landlord's option, terminate immediately and Landlord shall be entitled to all rights and remedies that it has at law or in equity.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">25. GOVERNING LAW.</span></div>
+    <p>
+      This Lease Agreement shall be governed, construed and interpreted by, through and under the Laws of the State of {{state}}.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">26. SEVERABILITY.</span></div>
+    <p>
+      If any provision of this Lease Agreement or the application thereof shall, for any reason and to any extent, be invalid or unenforceable, neither the 
+      remainder of this Lease Agreement nor the application of the provision to other persons, entities or circumstances shall be affected thereby, but 
+      instead shall be enforced to the maximum extent permitted by law.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">27. BINDING EFFECT.</span></div>
+    <p>
+      The covenants, obligations and conditions herein contained shall be binding on and inure to the benefit of the heirs, legal representatives, and 
+      assigns of the parties hereto.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">28. DESCRIPTIVE HEADINGS.</span></div>
+    <p>
+      The descriptive headings used herein are for convenience of reference only and they are not intended to have any effect whatsoever in determining 
+      the rights or obligations of the Landlord or Tenant.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">29. CONSTRUCTION.</span></div>
+    <p>
+      The pronouns used herein shall include, where appropriate, either gender or both, singular and plural.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">30. NON-WAIVER.</span></div>
+    <p>
+      No delay, indulgence, waiver, non-enforcement, election or non-election by Landlord under this Lease Agreement will be deemed to be a waiver of any 
+      other breach by Tenant, nor shall it affect Tenant's duties, obligations, and liabilities hereunder.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">31. MODIFICATION.</span></div>
+    <p>
+      The parties hereby agree that this document contains the entire agreement between the parties and this Lease Agreement shall not be modified, changed, 
+      altered or amended in any way except through a written amendment signed by all of the parties hereto.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">32. NOTICE.</span></div>
+    <p>
+      Any notice required or permitted under this Lease or under state law shall be delivered to Tenant at the Property address, and to Landlord at the 
+      address provided by Landlord.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title"><span class="section-number">33. LEAD-BASED PAINT DISCLOSURE.</span></div>
+    <p>
+      If the premises were constructed prior to 1978, Tenant acknowledges receipt of the form entitled "LEAD-BASED PAINT DISCLOSURE" which contains 
+      disclosure of information on lead-based paint and/or lead-based paint hazards.
+    </p>
+  </div>
+
+  <div class="signature-section">
+    <p style="margin-top: 40px;">
+      As to Landlord this <strong>{{generatedDate}}</strong>.
+    </p>
+    
+    <div style="margin-top: 40px;">
+      <div style="display: inline-block; width: 45%; vertical-align: top;">
+        <p><strong>LANDLORD:</strong></p>
+        <p>{{organizationName}}</p>
+        <div class="signature-line"></div>
+        <p style="margin-top: 5px; font-size: 9pt;">Signature</p>
+        <div class="signature-line" style="margin-top: 20px;"></div>
+        <p style="margin-top: 5px; font-size: 9pt;">Print Name</p>
+        <div class="signature-line" style="margin-top: 20px;"></div>
+        <p style="margin-top: 5px; font-size: 9pt;">Date</p>
+      </div>
+      
+      <div style="display: inline-block; width: 45%; vertical-align: top; margin-left: 5%;">
+        <p><strong>TENANT(S):</strong></p>
+        {{#each tenants}}
+        <p>{{firstName}} {{lastName}}</p>
+        <div class="signature-line"></div>
+        <p style="margin-top: 5px; font-size: 9pt;">Signature</p>
+        <div class="signature-line" style="margin-top: 20px;"></div>
+        <p style="margin-top: 5px; font-size: 9pt;">Print Name</p>
+        <div class="signature-line" style="margin-top: 20px;"></div>
+        <p style="margin-top: 5px; font-size: 9pt;">Date</p>
+        {{#unless @last}}<br><br>{{/unless}}
+        {{/each}}
+      </div>
+    </div>
+  </div>
+</body>
+</html>

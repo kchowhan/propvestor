@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>California Residential Lease Agreement</title>
+  <style>
+    body {
+      font-family: 'Times New Roman', serif;
+      font-size: 11pt;
+      line-height: 1.6;
+      color: #000;
+      margin: 0;
+      padding: 20px;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+      border-bottom: 2px solid #000;
+      padding-bottom: 20px;
+    }
+    .header h1 {
+      margin: 0;
+      font-size: 18pt;
+      font-weight: bold;
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+    .section-title {
+      font-weight: bold;
+      font-size: 12pt;
+      margin-bottom: 10px;
+      text-decoration: underline;
+    }
+    .info-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+    .info-item {
+      margin-bottom: 8px;
+    }
+    .info-label {
+      font-weight: bold;
+      display: inline-block;
+      min-width: 120px;
+    }
+    .tenants-list {
+      margin: 15px 0;
+    }
+    .tenant-item {
+      margin-bottom: 10px;
+      padding: 10px;
+      background-color: #f5f5f5;
+      border-left: 3px solid #333;
+    }
+    .signature-section {
+      margin-top: 40px;
+      page-break-inside: avoid;
+    }
+    .signature-line {
+      border-top: 1px solid #000;
+      margin-top: 60px;
+      width: 300px;
+      display: inline-block;
+    }
+    .terms {
+      margin-top: 30px;
+    }
+    .terms ol {
+      margin-left: 20px;
+    }
+    .terms li {
+      margin-bottom: 10px;
+    }
+    .ca-notice {
+      background-color: #fff3cd;
+      border: 2px solid #ffc107;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 5px;
+    }
+    @media print {
+      body {
+        padding: 0;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>CALIFORNIA RESIDENTIAL LEASE AGREEMENT</h1>
+    <p><strong>{{organizationName}}</strong></p>
+  </div>
+
+  <div class="ca-notice">
+    <strong>CALIFORNIA-SPECIFIC NOTICE:</strong> This lease is subject to California Civil Code and local rent control ordinances. 
+    Tenant has the right to receive a copy of this lease agreement.
+  </div>
+
+  <div class="section">
+    <div class="section-title">1. PARTIES</div>
+    <p>
+      This Lease Agreement ("Lease") is entered into on <strong>{{generatedDate}}</strong>, 
+      between <strong>{{organizationName}}</strong> ("Landlord") and the following tenant(s) ("Tenant"):
+    </p>
+    <div class="tenants-list">
+      {{#each tenants}}
+      <div class="tenant-item">
+        <strong>{{firstName}} {{lastName}}</strong>
+        {{#if isPrimary}}<em>(Primary Tenant)</em>{{/if}}<br>
+        {{#if email}}Email: {{email}}{{/if}}{{#if phone}} | Phone: {{phone}}{{/if}}
+      </div>
+      {{/each}}
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">2. PROPERTY</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">Property:</span> {{propertyName}}
+      </div>
+      <div class="info-item">
+        <span class="info-label">Address:</span> {{propertyAddress}}
+      </div>
+      <div class="info-item">
+        <span class="info-label">Unit:</span> {{unitName}}
+      </div>
+      <div class="info-item">
+        <span class="info-label">State:</span> California (CA)
+      </div>
+      {{#if bedrooms}}
+      <div class="info-item">
+        <span class="info-label">Bedrooms:</span> {{bedrooms}}
+      </div>
+      {{/if}}
+      {{#if bathrooms}}
+      <div class="info-item">
+        <span class="info-label">Bathrooms:</span> {{bathrooms}}
+      </div>
+      {{/if}}
+      {{#if squareFeet}}
+      <div class="info-item">
+        <span class="info-label">Square Feet:</span> {{squareFeet}}
+      </div>
+      {{/if}}
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">3. TERM</div>
+    <p>
+      The term of this Lease shall commence on <strong>{{date startDate}}</strong> and shall terminate on 
+      <strong>{{date endDate}}</strong>, unless sooner terminated in accordance with the terms of this Lease.
+    </p>
+  </div>
+
+  <div class="section">
+    <div class="section-title">4. RENT</div>
+    <div class="info-grid">
+      <div class="info-item">
+        <span class="info-label">Monthly Rent:</span> {{currency rentAmount}}
+      </div>
+      <div class="info-item">
+        <span class="info-label">Rent Due Date:</span> Day {{rentDueDay}} of each month
+      </div>
+      {{#if depositAmount}}
+      <div class="info-item">
+        <span class="info-label">Security Deposit:</span> {{currency depositAmount}}
+      </div>
+      {{/if}}
+    </div>
+    <p>
+      Rent shall be due and payable in advance on the {{rentDueDay}} day of each month during the term of this Lease. 
+      If rent is not received by the {{rentDueDay}} day of the month, Tenant shall be in default of this Lease.
+    </p>
+    <p>
+      <strong>California Law:</strong> Under California Civil Code Section 1947, rent is due on the date specified in this lease. 
+      Late fees may not exceed reasonable costs incurred by the landlord.
+    </p>
+  </div>
+
+  <div class="section terms">
+    <div class="section-title">5. TERMS AND CONDITIONS</div>
+    <ol>
+      <li>
+        <strong>Use of Premises:</strong> Tenant shall use the premises solely as a private residence and for no other purpose.
+      </li>
+      <li>
+        <strong>Maintenance:</strong> Tenant shall maintain the premises in good condition and promptly notify Landlord of any needed repairs. 
+        Landlord is responsible for maintaining the premises in habitable condition per California Civil Code Section 1941.1.
+      </li>
+      <li>
+        <strong>Alterations:</strong> Tenant shall not make any alterations, additions, or improvements to the premises without Landlord's prior written consent.
+      </li>
+      <li>
+        <strong>Utilities:</strong> Tenant shall be responsible for all utilities unless otherwise specified in writing.
+      </li>
+      <li>
+        <strong>Pets:</strong> No pets are allowed on the premises without Landlord's prior written consent.
+      </li>
+      <li>
+        <strong>Security Deposit:</strong> The security deposit shall be held by Landlord in accordance with California Civil Code Section 1950.5. 
+        The deposit may be applied to any damages, unpaid rent, or other charges owed by Tenant. 
+        Within 21 days of termination, Landlord shall provide an itemized statement of any deductions.
+      </li>
+      <li>
+        <strong>Rent Control:</strong> This property may be subject to local rent control ordinances. 
+        Tenant is advised to check with local housing authorities for applicable regulations.
+      </li>
+      <li>
+        <strong>Default:</strong> If Tenant fails to pay rent or breaches any term of this Lease, Landlord may terminate this Lease 
+        in accordance with California Civil Code Section 1946 and pursue all available remedies.
+      </li>
+      <li>
+        <strong>Governing Law:</strong> This Lease shall be governed by the laws of the State of California.
+      </li>
+    </ol>
+  </div>
+
+  <div class="signature-section">
+    <p>IN WITNESS WHEREOF, the parties have executed this Lease as of the date first written above.</p>
+    
+    <div style="margin-top: 40px;">
+      <div style="display: inline-block; width: 45%; vertical-align: top;">
+        <p><strong>LANDLORD:</strong></p>
+        <p>{{organizationName}}</p>
+        <div class="signature-line"></div>
+        <p style="margin-top: 5px; font-size: 9pt;">Signature</p>
+        <div class="signature-line" style="margin-top: 20px;"></div>
+        <p style="margin-top: 5px; font-size: 9pt;">Date</p>
+      </div>
+      
+      <div style="display: inline-block; width: 45%; vertical-align: top; margin-left: 5%;">
+        <p><strong>TENANT(S):</strong></p>
+        {{#each tenants}}
+        <p>{{firstName}} {{lastName}}</p>
+        <div class="signature-line"></div>
+        <p style="margin-top: 5px; font-size: 9pt;">Signature</p>
+        <div class="signature-line" style="margin-top: 20px;"></div>
+        <p style="margin-top: 5px; font-size: 9pt;">Date</p>
+        {{#unless @last}}<br><br>{{/unless}}
+        {{/each}}
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+

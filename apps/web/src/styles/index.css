@@ -1,0 +1,208 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'TASA Explorer', ui-sans-serif, system-ui;
+    @apply bg-canvas text-ink antialiased;
+  }
+}
+
+@layer components {
+  /* Enhanced Card Styles */
+  .card {
+    @apply rounded-xl bg-white shadow-soft border transition-all duration-200;
+    border-color: rgba(226, 232, 240, 0.6); /* slate-200 with 60% opacity */
+  }
+
+  .card:hover {
+    @apply shadow-medium;
+  }
+
+  .card-header {
+    @apply px-6 py-4 border-b text-sm font-semibold;
+    border-color: rgba(226, 232, 240, 0.6); /* slate-200 with 60% opacity */
+    color: rgb(51 65 85); /* slate-700 */
+    background: linear-gradient(to right, rgb(248 250 252), white); /* from-slate-50 to-white */
+  }
+
+  .card-body {
+    @apply p-6;
+  }
+
+  /* Enhanced Button Styles */
+  .btn {
+    @apply px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200;
+    @apply focus:outline-none focus:ring-2 focus:ring-offset-2;
+  }
+
+  .btn-primary {
+    @apply bg-ink text-white shadow-sm focus:ring-ink;
+  }
+  .btn-primary:hover {
+    background-color: rgb(30 41 59); /* slate-800 */
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  }
+
+  .btn-secondary {
+    @apply bg-white text-ink border;
+    border-color: rgb(203 213 225); /* slate-300 */
+  }
+  .btn-secondary:focus {
+    --tw-ring-color: rgb(100 116 139); /* slate-500 */
+  }
+  .btn-secondary:hover {
+    background-color: rgb(248 250 252); /* slate-50 */
+  }
+
+  .btn-success {
+    @apply bg-green-600 text-white shadow-sm focus:ring-green-500;
+  }
+  .btn-success:hover {
+    @apply bg-green-700 shadow-md;
+  }
+
+  .btn-danger {
+    @apply bg-red-600 text-white shadow-sm focus:ring-red-500;
+  }
+  .btn-danger:hover {
+    @apply bg-red-700 shadow-md;
+  }
+
+  .btn-ghost {
+    @apply bg-transparent;
+    color: rgb(51 65 85); /* slate-700 */
+  }
+  .btn-ghost:focus {
+    --tw-ring-color: rgb(100 116 139); /* slate-500 */
+  }
+  .btn-ghost:hover {
+    background-color: rgb(241 245 249); /* slate-100 */
+  }
+
+  /* Form Input Styles */
+  .input {
+    @apply w-full rounded-lg border px-4 py-2.5 text-sm transition-all duration-200;
+    border-color: rgb(203 213 225); /* slate-300 */
+    @apply focus:outline-none focus:ring-2;
+  }
+  .input:focus {
+    --tw-ring-color: rgb(14 165 233); /* primary-500 */
+    border-color: rgb(14 165 233); /* primary-500 */
+  }
+  .input::placeholder {
+    color: rgb(148 163 184); /* slate-400 */
+  }
+
+  .input:disabled {
+    background-color: rgb(248 250 252); /* slate-50 */
+    color: rgb(100 116 139); /* slate-500 */
+    @apply cursor-not-allowed;
+  }
+
+  .label {
+    @apply block text-sm font-medium mb-1.5;
+    color: rgb(51 65 85); /* slate-700 */
+  }
+
+  /* Table Styles */
+  .table {
+    @apply w-full text-sm;
+  }
+
+  .table thead {
+    @apply border-b;
+    background-color: rgb(248 250 252); /* slate-50 */
+    border-color: rgb(226 232 240); /* slate-200 */
+  }
+
+  .table th {
+    @apply px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider;
+    color: rgb(51 65 85); /* slate-700 */
+  }
+
+  .table tbody tr {
+    @apply border-b transition-colors duration-150;
+    border-color: rgb(241 245 249); /* slate-100 */
+  }
+  .table tbody tr:hover {
+    background-color: rgb(248 250 252); /* slate-50 */
+  }
+
+  .table td {
+    @apply px-4 py-3;
+    color: rgb(51 65 85); /* slate-700 */
+  }
+
+  /* Badge Styles */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply bg-primary-100 text-primary-800;
+  }
+
+  .badge-success {
+    @apply bg-green-100 text-green-800;
+  }
+
+  .badge-warning {
+    @apply bg-yellow-100 text-yellow-800;
+  }
+
+  .badge-danger {
+    @apply bg-red-100 text-red-800;
+  }
+
+  .badge-gray {
+    background-color: rgb(241 245 249); /* slate-100 */
+    color: rgb(30 41 59); /* slate-800 */
+  }
+
+  /* Tab Styles */
+  .tab {
+    @apply px-4 py-3 text-sm font-medium border-b-2 transition-colors duration-200;
+  }
+
+  .tab-active {
+    @apply border-primary-600 text-primary-600;
+  }
+
+  .tab-inactive {
+    @apply border-transparent;
+    color: rgb(71 85 105); /* slate-600 */
+  }
+  .tab-inactive:hover {
+    color: rgb(15 23 42); /* slate-900 */
+    border-color: rgb(203 213 225); /* slate-300 */
+  }
+
+  /* Loading Spinner */
+  .spinner {
+    @apply inline-block w-4 h-4 border-2 rounded-full animate-spin;
+    border-color: rgb(203 213 225); /* slate-300 */
+    border-top-color: rgb(17 24 39); /* ink */
+  }
+
+  /* Empty State */
+  .empty-state {
+    @apply text-center py-12 px-4;
+  }
+
+  .empty-state-icon {
+    @apply mx-auto h-12 w-12 mb-4;
+    color: rgb(148 163 184); /* slate-400 */
+  }
+
+  .empty-state-title {
+    @apply text-sm font-medium mb-1;
+    color: rgb(15 23 42); /* slate-900 */
+  }
+
+  .empty-state-description {
+    @apply text-sm;
+    color: rgb(100 116 139); /* slate-500 */
+  }
+}
