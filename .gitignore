@@ -6,3 +6,9 @@ node_modules
 apps/api/dist
 apps/web/dist
 apps/web/.vite
+
+# Coverage reports
+coverage/
+**/coverage/
+*.lcov
+.nyc_output/
