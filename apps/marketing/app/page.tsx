@@ -5,7 +5,7 @@ export default function HomePage() {
     <div className="min-h-screen">
       {/* Hero Section */}
       <section className="relative bg-gradient-to-br from-primary-600 via-primary-700 to-primary-800 text-white">
-        <div className="container mx-auto px-6 py-24 md:py-32">
+        <div className="container mx-auto px-6 pt-16 pb-24 md:pt-20 md:pb-32">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
               AI-Powered Property & Investment
