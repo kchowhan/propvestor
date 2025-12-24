@@ -19,15 +19,19 @@ export const TenantsPage = () => {
     unitId: '',
   });
 
-  const { data: properties } = useQuery({
+  const { data: propertiesResponse } = useQuery({
     queryKey: ['properties'],
     queryFn: () => apiFetch('/properties', { token }),
   });
 
-  const { data: tenants, isLoading, error } = useQuery({
+  const { data: tenantsResponse, isLoading, error } = useQuery({
     queryKey: ['tenants'],
     queryFn: () => apiFetch('/tenants', { token }),
   });
+
+  // Extract data arrays from paginated responses
+  const properties = propertiesResponse?.data || [];
+  const tenants = tenantsResponse?.data || [];
 
   const createTenant = useMutation({
     mutationFn: () =>

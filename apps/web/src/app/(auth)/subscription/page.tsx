@@ -38,15 +38,15 @@ export default function SubscriptionPage() {
   });
 
   // Fetch usage counts
-  const { data: properties } = useQuery({
+  const { data: propertiesResponse } = useQuery({
     queryKey: ['properties'],
     queryFn: () => apiFetch('/properties', { token }),
   });
-  const { data: tenants } = useQuery({
+  const { data: tenantsResponse } = useQuery({
     queryKey: ['tenants'],
     queryFn: () => apiFetch('/tenants', { token }),
   });
-  const { data: users } = useQuery({
+  const { data: usersResponse } = useQuery({
     queryKey: ['users'],
     queryFn: () => apiFetch('/users', { token }),
   });
@@ -55,11 +55,11 @@ export default function SubscriptionPage() {
   const invoicesList = invoices || [];
   const limitsData = limits || {};
   
-  // Calculate usage
+  // Calculate usage (extract from paginated responses)
   const usage = {
-    propertiesUsed: properties?.length || 0,
-    tenantsUsed: tenants?.length || 0,
-    usersUsed: users?.length || 0,
+    propertiesUsed: propertiesResponse?.data?.length || propertiesResponse?.pagination?.total || 0,
+    tenantsUsed: tenantsResponse?.data?.length || tenantsResponse?.pagination?.total || 0,
+    usersUsed: usersResponse?.data?.length || usersResponse?.pagination?.total || 0,
     storageUsed: 0, // Would need to fetch documents and calculate
   };
 
@@ -289,30 +289,48 @@ export default function SubscriptionPage() {
         </div>
       ) : (
         <div className="card">
-          <div className="card-header">Upgrade Plan</div>
+          <div className="card-header">Change Plan</div>
           <div className="card-body">
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
               {plansList
                 .filter((plan: any) => plan.id !== currentPlan?.id)
-                .map((plan: any) => (
-                  <div
-                    key={plan.id}
-                    className="border border-slate-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
-                  >
-                    <h3 className="text-xl font-bold text-ink mb-2">{plan.name}</h3>
-                    <div className="mb-4">
-                      <span className="text-3xl font-bold text-ink">${Number(plan.price).toFixed(2)}</span>
-                      <span className="text-slate-600">/{plan.billingInterval}</span>
-                    </div>
-                    <button
-                      onClick={() => upgrade.mutate(plan.id)}
-                      disabled={upgrade.isPending}
-                      className="w-full rounded-lg bg-ink text-white px-4 py-2 hover:bg-ink/90 transition-colors disabled:opacity-50"
+                .map((plan: any) => {
+                  const currentPrice = Number(currentPlan?.price || 0);
+                  const planPrice = Number(plan.price);
+                  const isUpgrade = planPrice > currentPrice;
+                  const isCurrentPlan = plan.id === currentPlan?.id;
+                  
+                  return (
+                    <div
+                      key={plan.id}
+                      className="border border-slate-200 rounded-lg p-6 hover:shadow-lg transition-shadow relative"
                     >
-                      {upgrade.isPending ? 'Upgrading...' : 'Upgrade'}
-                    </button>
-                  </div>
-                ))}
+                      {isCurrentPlan && (
+                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
+                          Current Plan
+                        </div>
+                      )}
+                      <h3 className="text-xl font-bold text-ink mb-2">{plan.name}</h3>
+                      <div className="mb-4">
+                        <span className="text-3xl font-bold text-ink">${planPrice.toFixed(2)}</span>
+                        <span className="text-slate-600">/{plan.billingInterval}</span>
+                      </div>
+                      <button
+                        onClick={() => upgrade.mutate(plan.id)}
+                        disabled={upgrade.isPending || isCurrentPlan}
+                        className={`w-full rounded-lg px-4 py-2 transition-colors disabled:opacity-50 ${
+                          isUpgrade
+                            ? 'bg-ink text-white hover:bg-ink/90'
+                            : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
+                        }`}
+                      >
+                        {upgrade.isPending 
+                          ? (isUpgrade ? 'Upgrading...' : 'Downgrading...') 
+                          : (isUpgrade ? 'Upgrade' : 'Downgrade')}
+                      </button>
+                    </div>
+                  );
+                })}
             </div>
           </div>
         </div>

@@ -19,10 +19,13 @@ export const PropertiesPage = () => {
     type: 'SINGLE_FAMILY',
   });
 
-  const { data, isLoading, error } = useQuery({
+  const { data: propertiesResponse, isLoading, error } = useQuery({
     queryKey: ['properties'],
     queryFn: () => apiFetch('/properties', { token }),
   });
+
+  // Extract data array from paginated response
+  const properties = propertiesResponse?.data || [];
 
   const createMutation = useMutation({
     mutationFn: (payload: typeof form) =>
@@ -131,7 +134,7 @@ export const PropertiesPage = () => {
               </tr>
             </thead>
             <tbody>
-              {data?.map((property: any) => (
+              {properties.map((property: any) => (
                 <tr key={property.id} className="border-t border-slate-100">
                   <td className="py-2 font-medium text-ink">
                     <Link className="underline" href={`/properties/${property.id}`}>

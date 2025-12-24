@@ -35,6 +35,11 @@ export const LeasesPage = () => {
     queryFn: () => apiFetch('/tenants', { token }),
   });
 
+  // Extract data arrays from paginated responses
+  const leases = leasesQuery.data?.data || [];
+  const properties = propertiesQuery.data?.data || [];
+  const tenants = tenantsQuery.data?.data || [];
+
   const createLease = useMutation({
     mutationFn: () =>
       apiFetch('/leases', {
@@ -105,7 +110,7 @@ export const LeasesPage = () => {
               required
             >
               <option value="">Select unit</option>
-              {propertiesQuery.data?.flatMap((property: any) =>
+              {properties.flatMap((property: any) =>
                 property.units.map((unit: any) => (
                   <option key={unit.id} value={unit.id}>
                     {property.name} - {unit.name}
@@ -165,7 +170,7 @@ export const LeasesPage = () => {
                   }));
                 }}
               >
-                {tenantsQuery.data?.map((tenant: any) => (
+                {tenants.map((tenant: any) => (
                   <option key={tenant.id} value={tenant.id}>
                     {tenant.firstName} {tenant.lastName}
                   </option>
@@ -183,7 +188,7 @@ export const LeasesPage = () => {
               >
                 <option value="">Select primary tenant</option>
                 {form.tenantIds.map((tenantId) => {
-                  const tenant = tenantsQuery.data?.find((t: any) => t.id === tenantId);
+                  const tenant = tenants.find((t: any) => t.id === tenantId);
                   return tenant ? (
                     <option key={tenantId} value={tenantId}>
                       {tenant.firstName} {tenant.lastName}
@@ -215,7 +220,7 @@ export const LeasesPage = () => {
               </tr>
             </thead>
             <tbody>
-              {leasesQuery.data?.map((lease: any) => (
+              {leases.map((lease: any) => (
                 <tr key={lease.id} className="border-t border-slate-100">
                   <td className="py-2">
                     <Link className="underline" href={`/leases/${lease.id}`}>
