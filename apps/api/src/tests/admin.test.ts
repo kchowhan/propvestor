@@ -13,7 +13,7 @@ import {
   prisma,
 } from './setup.js';
 
-const app = createApp({ enableRateLimiting: false });
+const app = createApp();
 
 describe('Admin Routes', () => {
   let superAdminUser: any;

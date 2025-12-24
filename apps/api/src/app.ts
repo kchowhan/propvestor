@@ -7,11 +7,11 @@ import { rateLimit, strictRateLimit } from './middleware/rate-limit.js';
 import { optionalAuth } from './middleware/auth.js';
 
 export interface AppOptions {
-  enableRateLimiting?: boolean;
+  // No longer optional - rate limiting is always enabled for security
+  // CodeQL: Ensures all routes with authorization are rate-limited
 }
 
 export const createApp = (options: AppOptions = {}) => {
-  const { enableRateLimiting = process.env.NODE_ENV === 'production' } = options; // Enable rate limiting in production only
   const app = express();
   
   // Support multiple CORS origins (comma-separated) or single origin
@@ -37,16 +37,14 @@ export const createApp = (options: AppOptions = {}) => {
   app.use(express.json());
 
   // Apply strict rate limiting to auth endpoints (before general rate limiting)
-  if (enableRateLimiting) {
-    app.use('/api/auth/login', strictRateLimit);
-    app.use('/api/auth/register', strictRateLimit);
-  }
+  // CodeQL: Rate limiting prevents DoS attacks on authentication endpoints
+  app.use('/api/auth/login', strictRateLimit);
+  app.use('/api/auth/register', strictRateLimit);
 
   // Apply general rate limiting to all API routes
   // Rate limiting needs auth context, so apply optionalAuth first for authenticated requests
-  if (enableRateLimiting) {
-    app.use('/api', optionalAuth, rateLimit);
-  }
+  // CodeQL: Always enable rate limiting to prevent DoS attacks
+  app.use('/api', optionalAuth, rateLimit);
 
   app.use('/api', router);
 
