@@ -48,13 +48,13 @@ export default function PricingPage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       <div className="text-center">
-        <h1 className="text-4xl font-bold text-ink mb-4">Choose Your Plan</h1>
-        <p className="text-slate-600 text-lg">Select the plan that best fits your property management needs</p>
+        <h1 className="text-3xl font-bold text-ink mb-2">Choose Your Plan</h1>
+        <p className="text-slate-600">Select the plan that best fits your property management needs</p>
       </div>
 
-      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
+      <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-7xl mx-auto">
         {plansList.map((plan: any, index: number) => {
           const isCurrentPlan = plan.id === currentPlanId;
           const isPopular = plan.slug === 'pro'; // Mark Pro as popular
@@ -62,32 +62,41 @@ export default function PricingPage() {
           return (
             <div
               key={plan.id}
-              className={`relative border rounded-lg p-8 ${
-                isPopular
-                  ? 'border-primary-500 shadow-xl scale-105 bg-gradient-to-b from-primary-50 to-white'
-                  : 'border-slate-200 hover:shadow-lg'
+              className={`relative border rounded-lg p-4 flex flex-col ${
+                isCurrentPlan
+                  ? 'border-green-500 bg-green-50/50 shadow-lg'
+                  : isPopular
+                  ? 'border-primary-500 shadow-xl bg-gradient-to-b from-primary-50 to-white'
+                  : 'border-slate-200 hover:shadow-lg bg-white'
               } transition-all`}
             >
-              {isPopular && (
+              {/* Current Plan or Popular Badge */}
+              {isCurrentPlan ? (
                 <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
-                  <span className="bg-primary-600 text-white px-4 py-1 rounded-full text-sm font-semibold">
+                  <span className="bg-green-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
+                    Current Plan
+                  </span>
+                </div>
+              ) : isPopular ? (
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-1/2">
+                  <span className="bg-primary-600 text-white px-3 py-1 rounded-full text-xs font-semibold">
                     Most Popular
                   </span>
                 </div>
-              )}
+              ) : null}
 
-              <div className="text-center mb-6">
-                <h3 className="text-2xl font-bold text-ink mb-2">{plan.name}</h3>
-                <div className="mb-4">
-                  <span className="text-5xl font-bold text-ink">${Number(plan.price).toFixed(2)}</span>
-                  <span className="text-slate-600">/{plan.billingInterval}</span>
+              <div className="text-center mb-4 pt-2">
+                <h3 className="text-xl font-bold text-ink mb-2">{plan.name}</h3>
+                <div className="mb-3">
+                  <span className="text-3xl font-bold text-ink">${Number(plan.price).toFixed(0)}</span>
+                  <span className="text-slate-600 text-sm">/{plan.billingInterval === 'monthly' ? 'mo' : 'yr'}</span>
                 </div>
               </div>
 
               {/* Limits & Restrictions */}
-              <div className="mb-6 border-b border-slate-200 pb-4">
-                <h4 className="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Resource Limits</h4>
-                <ul className="space-y-2.5">
+              <div className="mb-3 border-b border-slate-200 pb-3">
+                <h4 className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">Limits</h4>
+                <ul className="space-y-1.5">
                   {Object.entries(plan.limits || {}).map(([key, value]: [string, any]) => {
                     const labelMap: Record<string, string> = {
                       properties: 'Properties',
@@ -97,12 +106,12 @@ export default function PricingPage() {
                       apiCalls: 'API Calls',
                     };
                     const label = labelMap[key] || key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
-                    const displayValue = value === 999999 ? 'Unlimited' : value.toLocaleString();
-                    const unit = key === 'storage' ? 'MB' : key === 'apiCalls' ? '/hour' : '';
+                    const displayValue = value === 999999 ? '∞' : value.toLocaleString();
+                    const unit = key === 'storage' ? 'MB' : key === 'apiCalls' ? '/hr' : '';
                     return (
-                      <li key={key} className="flex items-center justify-between text-sm py-1.5 border-b border-slate-100 last:border-0">
-                        <span className="text-slate-600 font-medium">{label}</span>
-                        <span className="font-bold text-ink">
+                      <li key={key} className="flex items-center justify-between text-xs py-1">
+                        <span className="text-slate-600">{label}</span>
+                        <span className="font-semibold text-ink text-xs">
                           {displayValue}{unit && ` ${unit}`}
                         </span>
                       </li>
@@ -112,33 +121,33 @@ export default function PricingPage() {
               </div>
 
               {/* Features */}
-              <div className="mb-8">
-                <h4 className="text-sm font-semibold text-slate-700 mb-3 uppercase tracking-wide">Features</h4>
-                <ul className="space-y-2.5">
+              <div className="mb-4 flex-grow">
+                <h4 className="text-xs font-semibold text-slate-700 mb-2 uppercase tracking-wide">Features</h4>
+                <ul className="space-y-1.5">
                   {Object.entries(plan.features || {}).map(([key, value]: [string, any]) => {
                     const featureMap: Record<string, string> = {
-                      properties: 'Property Management',
-                      tenants: 'Tenant Management',
-                      leases: 'Lease Management',
+                      properties: 'Properties',
+                      tenants: 'Tenants',
+                      leases: 'Leases',
                       workOrders: 'Work Orders',
-                      reports: 'Basic Reports',
+                      reports: 'Reports',
                       api: 'API Access',
-                      advancedReports: 'Advanced Reports',
-                      sso: 'Single Sign-On (SSO)',
+                      advancedReports: 'Adv. Reports',
+                      sso: 'SSO',
                       whiteLabel: 'White Label',
                       dedicatedSupport: 'Dedicated Support',
                     };
                     const featureLabel = featureMap[key] || key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1');
                     return (
-                      <li key={key} className="flex items-center gap-2.5 text-sm">
+                      <li key={key} className="flex items-center gap-2 text-xs">
                         {value ? (
                           <>
-                            <span className="text-green-600 font-bold text-base">✓</span>
+                            <span className="text-green-600 font-bold">✓</span>
                             <span className="text-slate-700">{featureLabel}</span>
                           </>
                         ) : (
                           <>
-                            <span className="text-slate-300 font-bold text-base">✗</span>
+                            <span className="text-slate-300">✗</span>
                             <span className="text-slate-400 line-through">{featureLabel}</span>
                           </>
                         )}
@@ -151,7 +160,7 @@ export default function PricingPage() {
               <button
                 onClick={() => subscribe.mutate(plan.id)}
                 disabled={subscribe.isPending || isCurrentPlan}
-                className={`w-full rounded-lg px-6 py-3 font-semibold transition-colors ${
+                className={`w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
                   isCurrentPlan
                     ? 'bg-slate-200 text-slate-600 cursor-not-allowed'
                     : isPopular
