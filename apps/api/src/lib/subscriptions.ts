@@ -101,15 +101,15 @@ export async function createStripeSubscription(
     subscriptionData.default_payment_method = paymentMethodId;
   }
 
-  const stripeSubscription = await stripe.subscriptions.create(subscriptionData);
+  const stripeSubscription = await stripe.subscriptions.create(subscriptionData) as any;
 
   // Calculate trial end date (14 days from now)
   const trialEndsAt = new Date();
   trialEndsAt.setDate(trialEndsAt.getDate() + 14);
 
   // Calculate billing period
-  const currentPeriodStart = new Date(stripeSubscription.current_period_start * 1000);
-  const currentPeriodEnd = new Date(stripeSubscription.current_period_end * 1000);
+  const currentPeriodStart = new Date((stripeSubscription.current_period_start) * 1000);
+  const currentPeriodEnd = new Date((stripeSubscription.current_period_end) * 1000);
 
   // Create or update subscription in database
   let subscription;
@@ -143,9 +143,9 @@ export async function createStripeSubscription(
   }
 
   // Get client secret from invoice if available
-  const latestInvoice = stripeSubscription.latest_invoice as Stripe.Invoice;
-  const paymentIntent = latestInvoice?.payment_intent as Stripe.PaymentIntent;
-  const clientSecret = paymentIntent?.client_secret;
+  const latestInvoice = stripeSubscription.latest_invoice as any;
+  const paymentIntent = latestInvoice?.payment_intent as any;
+  const clientSecret = paymentIntent?.client_secret ?? undefined;
 
   return {
     subscriptionId: subscription.id,
@@ -306,7 +306,7 @@ export async function getCurrentSubscription(organizationId: string) {
  */
 export async function syncSubscriptionFromStripe(stripeSubscriptionId: string): Promise<void> {
   const stripe = getStripeClient();
-  const stripeSubscription = await stripe.subscriptions.retrieve(stripeSubscriptionId);
+  const stripeSubscription = await stripe.subscriptions.retrieve(stripeSubscriptionId) as any;
 
   const subscription = await prisma.subscription.findUnique({
     where: { stripeSubscriptionId },
@@ -335,11 +335,11 @@ export async function syncSubscriptionFromStripe(stripeSubscriptionId: string): 
     where: { id: subscription.id },
     data: {
       status,
-      currentPeriodStart: new Date(stripeSubscription.current_period_start * 1000),
-      currentPeriodEnd: new Date(stripeSubscription.current_period_end * 1000),
+      currentPeriodStart: new Date((stripeSubscription.current_period_start as number) * 1000),
+      currentPeriodEnd: new Date((stripeSubscription.current_period_end as number) * 1000),
       cancelAtPeriodEnd: stripeSubscription.cancel_at_period_end || false,
       trialEndsAt: stripeSubscription.trial_end
-        ? new Date(stripeSubscription.trial_end * 1000)
+        ? new Date((stripeSubscription.trial_end as number) * 1000)
         : null,
     },
   });

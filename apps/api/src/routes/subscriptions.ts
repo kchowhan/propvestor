@@ -90,14 +90,11 @@ subscriptionRouter.get('/limits-with-usage', requireAuth, async (req, res, next)
       }),
     ]);
 
-    // Calculate storage usage
-    const documents = await prisma.document.findMany({
+    // Calculate storage usage (estimate 1 MB per document since fileSize is not tracked)
+    const documentsCount = await prisma.document.count({
       where: { organizationId: req.auth.organizationId },
-      select: { fileSize: true },
     });
-    const storageUsedMB = Math.round(
-      documents.reduce((sum, doc) => sum + (Number(doc.fileSize) || 0), 0) / (1024 * 1024)
-    );
+    const storageUsedMB = documentsCount; // Estimate 1 MB per document
 
     const usage = {
       properties: propertiesCount,

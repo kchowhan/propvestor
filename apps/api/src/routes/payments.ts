@@ -109,7 +109,7 @@ paymentRouter.post('/', async (req, res, next) => {
 
     // For check payments, optionally create a bank transaction record
     // This represents the check being received (but not yet cleared)
-    let bankTransaction = null;
+    let bankTransaction: Awaited<ReturnType<typeof prisma.bankTransaction.findFirst>> = null;
     if (data.method === 'CHECK' && data.createBankTransaction) {
       // Import as a bank transaction with status "pending" (not reconciled)
       const transactions = await importBankTransactions(

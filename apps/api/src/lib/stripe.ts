@@ -12,7 +12,7 @@ export function getStripeClient(): Stripe {
       throw new AppError(500, 'CONFIG_ERROR', 'Stripe secret key not configured');
     }
     stripeClient = new Stripe(secretKey, {
-      apiVersion: '2024-12-18.acacia',
+      apiVersion: '2024-12-18.acacia' as Stripe.LatestApiVersion,
     });
   }
   return stripeClient;
@@ -133,8 +133,8 @@ export async function attachPaymentMethod(
   let cardExpYear: number | undefined;
 
   if (paymentMethod.us_bank_account) {
-    last4 = paymentMethod.us_bank_account.last4;
-    bankName = paymentMethod.us_bank_account.bank_name;
+    last4 = paymentMethod.us_bank_account.last4 ?? undefined;
+    bankName = paymentMethod.us_bank_account.bank_name ?? undefined;
   } else if (paymentMethod.card) {
     last4 = paymentMethod.card.last4;
     cardBrand = paymentMethod.card.brand;

@@ -1,17 +1,19 @@
-import { Lease, Prisma } from '@prisma/client';
 import { prisma } from './prisma.js';
 
-export const buildRentDueDate = (lease: Lease, month: number, year: number) => {
+type Lease = Awaited<ReturnType<typeof prisma.lease.findFirst>>;
+type Charge = Awaited<ReturnType<typeof prisma.charge.findFirst>>;
+
+export const buildRentDueDate = (lease: NonNullable<Lease>, month: number, year: number) => {
   const lastDay = new Date(year, month, 0).getDate();
   const day = Math.min(lease.rentDueDay, lastDay);
   return new Date(year, month - 1, day);
 };
 
 export const createRentChargeForLease = async (
-  lease: Lease,
+  lease: NonNullable<Lease>,
   month: number,
   year: number,
-): Promise<Prisma.ChargeGetPayload<Record<string, never>> | null> => {
+): Promise<Charge | null> => {
   const dueDate = buildRentDueDate(lease, month, year);
   const existing = await prisma.charge.findFirst({
     where: {

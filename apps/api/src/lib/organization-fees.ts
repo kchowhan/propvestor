@@ -28,15 +28,15 @@ export async function getStripeFeeFromPaymentIntent(
 ): Promise<number | null> {
   try {
     const paymentIntent = await stripeClient.paymentIntents.retrieve(paymentIntentId, {
-      expand: ['charges.data.balance_transaction'],
+      expand: ['latest_charge.balance_transaction'],
     });
 
-    const charge = paymentIntent.charges?.data?.[0];
-    if (!charge) {
+    const latestCharge = paymentIntent.latest_charge;
+    if (!latestCharge || typeof latestCharge === 'string') {
       return null;
     }
 
-    const balanceTransaction = charge.balance_transaction;
+    const balanceTransaction = latestCharge.balance_transaction;
     if (typeof balanceTransaction === 'string') {
       const bt = await stripeClient.balanceTransactions.retrieve(balanceTransaction);
       return Math.abs(bt.fee) / 100; // Convert from cents to dollars

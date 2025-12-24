@@ -164,13 +164,12 @@ export const requireLimit = (resourceType: 'properties' | 'tenants' | 'users' | 
           break;
         case 'storage':
           // Storage is calculated in MB from documents
-          const documents = await prisma.document.findMany({
+          // Note: fileSize is not currently tracked in Document model
+          // For now, count documents as a proxy (1 MB per document estimated)
+          const documentCount = await prisma.document.count({
             where: { organizationId: req.auth.organizationId },
-            select: { fileSize: true },
           });
-          currentUsage = Math.round(
-            documents.reduce((sum, doc) => sum + (Number(doc.fileSize) || 0), 0) / (1024 * 1024)
-          );
+          currentUsage = documentCount; // Estimate 1 MB per document
           break;
         case 'apiCalls':
           // API calls would need to be tracked separately (not implemented yet)

@@ -385,6 +385,7 @@ leaseRouter.post('/:id/generate-pdf', async (req, res, next) => {
       organizationName: lease.organization.name,
       propertyName: property.name,
       propertyAddress,
+      state: property.state,
       unitName: lease.unit.name,
       bedrooms: lease.unit.bedrooms ?? undefined,
       bathrooms: lease.unit.bathrooms ?? undefined,

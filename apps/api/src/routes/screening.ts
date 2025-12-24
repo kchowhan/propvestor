@@ -53,15 +53,18 @@ screeningRouter.post('/request', async (req, res, next) => {
     }
 
     if (unitId) {
-      unit = await prisma.unit.findFirst({
+      const unitWithProperty = await prisma.unit.findFirst({
         where: {
           id: unitId,
           property: { organizationId: req.auth.organizationId },
         },
         include: { property: true },
       });
-      if (unit && !property) {
-        property = unit.property;
+      if (unitWithProperty) {
+        unit = unitWithProperty;
+        if (!property) {
+          property = unitWithProperty.property;
+        }
       }
     }
 
@@ -178,8 +181,7 @@ screeningRouter.get('/:id', async (req, res, next) => {
         const updated = await prisma.screeningRequest.findUnique({
           where: { id: screeningRequest.id },
           include: {
-            applicant: { include: { property: true, unit: true } },
-            tenant: true,
+            tenant: { include: { property: true, unit: true } },
           },
         });
 

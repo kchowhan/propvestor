@@ -5,7 +5,17 @@ export type ErrorCode =
   | 'VALIDATION_ERROR'
   | 'CONFLICT'
   | 'BAD_REQUEST'
-  | 'INTERNAL_ERROR';
+  | 'INTERNAL_ERROR'
+  | 'CONFIG_ERROR'
+  | 'DOCUSIGN_AUTH_ERROR'
+  | 'DOCUSIGN_ERROR'
+  | 'RENTSPREE_ERROR'
+  | 'SCHEDULER_ERROR'
+  | 'SUBSCRIPTION_REQUIRED'
+  | 'PAYMENT_REQUIRED'
+  | 'TRIAL_EXPIRED'
+  | 'FEATURE_NOT_AVAILABLE'
+  | 'LIMIT_EXCEEDED';
 
 export class AppError extends Error {
   status: number;

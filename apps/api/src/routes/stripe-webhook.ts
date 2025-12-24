@@ -32,7 +32,7 @@ async function updateChargeStatus(chargeId: string) {
 // Stripe webhook endpoint (no auth - uses webhook signature verification)
 stripeWebhookRouter.post('/webhook', async (req: Request, res: Response) => {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
-    apiVersion: '2024-12-18.acacia',
+    apiVersion: '2024-12-18.acacia' as Stripe.LatestApiVersion,
   });
 
   const sig = req.headers['stripe-signature'] as string;
@@ -132,13 +132,18 @@ async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
     }
   }
 
+  // Get charge ID from latest_charge (newer API) or expand if needed
+  const stripeChargeId = typeof paymentIntent.latest_charge === 'string' 
+    ? paymentIntent.latest_charge 
+    : paymentIntent.latest_charge?.id;
+
   if (payment) {
     // Update payment with charge ID if available
-    if (paymentIntent.charges?.data?.[0]?.id) {
+    if (stripeChargeId) {
       await prisma.payment.update({
         where: { id: payment.id },
         data: {
-          stripeChargeId: paymentIntent.charges.data[0].id,
+          stripeChargeId,
         },
       });
     }
@@ -158,7 +163,7 @@ async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
         receivedDate: new Date(paymentIntent.created * 1000), // Use payment intent creation date
         method: actualPaymentMethodType === 'card' ? 'STRIPE_CARD' : 'STRIPE_ACH',
         stripePaymentIntentId: paymentIntent.id,
-        stripeChargeId: paymentIntent.charges?.data?.[0]?.id,
+        stripeChargeId: stripeChargeId ?? undefined,
         reference: paymentIntent.id,
       },
     });
@@ -192,7 +197,7 @@ async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
   // Note: For ACH, actual bank deposit may be 2-7 days later, but we create the transaction
   // record now for tracking. The date can be adjusted when the actual deposit clears.
   try {
-    const stripeChargeId = paymentIntent.charges?.data?.[0]?.id || paymentIntent.id;
+    const txnChargeId = stripeChargeId || paymentIntent.id;
     const amount = paymentIntent.amount / 100; // Convert from cents
     const paymentDate = new Date(paymentIntent.created * 1000);
 
@@ -204,7 +209,7 @@ async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
           date: paymentDate,
           amount,
           description: `Stripe payment - ${paymentIntent.id}${paymentIntent.description ? ` - ${paymentIntent.description}` : ''}`,
-          reference: stripeChargeId,
+          reference: txnChargeId,
           accountName: 'Stripe Account',
         },
       ],

@@ -117,7 +117,7 @@ export async function listScheduledJobs(projectId: string, location: string) {
     name: job.name,
     schedule: job.schedule,
     state: job.state,
-    lastAttemptTime: job.status?.lastAttemptTime,
+    lastAttemptTime: (job.status as any)?.lastAttemptTime,
     nextRunTime: job.scheduleTime,
   }));
 }

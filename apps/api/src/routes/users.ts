@@ -141,7 +141,7 @@ userRouter.post('/', requireLimit('users'), async (req, res, next) => {
         data: {
           userId: existingUser.id,
           organizationId: req.auth.organizationId,
-          role: data.role,
+          role: data.role ?? 'VIEWER',
         },
         include: {
           user: true,
@@ -181,7 +181,7 @@ userRouter.post('/', requireLimit('users'), async (req, res, next) => {
         memberships: {
           create: {
             organizationId: req.auth.organizationId,
-            role: data.role,
+            role: data.role ?? 'VIEWER',
           },
         },
       },
@@ -194,7 +194,8 @@ userRouter.post('/', requireLimit('users'), async (req, res, next) => {
       },
     });
 
-    const organization = user.memberships[0]?.organization;
+    const membership = user.memberships[0];
+    const organization = membership?.organization;
 
     // Send welcome email with password
     if (organization) {
@@ -259,7 +260,7 @@ userRouter.post('/add-existing', requireLimit('users'), async (req, res, next) =
       data: {
         userId: user.id,
         organizationId: req.auth.organizationId,
-        role: data.role,
+        role: data.role ?? 'VIEWER',
       },
     });
 

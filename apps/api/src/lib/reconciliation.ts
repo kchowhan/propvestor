@@ -6,9 +6,9 @@ export interface BankTransactionImport {
   date: Date;
   amount: number;
   description: string;
-  reference?: string;
-  accountNumber?: string;
-  accountName?: string;
+  reference?: string | null;
+  accountNumber?: string | null;
+  accountName?: string | null;
 }
 
 /**
@@ -141,17 +141,21 @@ export async function autoMatchPayments(
     const fuzzyMatch = transactions.find((tx) => {
       const txAmount = Number(tx.amount);
       const amountDiff = Math.abs(txAmount - paymentAmount) / paymentAmount;
-      const daysDiff = Math.abs(
+      const txDaysDiff = Math.abs(
         (tx.date.getTime() - payment.receivedDate.getTime()) / (1000 * 60 * 60 * 24)
       );
-      return amountDiff <= 0.01 && daysDiff <= 7 && !tx.reconciled;
+      return amountDiff <= 0.01 && txDaysDiff <= 7 && !tx.reconciled;
     });
 
     if (fuzzyMatch) {
+      // Recalculate daysDiff for confidence calculation
+      const matchDaysDiff = Math.abs(
+        (fuzzyMatch.date.getTime() - payment.receivedDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
       // Create suggested match (requires manual review)
       const confidence = Math.max(
         0,
-        100 - (Math.abs(Number(fuzzyMatch.amount) - paymentAmount) / paymentAmount) * 100 - daysDiff * 5
+        100 - (Math.abs(Number(fuzzyMatch.amount) - paymentAmount) / paymentAmount) * 100 - matchDaysDiff * 5
       );
 
       // Create suggested match (reconciliationId will be set later when creating reconciliation)

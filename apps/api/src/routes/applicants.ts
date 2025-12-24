@@ -6,6 +6,10 @@ import { parseBody } from '../validators/common.js';
 
 export const applicantRouter = Router();
 
+// Applicant statuses (not yet active tenants)
+type TenantStatus = 'PROSPECT' | 'SCREENING' | 'APPROVED' | 'ACTIVE' | 'INACTIVE' | 'DECLINED' | 'WITHDRAWN';
+const APPLICANT_STATUSES: TenantStatus[] = ['PROSPECT', 'SCREENING', 'APPROVED', 'DECLINED', 'WITHDRAWN'];
+
 const applicantSchema = z.object({
   firstName: z.string().min(1),
   lastName: z.string().min(1),
@@ -14,12 +18,17 @@ const applicantSchema = z.object({
   propertyId: z.string().uuid().optional().nullable(),
   unitId: z.string().uuid().optional().nullable(),
   notes: z.string().optional().nullable(),
+  status: z.enum(['PROSPECT', 'SCREENING', 'APPROVED', 'DECLINED', 'WITHDRAWN']).optional(),
 });
 
 applicantRouter.get('/', async (req, res, next) => {
   try {
-    const applicants = await prisma.applicant.findMany({
-      where: { organizationId: req.auth?.organizationId },
+    // Get tenants that are in applicant stages (not yet ACTIVE)
+    const applicants = await prisma.tenant.findMany({
+      where: {
+        organizationId: req.auth?.organizationId,
+        status: { in: APPLICANT_STATUSES },
+      },
       include: {
         property: true,
         unit: true,
@@ -70,7 +79,8 @@ applicantRouter.post('/', async (req, res, next) => {
       }
     }
 
-    const applicant = await prisma.applicant.create({
+    // Create applicant as a tenant with PROSPECT status
+    const applicant = await prisma.tenant.create({
       data: {
         organizationId: req.auth.organizationId,
         firstName: data.firstName,
@@ -80,7 +90,7 @@ applicantRouter.post('/', async (req, res, next) => {
         propertyId: data.propertyId ?? undefined,
         unitId: data.unitId ?? undefined,
         notes: data.notes ?? undefined,
-        status: 'PENDING',
+        status: 'PROSPECT',
       },
       include: {
         property: true,
@@ -96,10 +106,11 @@ applicantRouter.post('/', async (req, res, next) => {
 
 applicantRouter.get('/:id', async (req, res, next) => {
   try {
-    const applicant = await prisma.applicant.findFirst({
+    const applicant = await prisma.tenant.findFirst({
       where: {
         id: req.params.id,
         organizationId: req.auth?.organizationId,
+        status: { in: APPLICANT_STATUSES },
       },
       include: {
         property: true,
@@ -123,10 +134,11 @@ applicantRouter.get('/:id', async (req, res, next) => {
 applicantRouter.put('/:id', async (req, res, next) => {
   try {
     const data = parseBody(applicantSchema.partial(), req.body);
-    const applicant = await prisma.applicant.findFirst({
+    const applicant = await prisma.tenant.findFirst({
       where: {
         id: req.params.id,
         organizationId: req.auth?.organizationId,
+        status: { in: APPLICANT_STATUSES },
       },
     });
 
@@ -134,7 +146,7 @@ applicantRouter.put('/:id', async (req, res, next) => {
       throw new AppError(404, 'NOT_FOUND', 'Applicant not found.');
     }
 
-    const updated = await prisma.applicant.update({
+    const updated = await prisma.tenant.update({
       where: { id: applicant.id },
       data: {
         firstName: data.firstName ?? undefined,
@@ -159,17 +171,18 @@ applicantRouter.put('/:id', async (req, res, next) => {
   }
 });
 
-// Convert applicant to tenant
+// Convert applicant to active tenant
 applicantRouter.post('/:id/convert-to-tenant', async (req, res, next) => {
   try {
     if (!req.auth) {
       throw new AppError(401, 'UNAUTHORIZED', 'Missing auth context.');
     }
 
-    const applicant = await prisma.applicant.findFirst({
+    const applicant = await prisma.tenant.findFirst({
       where: {
         id: req.params.id,
         organizationId: req.auth.organizationId,
+        status: { in: APPLICANT_STATUSES },
       },
     });
 
@@ -177,33 +190,14 @@ applicantRouter.post('/:id/convert-to-tenant', async (req, res, next) => {
       throw new AppError(404, 'NOT_FOUND', 'Applicant not found.');
     }
 
-    // Create tenant from applicant
-    const tenant = await prisma.tenant.create({
-      data: {
-        organizationId: applicant.organizationId,
-        firstName: applicant.firstName,
-        lastName: applicant.lastName,
-        email: applicant.email,
-        phone: applicant.phone ?? undefined,
-        notes: applicant.notes ?? undefined,
-      },
-    });
-
-    // Update screening requests to link to tenant
-    await prisma.screeningRequest.updateMany({
-      where: { applicantId: applicant.id },
-      data: { tenantId: tenant.id },
-    });
-
-    // Update applicant status
-    await prisma.applicant.update({
+    // Update applicant status to APPROVED (ready for lease) or ACTIVE (if lease exists)
+    const tenant = await prisma.tenant.update({
       where: { id: applicant.id },
       data: { status: 'APPROVED' },
     });
 
-    res.status(201).json({ data: tenant });
+    res.status(200).json({ data: tenant });
   } catch (err) {
     next(err);
   }
 });
-

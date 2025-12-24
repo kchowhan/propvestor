@@ -28,7 +28,7 @@ const makeSlug = (value: string) =>
     .slice(0, 60) || 'org';
 
 const signToken = (payload: { userId: string; organizationId: string }) =>
-  jwt.sign(payload, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN });
+  jwt.sign(payload, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN } as any);
 
 export const authRouter = Router();
 
@@ -138,12 +138,12 @@ authRouter.get('/me', requireAuth, async (req, res, next) => {
       where: { id: req.auth.organizationId },
     });
 
-    if (!user || !organization) {
+    if (!user || !organization || !req.auth) {
       throw new AppError(401, 'UNAUTHORIZED', 'Invalid user session.');
     }
 
     // Find the current user's role in the current organization
-    const currentMembership = user.memberships.find((m) => m.organizationId === req.auth.organizationId);
+    const currentMembership = user.memberships.find((m) => m.organizationId === req.auth!.organizationId);
 
     res.json({
       user: { id: user.id, name: user.name, email: user.email },
