@@ -22,6 +22,15 @@ export default function PricingPage() {
 
   const plansList = plans || [];
   const currentPlanId = subscription?.planId;
+  const currentPlan = plansList.find((p: any) => p.id === currentPlanId);
+
+  // Define plan hierarchy for upgrade/downgrade detection
+  const planHierarchy: Record<string, number> = {
+    'free': 0,
+    'basic': 1,
+    'pro': 2,
+    'enterprise': 3,
+  };
 
   // Subscribe mutation
   const subscribe = useMutation({
@@ -58,6 +67,11 @@ export default function PricingPage() {
         {plansList.map((plan: any, index: number) => {
           const isCurrentPlan = plan.id === currentPlanId;
           const isPopular = plan.slug === 'pro'; // Mark Pro as popular
+          
+          // Determine if this is an upgrade or downgrade
+          const currentPlanLevel = currentPlan ? planHierarchy[currentPlan.slug] ?? -1 : -1;
+          const targetPlanLevel = planHierarchy[plan.slug] ?? -1;
+          const isDowngrade = currentPlanLevel !== -1 && targetPlanLevel < currentPlanLevel;
 
           return (
             <div
@@ -163,6 +177,8 @@ export default function PricingPage() {
                 className={`w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
                   isCurrentPlan
                     ? 'bg-slate-200 text-slate-600 cursor-not-allowed'
+                    : isDowngrade
+                    ? 'bg-orange-600 text-white hover:bg-orange-700'
                     : isPopular
                     ? 'bg-primary-600 text-white hover:bg-primary-700'
                     : 'bg-ink text-white hover:bg-ink/90'
@@ -171,10 +187,14 @@ export default function PricingPage() {
                 {isCurrentPlan
                   ? 'Current Plan'
                   : subscribe.isPending
-                  ? 'Subscribing...'
+                  ? isDowngrade
+                    ? 'Downgrading...'
+                    : 'Subscribing...'
+                  : isDowngrade
+                  ? 'Downgrade'
                   : plan.price === 0
                   ? 'Get Started'
-                  : 'Subscribe'}
+                  : 'Upgrade'}
               </button>
             </div>
           );
