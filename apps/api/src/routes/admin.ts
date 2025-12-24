@@ -456,23 +456,68 @@ adminRouter.get('/activity', async (req, res, next) => {
 adminRouter.post('/organizations/:id/impersonate', async (req, res, next) => {
   try {
     const { id } = req.params;
+    const userId = (req as any).user?.id;
+
+    if (!userId) {
+      throw new AppError(401, 'UNAUTHORIZED', 'User not authenticated.');
+    }
 
     // Verify organization exists
     const organization = await prisma.organization.findUnique({
       where: { id },
+      include: {
+        memberships: {
+          where: { userId },
+          select: { role: true },
+        },
+      },
     });
 
     if (!organization) {
       throw new AppError(404, 'NOT_FOUND', 'Organization not found.');
     }
 
-    // Return organization ID for client-side context switching
-    // In a real implementation, you might generate a special token or session
-    res.json({
-      data: {
+    // Get user to determine role (super admin or member role)
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, name: true, email: true, isSuperAdmin: true },
+    });
+
+    if (!user) {
+      throw new AppError(404, 'NOT_FOUND', 'User not found.');
+    }
+
+    // Determine role: if user is a member, use their role; otherwise use SUPER_ADMIN
+    const role = organization.memberships[0]?.role || (user.isSuperAdmin ? 'OWNER' : null);
+
+    if (!role) {
+      throw new AppError(403, 'FORBIDDEN', 'Cannot impersonate organization without membership or super admin privileges.');
+    }
+
+    // Generate new JWT token with organization context
+    const jwt = (await import('jsonwebtoken')).default;
+    const token = jwt.sign(
+      {
+        userId: user.id,
         organizationId: id,
-        organizationName: organization.name,
-        message: 'Impersonation context set. Use this organizationId in subsequent requests.',
+        role,
+      },
+      process.env.JWT_SECRET || 'dev-secret-key',
+      { expiresIn: '7d' }
+    );
+
+    res.json({
+      token,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        isSuperAdmin: user.isSuperAdmin,
+      },
+      organization: {
+        id: organization.id,
+        name: organization.name,
+        slug: organization.slug,
       },
     });
   } catch (err) {

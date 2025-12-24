@@ -46,7 +46,32 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       return;
     }
     try {
-      const newToken = await switchOrganization(orgId);
+      let newToken: string;
+
+      // Check if user is a member of the target organization
+      const isMember = organizations.some((org) => org.id === orgId);
+
+      if (isSuperAdmin && !isMember) {
+        // Super admin switching to non-member org: use impersonate
+        const data = await apiFetch(`/admin/organizations/${orgId}/impersonate`, {
+          token,
+          method: 'POST',
+        });
+        
+        if (!data.token) {
+          throw new Error('No token received from impersonate');
+        }
+
+        newToken = data.token;
+        
+        // Update localStorage and auth context
+        localStorage.setItem('propvestor_token', newToken);
+        // Note: Auth context will reload via useEffect when localStorage changes
+      } else {
+        // Regular organization switch (user is a member)
+        newToken = await switchOrganization(orgId);
+      }
+
       setIsOrgMenuOpen(false);
       
       // Verify token is in localStorage
@@ -62,9 +87,12 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
       
       // Navigate to dashboard to refresh the view
       router.replace('/dashboard');
+      
+      // Force page reload to ensure all state is fresh
+      window.location.reload();
     } catch (error) {
       console.error('Failed to switch organization:', error);
-      alert('Failed to switch organization. Please try again.');
+      alert(`Failed to switch organization: ${(error as Error).message}`);
     }
   };
 
