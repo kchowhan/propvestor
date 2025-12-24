@@ -1,49 +1,51 @@
-# TEMPORARILY DISABLED - Uncomment to re-enable frontend deployments
+# TEMPORARILY DISABLED - Uncomment push trigger to re-enable automatic frontend deployments
+# Currently set to manual trigger only (workflow_dispatch)
 
-# name: Deploy Frontend to GCP
-#
-# on:
+name: Deploy Frontend to GCP
+
+on:
+  workflow_dispatch: # Manual trigger only - change to 'push:' to enable automatic deployments
 #   push:
 #     branches: [main]
 #     paths:
 #       - 'apps/web/**'
 #       - 'cloudbuild-frontend.yaml'
 #       - '.github/workflows/deploy-frontend.yml'
-#
-# env:
-#   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-#   REGION: us-central1
-#
-# jobs:
-#   deploy:
-#     runs-on: ubuntu-latest
-#     permissions:
-#       contents: read
-#       id-token: write
-#
-#     steps:
-#       - name: Checkout code
-#         uses: actions/checkout@v4
-#
-#       - id: 'auth'
-#         name: 'Authenticate to Google Cloud'
-#         uses: 'google-github-actions/auth@v2'
-#         with:
-#           credentials_json: '${{ secrets.GCP_SA_KEY }}'
-#
-#       - name: 'Set up Cloud SDK'
-#         uses: 'google-github-actions/setup-gcloud@v2'
-#
-#       - name: 'Get Backend URL'
-#         id: backend-url
-#         run: |
-#           BACKEND_URL=$(gcloud run services describe propvestor-api \
-#             --region=${{ env.REGION }} \
-#             --format="value(status.url)")
-#           echo "url=${BACKEND_URL}/api" >> $GITHUB_OUTPUT
-#
-#       - name: 'Submit to Cloud Build'
-#         run: |
-#           gcloud builds submit \
-#             --config=cloudbuild-frontend.yaml \
-#             --substitutions=_REGION=${{ env.REGION }},_API_URL=${{ steps.backend-url.outputs.url }}
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: us-central1
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: 'Set up Cloud SDK'
+        uses: 'google-github-actions/setup-gcloud@v2'
+
+      - name: 'Get Backend URL'
+        id: backend-url
+        run: |
+          BACKEND_URL=$(gcloud run services describe propvestor-api \
+            --region=${{ env.REGION }} \
+            --format="value(status.url)")
+          echo "url=${BACKEND_URL}/api" >> $GITHUB_OUTPUT
+
+      - name: 'Submit to Cloud Build'
+        run: |
+          gcloud builds submit \
+            --config=cloudbuild-frontend.yaml \
+            --substitutions=_REGION=${{ env.REGION }},_API_URL=${{ steps.backend-url.outputs.url }}
