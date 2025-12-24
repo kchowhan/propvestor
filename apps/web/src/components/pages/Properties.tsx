@@ -12,6 +12,7 @@ export const PropertiesPage = () => {
   const [form, setForm] = useState({
     name: '',
     addressLine1: '',
+    addressLine2: '',
     city: '',
     state: '',
     postalCode: '',
@@ -39,6 +40,7 @@ export const PropertiesPage = () => {
       setForm({
         name: '',
         addressLine1: '',
+        addressLine2: '',
         city: '',
         state: '',
         postalCode: '',
@@ -81,6 +83,12 @@ export const PropertiesPage = () => {
               value={form.addressLine1}
               onChange={(e) => setForm((prev) => ({ ...prev, addressLine1: e.target.value }))}
               required
+            />
+            <input
+              className="rounded-lg border border-slate-200 px-3 py-2"
+              placeholder="Address line 2 (Optional)"
+              value={form.addressLine2}
+              onChange={(e) => setForm((prev) => ({ ...prev, addressLine2: e.target.value }))}
             />
             <input
               className="rounded-lg border border-slate-200 px-3 py-2"
@@ -142,7 +150,8 @@ export const PropertiesPage = () => {
                     </Link>
                   </td>
                   <td className="py-2 text-slate-600">
-                    {property.addressLine1}, {property.city}
+                    {property.addressLine1}
+                    {property.addressLine2 && `, ${property.addressLine2}`}, {property.city}
                   </td>
                   <td className="py-2 text-slate-600">{property.type}</td>
                   <td className="py-2 text-slate-600">{property.units?.length ?? 0}</td>

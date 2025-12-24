@@ -51,7 +51,10 @@ export const PropertyDetailPage = () => {
         <div className="card-body">
           <div className="text-lg font-semibold">{data.name}</div>
           <div className="text-sm text-slate-600">
-            {data.addressLine1}, {data.city}, {data.state}
+            {data.addressLine1}
+            {data.addressLine2 && <>, {data.addressLine2}</>}
+            <br />
+            {data.city}, {data.state} {data.postalCode}
           </div>
           <div className="text-sm text-slate-500 mt-1">Type: {data.type}</div>
         </div>
