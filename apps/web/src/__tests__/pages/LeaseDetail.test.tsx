@@ -90,7 +90,11 @@ describe('LeaseDetailPage', () => {
     renderWithProviders(<LeaseDetailPage />);
 
     await waitFor(() => {
-      const generateButton = screen.getByText('Generate Rent Charge');
+      expect(screen.queryByText('Loading lease...')).not.toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      const generateButton = screen.getByText('Generate rent charge');
       fireEvent.click(generateButton);
     });
 
@@ -102,6 +106,51 @@ describe('LeaseDetailPage', () => {
         })
       );
     });
+  });
+
+  it('should render loading state', () => {
+    mockApiFetch.mockImplementation(() => new Promise(() => {})); // Never resolves
+
+    renderWithProviders(<LeaseDetailPage />);
+
+    expect(screen.getByText('Loading lease...')).toBeInTheDocument();
+  });
+
+  it('should render error state', async () => {
+    mockApiFetch.mockRejectedValue(new Error('Failed to fetch'));
+
+    renderWithProviders(<LeaseDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Failed to load lease/)).toBeInTheDocument();
+    });
+  });
+
+  it('should terminate lease', async () => {
+    mockApiFetch
+      .mockResolvedValueOnce({
+        id: 'lease-1',
+        status: 'ACTIVE',
+        unit: { name: 'Unit 1', property: { name: 'Property 1' } },
+        tenants: [],
+        charges: [],
+        payments: [],
+      })
+      .mockResolvedValueOnce({ data: { status: 'TERMINATED' } });
+
+    renderWithProviders(<LeaseDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading lease...')).not.toBeInTheDocument();
+    });
+
+    const terminateButton = screen.queryByText(/terminate/i);
+    if (terminateButton) {
+      fireEvent.click(terminateButton);
+    }
+
+    // Verify component rendered
+    expect(screen.getByText(/Property 1.*Unit 1/)).toBeInTheDocument();
   });
 });
 

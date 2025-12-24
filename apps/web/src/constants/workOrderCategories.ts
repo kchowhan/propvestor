@@ -17,7 +17,12 @@ const CATEGORY_LABELS: Record<string, string> = {
   HVAC: 'HVAC',
 };
 
-export const getCategoryLabel = (category: string): string => {
+export const getCategoryLabel = (category: string | undefined | null): string => {
+  // Handle undefined or null category
+  if (!category) {
+    return 'Unknown';
+  }
+  
   // Check if there's a special label for this category
   if (CATEGORY_LABELS[category]) {
     return CATEGORY_LABELS[category];

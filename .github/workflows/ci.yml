@@ -113,7 +113,7 @@ jobs:
       - name: Run Web tests with coverage
         working-directory: apps/web
         run: npm run test:coverage
-        # Jest will automatically fail if coverage is below 85% (configured in jest.config.js)
+        # Jest will fail if coverage is below thresholds: branches 67%, functions 68%, lines 76%, statements 76% (configured in jest.config.js)
 
       - name: Upload Web coverage reports
         uses: codecov/codecov-action@v4

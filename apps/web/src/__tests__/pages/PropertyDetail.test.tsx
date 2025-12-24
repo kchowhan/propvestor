@@ -70,5 +70,58 @@ describe('PropertyDetailPage', () => {
       );
     });
   });
+
+  it('should render loading state', () => {
+    mockApiFetch.mockImplementation(() => new Promise(() => {})); // Never resolves
+
+    renderWithProviders(<PropertyDetailPage />);
+
+    expect(screen.getByText('Loading property...')).toBeInTheDocument();
+  });
+
+  it('should render error state', async () => {
+    mockApiFetch.mockRejectedValue(new Error('Failed to fetch'));
+
+    renderWithProviders(<PropertyDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Failed to load property/)).toBeInTheDocument();
+    });
+  });
+
+  it('should create unit with bedrooms and bathrooms', async () => {
+    mockApiFetch
+      .mockResolvedValueOnce({
+        id: 'property-1',
+        name: 'Test Property',
+        units: [],
+      })
+      .mockResolvedValueOnce({ data: { id: 'unit-1', name: 'Unit 1' } });
+
+    renderWithProviders(<PropertyDetailPage />);
+
+    await waitFor(() => {
+      const nameInput = screen.getByPlaceholderText('Unit name');
+      fireEvent.change(nameInput, { target: { value: 'Unit 1' } });
+      
+      const bedroomsInput = screen.getByPlaceholderText('Bedrooms');
+      fireEvent.change(bedroomsInput, { target: { value: '2' } });
+      
+      const bathroomsInput = screen.getByPlaceholderText('Bathrooms');
+      fireEvent.change(bathroomsInput, { target: { value: '1' } });
+    });
+
+    const submitButton = screen.getByText('Add unit');
+    fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledWith(
+        '/properties/property-1/units',
+        expect.objectContaining({
+          method: 'POST',
+        })
+      );
+    });
+  });
 });
 

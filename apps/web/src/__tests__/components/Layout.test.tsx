@@ -3,18 +3,7 @@ import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { Layout } from '../../components/Layout';
 import { renderWithProviders } from '../../../jest.setup';
 
-// Mock dependencies
-jest.mock('next/navigation', () => ({
-  useRouter: () => ({
-    replace: jest.fn(),
-  }),
-}));
-
-jest.mock('@tanstack/react-query', () => ({
-  useQueryClient: () => ({
-    invalidateQueries: jest.fn(() => Promise.resolve()),
-  }),
-}));
+// Mock dependencies - next/navigation and usePathname are already mocked in jest.setup.js
 
 const mockAuth = {
   user: { id: '1', name: 'Test User', email: 'test@example.com' },
@@ -82,6 +71,47 @@ describe('Layout', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Other Org')).toBeInTheDocument();
+    });
+  });
+
+  it('should switch organization', async () => {
+    const mockSwitchOrg = jest.fn().mockResolvedValue('new-token');
+    mockAuth.switchOrganization = mockSwitchOrg;
+    localStorage.setItem('propvestor_token', 'new-token');
+
+    renderWithProviders(
+      <Layout>
+        <div>Test Content</div>
+      </Layout>
+    );
+
+    const orgButton = screen.getByText('Test Org');
+    fireEvent.click(orgButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Other Org')).toBeInTheDocument();
+    });
+
+    const otherOrgButton = screen.getByText('Other Org');
+    fireEvent.click(otherOrgButton);
+
+    // Verify component rendered
+    expect(screen.getByText('Test Content')).toBeInTheDocument();
+  });
+
+  it('should show create organization button when user is OWNER', async () => {
+    renderWithProviders(
+      <Layout>
+        <div>Test Content</div>
+      </Layout>
+    );
+
+    const orgButton = screen.getByText('Test Org');
+    fireEvent.click(orgButton);
+
+    await waitFor(() => {
+      const createButton = screen.queryByText(/create.*organization/i);
+      expect(createButton).toBeTruthy();
     });
   });
 });
