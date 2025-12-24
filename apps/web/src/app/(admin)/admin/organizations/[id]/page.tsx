@@ -54,11 +54,24 @@ export default function AdminOrganizationDetail() {
 
   if (error || !org) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
         <h2 className="text-xl font-semibold text-red-800 mb-2">Error</h2>
-        <p className="text-red-600">Could not load organization details.</p>
-        <Link href="/admin/organizations" className="mt-4 inline-block text-red-700 underline">
-          Back to Organizations
+        <p className="text-red-600 mb-4">Could not load organization details.</p>
+        {error && (
+          <div className="bg-white rounded p-4 mb-4 text-left">
+            <p className="text-sm font-mono text-red-700">
+              {(error as any)?.message || JSON.stringify(error)}
+            </p>
+          </div>
+        )}
+        <div className="text-left bg-white rounded p-4 mb-4 text-sm">
+          <p className="font-semibold text-slate-700 mb-2">Debug Info:</p>
+          <p className="text-slate-600">Organization ID: <code className="bg-slate-100 px-1 rounded">{orgId}</code></p>
+          <p className="text-slate-600">Token present: {token ? 'Yes' : 'No'}</p>
+          <p className="text-slate-600">API URL: <code className="bg-slate-100 px-1 rounded">GET /api/admin/organizations/{orgId}</code></p>
+        </div>
+        <Link href="/admin/organizations" className="inline-block text-red-700 underline">
+          ← Back to Organizations
         </Link>
       </div>
     );
