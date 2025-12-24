@@ -9,7 +9,7 @@ export default function AboutPage() {
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl font-bold mb-6">About PropVestor</h1>
             <p className="text-xl text-primary-100">
-              We're on a mission to simplify property management for landlords and investors everywhere
+              We're on a mission to simplify property and investment management with AI-powered tools for landlords and investors everywhere
             </p>
           </div>
         </div>

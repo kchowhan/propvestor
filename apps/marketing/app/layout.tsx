@@ -3,8 +3,8 @@ import Link from 'next/link';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'PropVestor - Property Management Made Simple',
-  description: 'Streamline your rental property operations with PropVestor. Manage tenants, track rent, maintenance, and grow your portfolio.',
+  title: 'PropVestor - AI-Powered Property & Investment Management Made Simple',
+  description: 'Streamline your rental property operations with AI-powered PropVestor. Manage tenants, track rent, maintenance, and grow your portfolio with intelligent insights.',
 };
 
 export default function RootLayout({

@@ -142,9 +142,9 @@ export default function FeaturesPage() {
       <section className="bg-gradient-to-br from-primary-600 to-primary-800 text-white py-20">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-5xl font-bold mb-6">Powerful Features for Property Management</h1>
+            <h1 className="text-5xl font-bold mb-6">AI-Powered Features for Property & Investment Management</h1>
             <p className="text-xl text-primary-100 mb-8">
-              Everything you need to manage your rental properties efficiently and profitably
+              Everything you need to manage your rental properties and investments efficiently with intelligent automation
             </p>
             <Link
               href="http://localhost:3000/login"

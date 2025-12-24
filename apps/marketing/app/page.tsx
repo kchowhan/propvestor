@@ -8,14 +8,14 @@ export default function HomePage() {
         <div className="container mx-auto px-6 py-24 md:py-32">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl md:text-6xl font-bold mb-6 leading-tight">
-              Property Management
+              AI-Powered Property & Investment
               <br />
-              <span className="text-primary-200">Made Simple</span>
+              <span className="text-primary-200">Management Made Simple</span>
             </h1>
             <p className="text-xl md:text-2xl mb-8 text-primary-100 leading-relaxed">
-              Streamline your rental property operations with PropVestor. 
+              Streamline your rental property and investment operations with AI-powered PropVestor. 
               Manage tenants, track rent, maintenance, and grow your portfolio 
-              with confidence.
+              with intelligent insights and automation.
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link
