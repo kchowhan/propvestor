@@ -16,12 +16,6 @@ jest.mock('../../context/AuthContext', () => ({
   useAuth: () => mockAuth,
 }));
 
-jest.mock('next/link', () => {
-  return ({ children, href }: { children: React.ReactNode; href: string }) => (
-    <a href={href}>{children}</a>
-  );
-});
-
 describe('PropertiesPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();

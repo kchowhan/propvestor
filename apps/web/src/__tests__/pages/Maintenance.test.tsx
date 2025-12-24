@@ -16,12 +16,6 @@ jest.mock('../../context/AuthContext', () => ({
   useAuth: () => mockAuth,
 }));
 
-jest.mock('next/link', () => {
-  return ({ children, href }: { children: React.ReactNode; href: string }) => (
-    <a href={href}>{children}</a>
-  );
-});
-
 // Helper to setup mocks based on path
 const setupMocks = (options: {
   workOrders?: any[];

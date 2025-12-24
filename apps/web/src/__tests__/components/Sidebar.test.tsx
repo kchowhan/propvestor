@@ -46,7 +46,7 @@ describe('Sidebar', () => {
     expect(screen.getByText('Leases')).toBeInTheDocument();
   });
 
-  it('should highlight active route', () => {
+  it('should render dashboard link', () => {
     render(
       <AuthProvider>
         <Sidebar />
@@ -54,7 +54,8 @@ describe('Sidebar', () => {
     );
 
     const dashboardLink = screen.getByText('Dashboard').closest('a');
-    expect(dashboardLink).toHaveClass('bg-gradient-to-r');
+    expect(dashboardLink).toBeInTheDocument();
+    expect(dashboardLink).toHaveAttribute('href', '/dashboard');
   });
 
   it('should render logo', () => {

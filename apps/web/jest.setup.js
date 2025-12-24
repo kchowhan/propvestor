@@ -43,6 +43,13 @@ jest.mock('next/navigation', () => ({
   useParams: jest.fn(() => ({})),
 }));
 
+// Mock Next.js Link component
+jest.mock('next/link', () => {
+  return function Link({ children, href }) {
+    return React.createElement('a', { href }, children);
+  };
+});
+
 // Mock Stripe
 jest.mock('@stripe/stripe-js', () => ({
   loadStripe: jest.fn(() => Promise.resolve({
