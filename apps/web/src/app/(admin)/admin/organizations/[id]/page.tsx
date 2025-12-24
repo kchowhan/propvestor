@@ -19,7 +19,19 @@ export default function AdminOrganizationDetail() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'organizations', orgId],
-    queryFn: () => apiFetch(`/admin/organizations/${orgId}`, { token }),
+    queryFn: async () => {
+      console.log('[DEBUG] Fetching org:', orgId);
+      console.log('[DEBUG] Token present:', !!token);
+      console.log('[DEBUG] Token (first 20 chars):', token?.substring(0, 20));
+      try {
+        const result = await apiFetch(`/admin/organizations/${orgId}`, { token });
+        console.log('[DEBUG] API Response:', result);
+        return result;
+      } catch (err) {
+        console.error('[DEBUG] API Error:', err);
+        throw err;
+      }
+    },
     retry: false,
   });
 
@@ -42,6 +54,8 @@ export default function AdminOrganizationDetail() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'organizations', orgId] }),
   });
 
+  console.log('[DEBUG] data object:', data);
+  console.log('[DEBUG] data?.data:', data?.data);
   const org = data?.data;
 
   if (isLoading) {
