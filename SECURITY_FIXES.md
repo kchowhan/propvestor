@@ -2,17 +2,21 @@
 
 ## CodeQL Security Scan Setup
 
-### What We Did
-1. **Created CodeQL Workflow** (`.github/workflows/codeql.yml`)
-   - Automated security scanning on every push/PR
-   - Weekly scheduled scans every Monday
-   - Scans JavaScript and TypeScript code
-   - Reports findings to GitHub Security tab
+### GitHub Default CodeQL
+GitHub automatically runs CodeQL analysis on this repository with default configuration. No custom workflow needed!
+
+**What GitHub CodeQL Does:**
+- Automated security scanning on every push/PR
+- Scans JavaScript and TypeScript code
+- Reports findings to GitHub Security tab
+- Uses industry-standard security rules
 
 ### How to View Results
 1. Go to your GitHub repository: https://github.com/kchowhan/propvestor
 2. Click on "Security" tab
 3. Click on "Code scanning" to see CodeQL findings
+
+**Note:** Custom CodeQL workflow was removed as GitHub's default scanning is sufficient and avoids duplication.
 
 ---
 
@@ -57,6 +61,34 @@ password += uppercase[crypto.randomInt(0, uppercase.length)];
 - All 415 tests passing ✓
 - No breaking changes to API
 - Passwords now cryptographically secure
+
+### 3. ✅ Missing Rate Limiting on Admin Routes
+**Severity**: MEDIUM (CodeQL Finding)  
+**Status**: RESOLVED  
+
+**Details:**
+- **Issue**: Admin routes perform expensive database operations without rate limiting
+- **Risk**: Denial-of-Service (DoS) attacks - attackers can overwhelm the server
+- **Location**: `apps/api/src/routes/admin.ts` - All admin endpoints
+- **Fix**: Added dedicated `adminRateLimit` middleware
+
+**Rate Limit Configuration:**
+```typescript
+// Admin-specific rate limiter
+max: 60 requests per minute (per user)
+window: 1 minute
+key: admin:userId:ip
+```
+
+**Changes Made:**
+- Created `adminRateLimit` in `middleware/rate-limit.ts`
+- Applied to all admin routes via `adminRouter.use(adminRateLimit)`
+- Prevents resource exhaustion on expensive operations
+
+**Impact:**
+- All 28 admin tests passing ✓
+- Protects against DoS attacks
+- Reasonable limit for legitimate admin use
 
 ---
 
