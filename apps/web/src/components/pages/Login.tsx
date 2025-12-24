@@ -68,8 +68,9 @@ export const LoginPage = () => {
             {isRegister && (
               <>
                 <div>
-                  <label className="label">Full Name</label>
+                  <label htmlFor="name" className="label">Full Name</label>
                   <input
+                    id="name"
                     className="input"
                     value={form.name}
                     onChange={(e) => handleChange('name', e.target.value)}
@@ -78,8 +79,9 @@ export const LoginPage = () => {
                   />
                 </div>
                 <div>
-                  <label className="label">Organization Name</label>
+                  <label htmlFor="organizationName" className="label">Organization Name</label>
                   <input
+                    id="organizationName"
                     className="input"
                     value={form.organizationName}
                     onChange={(e) => handleChange('organizationName', e.target.value)}
@@ -90,8 +92,9 @@ export const LoginPage = () => {
               </>
             )}
             <div>
-              <label className="label">Email</label>
+              <label htmlFor="email" className="label">Email</label>
               <input
+                id="email"
                 className="input"
                 type="email"
                 value={form.email}
@@ -101,8 +104,9 @@ export const LoginPage = () => {
               />
             </div>
             <div>
-              <label className="label">Password</label>
+              <label htmlFor="password" className="label">Password</label>
               <input
+                id="password"
                 className="input"
                 type="password"
                 value={form.password}

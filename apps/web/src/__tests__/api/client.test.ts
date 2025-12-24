@@ -1,11 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from '@jest/globals';
+import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
 // Mock fetch globally
-global.fetch = vi.fn();
+global.fetch = jest.fn() as jest.MockedFunction<typeof fetch>;
 
 describe('API Client', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
     process.env.NEXT_PUBLIC_API_URL = 'http://localhost:4000/api';
   });
 
