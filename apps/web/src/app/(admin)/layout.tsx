@@ -38,8 +38,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const navItems = [
-    { href: '/dashboard', label: '← Back to Dashboard', isExternal: true },
-    { href: '/admin', label: 'Dashboard', exact: true },
+    { href: '/dashboard', label: '← Exit Admin', isExternal: true },
+    { href: '/admin', label: 'Overview', exact: true },
     { href: '/admin/organizations', label: 'Organizations' },
     { href: '/admin/users', label: 'Users' },
     { href: '/admin/plans', label: 'Plans' },
