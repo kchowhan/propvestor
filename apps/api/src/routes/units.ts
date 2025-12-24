@@ -47,6 +47,15 @@ unitRouter.post('/properties/:propertyId/units', async (req, res, next) => {
       throw new AppError(404, 'NOT_FOUND', 'Property not found.');
     }
 
+    // Prevent adding units to SINGLE_FAMILY properties
+    if (property.type === 'SINGLE_FAMILY') {
+      throw new AppError(
+        400,
+        'BAD_REQUEST',
+        'Cannot add units to single-family properties. Single-family properties can only have one unit.'
+      );
+    }
+
     const unit = await prisma.unit.create({
       data: {
         ...data,

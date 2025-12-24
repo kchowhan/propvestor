@@ -71,9 +71,23 @@ describe('Units Routes', () => {
   });
 
   describe('POST /api/properties/:propertyId/units', () => {
-    it('should create unit', async () => {
+    it('should create unit for non-single-family property', async () => {
+      // Create a multi-family property
+      const multiFamily = await prisma.property.create({
+        data: {
+          organizationId: testOrg.id,
+          name: 'Multi Family Property',
+          addressLine1: '456 Oak St',
+          city: 'Test City',
+          state: 'CA',
+          postalCode: '12345',
+          country: 'USA',
+          type: 'MULTI_FAMILY',
+        },
+      });
+
       const response = await request(app)
-        .post(`/api/properties/${testProperty.id}/units`)
+        .post(`/api/properties/${multiFamily.id}/units`)
         .set('Authorization', `Bearer ${token}`)
         .send({
           name: 'Unit 2',
@@ -83,6 +97,20 @@ describe('Units Routes', () => {
 
       expect(response.status).toBe(201);
       expect(response.body.data.name).toBe('Unit 2');
+    });
+
+    it('should prevent adding units to single-family properties', async () => {
+      const response = await request(app)
+        .post(`/api/properties/${testProperty.id}/units`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          name: 'Unit 2',
+          bedrooms: 2,
+          bathrooms: 1.5,
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.error.message).toContain('Cannot add units to single-family properties');
     });
   });
 
@@ -202,6 +230,24 @@ describe('Units Routes', () => {
   });
 
   describe('POST /api/properties/:propertyId/units edge cases', () => {
+    let multiFamily: any;
+
+    beforeEach(async () => {
+      // Create a multi-family property for edge case tests
+      multiFamily = await prisma.property.create({
+        data: {
+          organizationId: testOrg.id,
+          name: 'Multi Family For Tests',
+          addressLine1: '789 Pine St',
+          city: 'Test City',
+          state: 'CA',
+          postalCode: '12345',
+          country: 'USA',
+          type: 'MULTI_FAMILY',
+        },
+      });
+    });
+
     it('should return 404 for invalid property', async () => {
       const response = await request(app)
         .post('/api/properties/00000000-0000-0000-0000-000000000000/units')
@@ -215,7 +261,7 @@ describe('Units Routes', () => {
 
     it('should create unit with all optional fields', async () => {
       const response = await request(app)
-        .post(`/api/properties/${testProperty.id}/units`)
+        .post(`/api/properties/${multiFamily.id}/units`)
         .set('Authorization', `Bearer ${token}`)
         .send({
           name: 'Unit 3',

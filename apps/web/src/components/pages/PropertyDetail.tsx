@@ -53,42 +53,51 @@ export const PropertyDetailPage = () => {
           <div className="text-sm text-slate-600">
             {data.addressLine1}, {data.city}, {data.state}
           </div>
+          <div className="text-sm text-slate-500 mt-1">Type: {data.type}</div>
         </div>
       </div>
 
       <div className="card">
         <div className="card-header">Units</div>
         <div className="card-body">
-          <form
-            className="grid gap-3 md:grid-cols-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              createUnit.mutate();
-            }}
-          >
-            <input
-              className="rounded-lg border border-slate-200 px-3 py-2"
-              placeholder="Unit name"
-              value={unitForm.name}
-              onChange={(e) => setUnitForm((prev) => ({ ...prev, name: e.target.value }))}
-              required
-            />
-            <input
-              className="rounded-lg border border-slate-200 px-3 py-2"
-              placeholder="Bedrooms"
-              value={unitForm.bedrooms}
-              onChange={(e) => setUnitForm((prev) => ({ ...prev, bedrooms: e.target.value }))}
-            />
-            <input
-              className="rounded-lg border border-slate-200 px-3 py-2"
-              placeholder="Bathrooms"
-              value={unitForm.bathrooms}
-              onChange={(e) => setUnitForm((prev) => ({ ...prev, bathrooms: e.target.value }))}
-            />
-            <button className="rounded-lg bg-ink text-white px-3 py-2" type="submit">
-              Add unit
-            </button>
-          </form>
+          {data.type !== 'SINGLE_FAMILY' ? (
+            <form
+              className="grid gap-3 md:grid-cols-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                createUnit.mutate();
+              }}
+            >
+              <input
+                className="rounded-lg border border-slate-200 px-3 py-2"
+                placeholder="Unit name"
+                value={unitForm.name}
+                onChange={(e) => setUnitForm((prev) => ({ ...prev, name: e.target.value }))}
+                required
+              />
+              <input
+                className="rounded-lg border border-slate-200 px-3 py-2"
+                placeholder="Bedrooms"
+                value={unitForm.bedrooms}
+                onChange={(e) => setUnitForm((prev) => ({ ...prev, bedrooms: e.target.value }))}
+              />
+              <input
+                className="rounded-lg border border-slate-200 px-3 py-2"
+                placeholder="Bathrooms"
+                value={unitForm.bathrooms}
+                onChange={(e) => setUnitForm((prev) => ({ ...prev, bathrooms: e.target.value }))}
+              />
+              <button className="rounded-lg bg-ink text-white px-3 py-2" type="submit">
+                Add unit
+              </button>
+            </form>
+          ) : (
+            <div className="bg-blue-50 border border-blue-200 text-blue-800 px-4 py-3 rounded-lg mb-4">
+              <p className="text-sm">
+                <strong>Note:</strong> Single-family properties can only have one unit and do not support adding additional units.
+              </p>
+            </div>
+          )}
 
           <table className="w-full text-sm mt-4">
             <thead className="text-left text-slate-600">
