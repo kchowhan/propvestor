@@ -112,7 +112,7 @@ describe('MaintenancePage', () => {
   it('should create work order', async () => {
     setupMocks({
       workOrders: [],
-      properties: [{ id: '1', name: 'Property 1' }],
+      properties: [{ id: '1', name: 'Property 1', units: [{ id: 'unit-1', name: 'Unit 1' }] }],
       vendors: [],
     });
 

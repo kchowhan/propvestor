@@ -11,7 +11,7 @@ export const MaintenancePage = () => {
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'vendors' | 'create' | 'orders'>('vendors');
-  const [form, setForm] = useState({ propertyId: '', title: '', description: '', category: 'GENERAL', priority: 'NORMAL', assignedVendorId: '' });
+  const [form, setForm] = useState({ propertyId: '', unitId: '', title: '', description: '', category: 'GENERAL', priority: 'NORMAL', assignedVendorId: '' });
   const [vendorForm, setVendorForm] = useState({ name: '', email: '', phone: '', website: '', category: 'GENERAL', notes: '' });
   const [editingVendor, setEditingVendor] = useState<string | null>(null);
   const [showVendorForm, setShowVendorForm] = useState(false);
@@ -43,12 +43,13 @@ export const MaintenancePage = () => {
         method: 'POST',
         body: {
           ...form,
+          unitId: form.unitId || null,
           assignedVendorId: form.assignedVendorId || null,
         },
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['work-orders'] });
-      setForm({ propertyId: '', title: '', description: '', category: 'GENERAL', priority: 'NORMAL', assignedVendorId: '' });
+      setForm({ propertyId: '', unitId: '', title: '', description: '', category: 'GENERAL', priority: 'NORMAL', assignedVendorId: '' });
     },
   });
 
@@ -376,19 +377,30 @@ export const MaintenancePage = () => {
             }}
           >
             <div className="flex flex-col">
-              <label className="text-sm font-medium text-slate-700 mb-1">Property</label>
+              <label className="text-sm font-medium text-slate-700 mb-1">Unit</label>
               <select
                 className="rounded-lg border border-slate-200 px-3 py-2"
-                value={form.propertyId}
-                onChange={(e) => setForm((prev) => ({ ...prev, propertyId: e.target.value }))}
+                value={form.unitId}
+                onChange={(e) => {
+                  const selectedUnit = properties
+                    .flatMap((p: any) => (p.units || []).map((u: any) => ({ ...u, propertyId: p.id })))
+                    .find((u: any) => u.id === e.target.value);
+                  setForm((prev) => ({ 
+                    ...prev, 
+                    unitId: e.target.value,
+                    propertyId: selectedUnit?.propertyId || ''
+                  }));
+                }}
                 required
               >
-                <option value="">Select property</option>
-                {properties.map((property: any) => (
-                  <option key={property.id} value={property.id}>
-                    {property.name}
-                  </option>
-                ))}
+                <option value="">Select unit</option>
+                {properties.flatMap((property: any) =>
+                  (property.units || []).map((unit: any) => (
+                    <option key={unit.id} value={unit.id}>
+                      {property.name} - {unit.name}
+                    </option>
+                  )),
+                )}
               </select>
             </div>
             <div className="flex flex-col">
