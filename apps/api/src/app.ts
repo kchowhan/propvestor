@@ -6,12 +6,7 @@ import { router } from './routes/index.js';
 import { rateLimit, strictRateLimit } from './middleware/rate-limit.js';
 import { optionalAuth } from './middleware/auth.js';
 
-export interface AppOptions {
-  // No longer optional - rate limiting is always enabled for security
-  // CodeQL: Ensures all routes with authorization are rate-limited
-}
-
-export const createApp = (options: AppOptions = {}) => {
+export const createApp = () => {
   const app = express();
   
   // Support multiple CORS origins (comma-separated) or single origin
