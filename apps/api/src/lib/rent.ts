@@ -11,7 +11,7 @@ export const createRentChargeForLease = async (
   lease: Lease,
   month: number,
   year: number,
-): Promise<Prisma.ChargeGetPayload<{}> | null> => {
+): Promise<Prisma.ChargeGetPayload<Record<string, never>> | null> => {
   const dueDate = buildRentDueDate(lease, month, year);
   const existing = await prisma.charge.findFirst({
     where: {

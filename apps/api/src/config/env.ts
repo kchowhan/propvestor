@@ -33,7 +33,6 @@ const envSchema = z.object({
   STRIPE_PUBLISHABLE_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
   // Google Cloud Scheduler configuration
-  GCS_PROJECT_ID: z.string().optional(), // Reuse from GCS config
   GCS_SCHEDULER_LOCATION: z.string().optional().default('us-central1'),
   GCS_SCHEDULER_SERVICE_ACCOUNT: z.string().optional(),
   SCHEDULER_SECRET: z.string().optional(), // Secret token for scheduler to authenticate
