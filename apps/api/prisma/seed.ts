@@ -77,7 +77,7 @@ const run = async () => {
   }
 
   // ============================================================================
-  // ORGANIZATION 1 - PropVestor Demo Org (Pro Plan)
+  // ORGANIZATION 1 - PropVestor Demo Org (Basic Plan - 2 properties)
   // ============================================================================
   console.log('\n📦 Creating Organization 1: PropVestor Demo Org...');
   
@@ -88,20 +88,20 @@ const run = async () => {
     },
   });
 
-  // Create subscription for org1 (Pro plan)
+  // Create subscription for org1 (Basic plan - suitable for 2 properties)
   const subscriptionEndDate1 = new Date();
   subscriptionEndDate1.setFullYear(subscriptionEndDate1.getFullYear() + 1);
   
   await prisma.subscription.create({
     data: {
       organizationId: org1.id,
-      planId: proPlan!.id,
+      planId: basicPlan!.id,
       status: 'ACTIVE',
       currentPeriodStart: new Date(),
       currentPeriodEnd: subscriptionEndDate1,
     },
   });
-  console.log('  ✓ Pro plan subscription created');
+  console.log('  ✓ Basic plan subscription created (2 properties)');
 
   // Create users for org1
   const demoUser = await prisma.user.create({
@@ -471,7 +471,7 @@ const run = async () => {
   console.log('  ✓ 3 work orders created');
 
   // ============================================================================
-  // ORGANIZATION 2 - Acme Properties (Basic Plan)
+  // ORGANIZATION 2 - Acme Properties (Free Plan - 1 property)
   // ============================================================================
   console.log('\n📦 Creating Organization 2: Acme Properties...');
   
@@ -482,20 +482,20 @@ const run = async () => {
     },
   });
 
-  // Create subscription for org2 (Basic plan)
+  // Create subscription for org2 (Free plan - suitable for 1 property)
   const subscriptionEndDate2 = new Date();
   subscriptionEndDate2.setFullYear(subscriptionEndDate2.getFullYear() + 1);
   
   await prisma.subscription.create({
     data: {
       organizationId: org2.id,
-      planId: basicPlan!.id,
+      planId: freePlan!.id,
       status: 'ACTIVE',
       currentPeriodStart: new Date(),
       currentPeriodEnd: subscriptionEndDate2,
     },
   });
-  console.log('  ✓ Basic plan subscription created');
+  console.log('  ✓ Free plan subscription created (1 property)');
 
   // Create users for org2
   const org2Owner = await prisma.user.create({
@@ -753,7 +753,8 @@ const run = async () => {
   console.log('\n' + '=' .repeat(60));
   console.log('📊 SUMMARY');
   console.log('=' .repeat(60));
-  console.log('\n🏢 Organization 1: PropVestor Demo Org (Pro Plan)');
+  console.log('\n🏢 Organization 1: PropVestor Demo Org (Basic Plan - $49/month)');
+  console.log('   ✓ Appropriate plan for 2 properties (limit: 10 properties)');
   console.log('   - 3 users');
   console.log('   - 2 properties (5 units)');
   console.log('   - 4 tenants (3 active, 1 prospect)');
@@ -761,7 +762,8 @@ const run = async () => {
   console.log('   - 3 charges, 2 payments');
   console.log('   - 2 vendors');
   console.log('   - 3 work orders');
-  console.log('\n🏢 Organization 2: Acme Properties (Basic Plan)');
+  console.log('\n🏢 Organization 2: Acme Properties (Free Plan - $0/month)');
+  console.log('   ✓ Appropriate plan for 1 property (limit: 1 property)');
   console.log('   - 2 users');
   console.log('   - 1 property (3 units)');
   console.log('   - 3 tenants (2 active, 1 prospect)');

@@ -13,54 +13,53 @@ export default function SubscriptionPage() {
   const [cancelAtPeriodEnd, setCancelAtPeriodEnd] = useState(true);
 
   // Fetch current subscription
-  const { data: subscriptionData, isLoading: subscriptionLoading } = useQuery({
+  const { data: subscription, isLoading: subscriptionLoading } = useQuery({
     queryKey: ['subscription', 'current'],
     queryFn: () => apiFetch('/subscriptions/current', { token }),
   });
 
   // Fetch available plans
-  const { data: plansData, isLoading: plansLoading } = useQuery({
+  const { data: plans, isLoading: plansLoading } = useQuery({
     queryKey: ['subscription', 'plans'],
     queryFn: () => apiFetch('/subscriptions/plans', { token }),
   });
 
   // Fetch invoices
-  const { data: invoicesData, isLoading: invoicesLoading } = useQuery({
+  const { data: invoices, isLoading: invoicesLoading } = useQuery({
     queryKey: ['subscription', 'invoices'],
     queryFn: () => apiFetch('/subscriptions/invoices', { token }),
-    enabled: !!subscriptionData?.data,
+    enabled: !!subscription,
   });
 
   // Fetch limits
-  const { data: limitsData } = useQuery({
+  const { data: limits } = useQuery({
     queryKey: ['subscription', 'limits'],
     queryFn: () => apiFetch('/subscriptions/limits', { token }),
   });
 
   // Fetch usage counts
-  const { data: propertiesData } = useQuery({
+  const { data: properties } = useQuery({
     queryKey: ['properties'],
     queryFn: () => apiFetch('/properties', { token }),
   });
-  const { data: tenantsData } = useQuery({
+  const { data: tenants } = useQuery({
     queryKey: ['tenants'],
     queryFn: () => apiFetch('/tenants', { token }),
   });
-  const { data: usersData } = useQuery({
+  const { data: users } = useQuery({
     queryKey: ['users'],
     queryFn: () => apiFetch('/users', { token }),
   });
 
-  const subscription = subscriptionData?.data;
-  const plans = plansData?.data || [];
-  const invoices = invoicesData?.data || [];
-  const limits = limitsData?.data || {};
+  const plansList = plans || [];
+  const invoicesList = invoices || [];
+  const limitsData = limits || {};
   
   // Calculate usage
   const usage = {
-    propertiesUsed: propertiesData?.data?.length || 0,
-    tenantsUsed: tenantsData?.data?.length || 0,
-    usersUsed: usersData?.data?.length || 0,
+    propertiesUsed: properties?.length || 0,
+    tenantsUsed: tenants?.length || 0,
+    usersUsed: users?.length || 0,
     storageUsed: 0, // Would need to fetch documents and calculate
   };
 
@@ -178,32 +177,32 @@ export default function SubscriptionPage() {
               </div>
 
               {/* Usage Limits */}
-              {limits && (
+              {limitsData && (
                 <div className="pt-4 border-t border-slate-200">
                   <h4 className="font-semibold text-ink mb-3">Current Usage</h4>
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div>
                       <p className="text-sm text-slate-600">Properties</p>
                       <p className="font-medium text-ink">
-                        {usage.propertiesUsed} / {limits.properties === 999999 ? '∞' : limits.properties}
+                        {usage.propertiesUsed} / {limitsData.properties === 999999 ? '∞' : limitsData.properties}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-slate-600">Tenants</p>
                       <p className="font-medium text-ink">
-                        {usage.tenantsUsed} / {limits.tenants === 999999 ? '∞' : limits.tenants}
+                        {usage.tenantsUsed} / {limitsData.tenants === 999999 ? '∞' : limitsData.tenants}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-slate-600">Users</p>
                       <p className="font-medium text-ink">
-                        {usage.usersUsed} / {limits.users === 999999 ? '∞' : limits.users}
+                        {usage.usersUsed} / {limitsData.users === 999999 ? '∞' : limitsData.users}
                       </p>
                     </div>
                     <div>
                       <p className="text-sm text-slate-600">Storage</p>
                       <p className="font-medium text-ink">
-                        {usage.storageUsed} MB / {limits.storage === 999999 ? '∞' : `${limits.storage} MB`}
+                        {usage.storageUsed} MB / {limitsData.storage === 999999 ? '∞' : `${limitsData.storage} MB`}
                       </p>
                     </div>
                   </div>
@@ -252,7 +251,7 @@ export default function SubscriptionPage() {
           <div className="card-header">Available Plans</div>
           <div className="card-body">
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {plans.map((plan: any) => (
+              {plansList.map((plan: any) => (
                 <div
                   key={plan.id}
                   className="border border-slate-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
@@ -293,7 +292,7 @@ export default function SubscriptionPage() {
           <div className="card-header">Upgrade Plan</div>
           <div className="card-body">
             <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {plans
+              {plansList
                 .filter((plan: any) => plan.id !== currentPlan?.id)
                 .map((plan: any) => (
                   <div
@@ -320,7 +319,7 @@ export default function SubscriptionPage() {
       )}
 
       {/* Invoices */}
-      {subscription && invoices.length > 0 && (
+      {subscription && invoicesList.length > 0 && (
         <div className="card">
           <div className="card-header">Invoices</div>
           <div className="card-body">
@@ -335,7 +334,7 @@ export default function SubscriptionPage() {
                   </tr>
                 </thead>
                 <tbody>
-                  {invoices.map((invoice: any) => (
+                  {invoicesList.map((invoice: any) => (
                     <tr key={invoice.id} className="border-t border-slate-100">
                       <td className="py-2 px-3">{format(new Date(invoice.createdAt), 'MMM d, yyyy')}</td>
                       <td className="py-2 px-3">${Number(invoice.amount).toFixed(2)}</td>

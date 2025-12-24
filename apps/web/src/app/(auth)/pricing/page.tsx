@@ -9,19 +9,18 @@ export default function PricingPage() {
   const queryClient = useQueryClient();
 
   // Fetch available plans
-  const { data: plansData, isLoading } = useQuery({
+  const { data: plans, isLoading } = useQuery({
     queryKey: ['subscription', 'plans'],
     queryFn: () => apiFetch('/subscriptions/plans', { token }),
   });
 
   // Fetch current subscription
-  const { data: subscriptionData } = useQuery({
+  const { data: subscription } = useQuery({
     queryKey: ['subscription', 'current'],
     queryFn: () => apiFetch('/subscriptions/current', { token }),
   });
 
-  const plans = plansData?.data || [];
-  const subscription = subscriptionData?.data;
+  const plansList = plans || [];
   const currentPlanId = subscription?.planId;
 
   // Subscribe mutation
@@ -56,7 +55,7 @@ export default function PricingPage() {
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
-        {plans.map((plan: any, index: number) => {
+        {plansList.map((plan: any, index: number) => {
           const isCurrentPlan = plan.id === currentPlanId;
           const isPopular = plan.slug === 'pro'; // Mark Pro as popular
 
