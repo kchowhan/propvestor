@@ -32,7 +32,7 @@ export default function HomePage() {
               </Link>
             </div>
             <p className="mt-6 text-primary-200 text-sm">
-              14-day free trial • No credit card required
+              14-day free trial • Cancel anytime
             </p>
           </div>
         </div>
@@ -287,7 +287,7 @@ export default function HomePage() {
             Start Your Free Trial
           </Link>
           <p className="mt-6 text-primary-200">
-            No credit card required • 14-day free trial • Cancel anytime
+            14-day free trial • Cancel anytime
           </p>
         </div>
       </section>

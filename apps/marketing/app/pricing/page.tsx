@@ -88,7 +88,7 @@ export default function PricingPage() {
               Choose the plan that fits your portfolio size
             </p>
             <p className="text-primary-200">
-              All plans include a 14-day free trial • No credit card required
+              All plans include a 14-day free trial • Cancel anytime
             </p>
           </div>
         </div>

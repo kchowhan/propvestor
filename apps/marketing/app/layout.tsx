@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { Logo } from '../components/Logo';
 import './globals.css';
 
 export const metadata: Metadata = {
@@ -21,10 +22,7 @@ export default function RootLayout({
             <div className="flex items-center justify-between h-16">
               {/* Logo */}
               <Link href="/" className="flex items-center space-x-2">
-                <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center text-white font-bold">
-                  P
-                </div>
-                <span className="text-xl font-bold text-ink">PropVestor</span>
+                <Logo className="h-10 w-auto" />
               </Link>
 
               {/* Desktop Navigation */}
@@ -72,13 +70,10 @@ export default function RootLayout({
               {/* Company Info */}
               <div>
                 <div className="flex items-center space-x-2 mb-4">
-                  <div className="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center font-bold">
-                    P
-                  </div>
-                  <span className="text-xl font-bold">PropVestor</span>
+                  <Logo className="h-10 w-auto brightness-0 invert" />
                 </div>
                 <p className="text-white/70 text-sm">
-                  Simplifying property management for landlords and investors.
+                  AI-powered property and investment management for landlords and investors.
                 </p>
               </div>
 
