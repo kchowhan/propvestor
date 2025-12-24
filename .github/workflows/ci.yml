@@ -1,0 +1,151 @@
+name: CI
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+jobs:
+  test-api:
+    name: Test API
+    runs-on: ubuntu-latest
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: propvestor_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/propvestor_test
+      NODE_ENV: test
+      JWT_SECRET: test-secret-key-for-ci
+      STRIPE_SECRET_KEY: sk_test_fake_key_for_ci
+      STRIPE_WEBHOOK_SECRET: whsec_fake_secret_for_ci
+      RENTSPREE_API_KEY: fake_key_for_ci
+      RENTSPREE_WEBHOOK_SECRET: fake_secret_for_ci
+      DOCUSIGN_INTEGRATION_KEY: fake_key_for_ci
+      DOCUSIGN_USER_ID: fake_user_for_ci
+      DOCUSIGN_ACCOUNT_ID: fake_account_for_ci
+      DOCUSIGN_RSA_PRIVATE_KEY: fake_key_for_ci
+      GCS_BUCKET_NAME: fake_bucket_for_ci
+      GOOGLE_APPLICATION_CREDENTIALS: /dev/null
+      SMTP_HOST: localhost
+      SMTP_PORT: 587
+      SMTP_USER: test@example.com
+      SMTP_PASS: test_password
+      SMTP_FROM: test@example.com
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        working-directory: apps/api
+        run: npm run prisma:generate
+
+      - name: Run database migrations
+        working-directory: apps/api
+        run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5432/propvestor_test
+
+      - name: Build API
+        working-directory: apps/api
+        run: npm run build
+
+      - name: Run API tests with coverage
+        working-directory: apps/api
+        run: npm run test:coverage
+        # Vitest will automatically fail if coverage is below 85% (configured in vitest.config.ts)
+
+      - name: Upload API coverage reports
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./apps/api/coverage/coverage-final.json
+          flags: api
+          name: api-coverage
+          fail_ci_if_error: false
+
+  test-web:
+    name: Test Web
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Web
+        working-directory: apps/web
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:4000/api
+
+      - name: Run Web tests with coverage
+        working-directory: apps/web
+        run: npm run test:coverage
+        # Jest will automatically fail if coverage is below 85% (configured in jest.config.js)
+
+      - name: Upload Web coverage reports
+        uses: codecov/codecov-action@v4
+        if: always()
+        with:
+          files: ./apps/web/coverage/coverage-final.json
+          flags: web
+          name: web-coverage
+          fail_ci_if_error: false
+
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint API
+        working-directory: apps/api
+        run: npm run lint
+
+      - name: Lint Web
+        working-directory: apps/web
+        run: npm run lint
+
