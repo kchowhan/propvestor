@@ -38,6 +38,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   const navItems = [
+    { href: '/dashboard', label: '← Back to Dashboard', isExternal: true },
     { href: '/admin', label: 'Dashboard', exact: true },
     { href: '/admin/organizations', label: 'Organizations' },
     { href: '/admin/users', label: 'Users' },
@@ -56,9 +57,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </Link>
               <nav className="hidden md:flex items-center gap-4">
                 {navItems.map((item) => {
-                  const isActive = item.exact
+                  const isActive = !item.isExternal && (item.exact
                     ? pathname === item.href
-                    : pathname.startsWith(item.href);
+                    : pathname.startsWith(item.href));
                   return (
                     <Link
                       key={item.href}
@@ -76,12 +77,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               </nav>
             </div>
             <div className="flex items-center gap-4">
-              <Link
-                href="/dashboard"
-                className="text-purple-200 hover:text-white text-sm"
-              >
-                Exit Admin →
-              </Link>
               <div className="text-sm text-purple-200">
                 {user.name}
               </div>
@@ -99,9 +94,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       {/* Mobile Nav */}
       <nav className="md:hidden bg-purple-800 px-4 py-2 flex gap-2 overflow-x-auto">
         {navItems.map((item) => {
-          const isActive = item.exact
+          const isActive = !item.isExternal && (item.exact
             ? pathname === item.href
-            : pathname.startsWith(item.href);
+            : pathname.startsWith(item.href));
           return (
             <Link
               key={item.href}

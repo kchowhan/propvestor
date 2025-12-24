@@ -69,11 +69,8 @@ export default function AdminOrganizations() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div>
         <h1 className="text-3xl font-bold text-ink">Organizations</h1>
-        <Link href="/admin" className="text-primary-600 hover:underline">
-          ← Back to Admin Dashboard
-        </Link>
       </div>
 
       {/* Filters */}
