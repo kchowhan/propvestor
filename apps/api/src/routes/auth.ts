@@ -63,7 +63,7 @@ authRouter.post('/register', async (req, res, next) => {
 
     res.json({
       token,
-      user: { id: user.id, name: user.name, email: user.email },
+      user: { id: user.id, name: user.name, email: user.email, isSuperAdmin: user.isSuperAdmin },
       organization,
     });
   } catch (err) {
@@ -73,7 +73,6 @@ authRouter.post('/register', async (req, res, next) => {
 
 authRouter.post('/login', async (req, res, next) => {
   try {
-    console.log('Login request body:', JSON.stringify(req.body, null, 2));
     const data = parseBody(loginSchema, req.body);
     const user = await prisma.user.findUnique({
       where: { email: data.email },
@@ -105,7 +104,7 @@ authRouter.post('/login', async (req, res, next) => {
 
     res.json({
       token,
-      user: { id: user.id, name: user.name, email: user.email },
+      user: { id: user.id, name: user.name, email: user.email, isSuperAdmin: user.isSuperAdmin },
       organization: defaultMembership.organization,
       organizations: user.memberships.map((m) => ({
         id: m.organization.id,
@@ -147,7 +146,7 @@ authRouter.get('/me', requireAuth, async (req, res, next) => {
     const currentMembership = user.memberships.find((m) => m.organizationId === req.auth!.organizationId);
 
     res.json({
-      user: { id: user.id, name: user.name, email: user.email },
+      user: { id: user.id, name: user.name, email: user.email, isSuperAdmin: user.isSuperAdmin },
       organization,
       currentRole: currentMembership?.role || null,
       organizations: user.memberships.map((m) => ({

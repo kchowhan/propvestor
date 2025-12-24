@@ -1,7 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { apiFetch } from '../api/client';
 
-export type User = { id: string; name: string; email: string };
+export type User = { id: string; name: string; email: string; isSuperAdmin?: boolean };
 export type Organization = { id: string; name: string; slug: string };
 export type OrganizationMembership = { id: string; name: string; slug: string; role: string };
 

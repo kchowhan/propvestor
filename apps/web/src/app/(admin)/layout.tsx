@@ -11,8 +11,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
+    if (!loading) {
+      if (!user) {
+        router.push('/login');
+      } else if (!user.isSuperAdmin) {
+        // Not a super admin, redirect to dashboard
+        router.push('/dashboard');
+      }
     }
   }, [loading, user, router]);
 
@@ -24,8 +29,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     );
   }
 
-  if (!user) {
-    return null;
+  if (!user || !user.isSuperAdmin) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <div className="text-slate-600">Redirecting...</div>
+      </div>
+    );
   }
 
   const navItems = [
