@@ -3,13 +3,19 @@ import { env } from '../config/env.js';
 import { prisma } from './prisma.js';
 import { AppError } from './errors.js';
 
-if (!env.STRIPE_SECRET_KEY) {
-  throw new Error('STRIPE_SECRET_KEY environment variable is required');
-}
+let stripeInstance: Stripe | null = null;
 
-const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-  apiVersion: '2025-12-15.clover',
-});
+function getStripe(): Stripe {
+  if (!stripeInstance) {
+    if (!env.STRIPE_SECRET_KEY) {
+      throw new Error('STRIPE_SECRET_KEY environment variable is required');
+    }
+    stripeInstance = new Stripe(env.STRIPE_SECRET_KEY, {
+      apiVersion: '2025-12-15.clover',
+    });
+  }
+  return stripeInstance;
+}
 
 /**
  * Create or get Stripe customer for organization
@@ -33,6 +39,7 @@ export async function getOrCreateStripeCustomer(
   }
 
   // Create new Stripe customer
+  const stripe = getStripe();
   const customer = await stripe.customers.create({
     email,
     name,
@@ -61,6 +68,7 @@ export async function createPaymentSetupIntent(
 ): Promise<{ clientSecret: string; customerId: string }> {
   const customerId = await getOrCreateStripeCustomer(organizationId, email, name);
 
+  const stripe = getStripe();
   const setupIntent = await stripe.setupIntents.create({
     customer: customerId,
     payment_method_types: ['card'],
@@ -91,6 +99,8 @@ export async function setDefaultPaymentMethod(
     throw new AppError(400, 'BAD_REQUEST', 'No Stripe customer found for organization');
   }
 
+  const stripe = getStripe();
+  
   // Attach payment method to customer if not already attached
   try {
     await stripe.paymentMethods.attach(paymentMethodId, {
@@ -134,6 +144,7 @@ export async function getOrganizationPaymentMethods(
     return [];
   }
 
+  const stripe = getStripe();
   const paymentMethods = await stripe.paymentMethods.list({
     customer: organization.stripeCustomerId,
     type: 'card',
@@ -146,6 +157,7 @@ export async function getOrganizationPaymentMethods(
  * Remove payment method
  */
 export async function removePaymentMethod(paymentMethodId: string): Promise<void> {
+  const stripe = getStripe();
   await stripe.paymentMethods.detach(paymentMethodId);
 }
 
