@@ -77,13 +77,11 @@ describe('Stripe Webhook Routes', () => {
 
   describe('POST /api/stripe/webhook', () => {
     it('should handle payment_intent.succeeded event', async () => {
-      const paymentIntent: Partial<Stripe.PaymentIntent> = {
+      const paymentIntent: Partial<Stripe.PaymentIntent> & { latest_charge?: string | Stripe.Charge | null } = {
         id: 'pi_test_123',
         status: 'succeeded',
         metadata: { chargeId: testCharge.id },
-        charges: {
-          data: [{ id: 'ch_test_123' } as Stripe.Charge],
-        },
+        latest_charge: { id: 'ch_test_123' } as Stripe.Charge,
       };
 
       mockStripeWebhooks.constructEvent.mockReturnValue({
@@ -109,8 +107,8 @@ describe('Stripe Webhook Routes', () => {
     it('should handle payment_intent.payment_failed event', async () => {
       const paymentIntent: Partial<Stripe.PaymentIntent> = {
         id: 'pi_test_123',
-        status: 'payment_failed',
-        last_payment_error: { message: 'Card declined' },
+        status: 'canceled', // Use valid PaymentIntent status
+        last_payment_error: { type: 'card_error', message: 'Card declined' } as Stripe.PaymentIntent.LastPaymentError,
       };
 
       mockStripeWebhooks.constructEvent.mockReturnValue({
@@ -130,13 +128,13 @@ describe('Stripe Webhook Routes', () => {
       // Delete existing payment
       await prisma.payment.delete({ where: { id: testPayment.id } });
 
-      const paymentIntent: Partial<Stripe.PaymentIntent> = {
+      const paymentIntent: Partial<Stripe.PaymentIntent> & { latest_charge?: string | Stripe.Charge | null, created: number, amount: number } = {
         id: 'pi_new_123',
         status: 'succeeded',
         metadata: { chargeId: testCharge.id },
-        charges: {
-          data: [{ id: 'ch_new_123' } as Stripe.Charge],
-        },
+        latest_charge: { id: 'ch_new_123' } as Stripe.Charge,
+        created: Math.floor(Date.now() / 1000),
+        amount: 100000, // amount in cents
       };
 
       mockStripeWebhooks.constructEvent.mockReturnValue({

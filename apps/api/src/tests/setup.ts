@@ -47,6 +47,42 @@ export const createTestMembership = async (
   });
 };
 
+// Create a test subscription plan with generous limits
+export const createTestSubscriptionPlan = async () => {
+  const uuid = require('crypto').randomUUID();
+  return prisma.subscriptionPlan.create({
+    data: {
+      name: 'Test Plan',
+      slug: `test-plan-${uuid}`,
+      price: 0,
+      billingInterval: 'monthly',
+      features: { properties: true, reports: true, api: true },
+      limits: { properties: 100, tenants: 100, users: 100, storage: 10000 },
+      isActive: true,
+    },
+  });
+};
+
+// Create a test subscription for an organization
+export const createTestSubscription = async (
+  organizationId: string,
+  planId: string
+) => {
+  const now = new Date();
+  const periodEnd = new Date(now);
+  periodEnd.setMonth(periodEnd.getMonth() + 1);
+  
+  return prisma.subscription.create({
+    data: {
+      organizationId,
+      planId,
+      status: 'ACTIVE',
+      currentPeriodStart: now,
+      currentPeriodEnd: periodEnd,
+    },
+  });
+};
+
 // Helper function to clean up all test data in the correct order
 export const cleanupTestData = async () => {
   // Delete in order of dependencies (children first, then parents)
@@ -97,7 +133,8 @@ export const cleanupTestData = async () => {
   // SaaS - Subscriptions (invoices before subscriptions, subscriptions before plans)
   try { await prisma.invoice.deleteMany(); } catch {}
   try { await prisma.subscription.deleteMany(); } catch {}
-  // Note: We don't delete subscription plans as they're shared across organizations
+  // Delete test subscription plans
+  try { await prisma.subscriptionPlan.deleteMany({ where: { slug: { startsWith: 'test-plan-' } } }); } catch {}
   
   // Organization fees (reference charges, payments, screening requests)
   try { await prisma.organizationFee.deleteMany(); } catch {}

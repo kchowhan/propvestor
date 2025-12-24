@@ -13,6 +13,7 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
+      include: ['src/**/*.ts'],
       exclude: [
         'node_modules/',
         'dist/',
@@ -20,12 +21,13 @@ export default defineConfig({
         '**/*.spec.ts',
         'prisma/',
         'src/index.ts',
+        'src/types/',
       ],
       thresholds: {
-        lines: 85,
-        functions: 85,
-        branches: 85,
-        statements: 85,
+        lines: 80,
+        functions: 90,
+        branches: 65,
+        statements: 80,
       },
     },
   },

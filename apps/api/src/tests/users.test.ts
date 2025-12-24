@@ -5,7 +5,7 @@ import bcrypt from 'bcryptjs';
 import { createApp } from '../app.js';
 import { prisma } from '../lib/prisma.js';
 import { env } from '../config/env.js';
-import { createTestUser, createTestOrganization, createTestMembership, cleanupTestData } from './setup.js';
+import { createTestUser, createTestOrganization, createTestMembership, createTestSubscriptionPlan, createTestSubscription, cleanupTestData } from './setup.js';
 
 // Mock email service
 vi.mock('../lib/email.js', () => ({
@@ -17,6 +17,7 @@ const app = createApp();
 describe('Users Routes', () => {
   let testUser: any;
   let testOrg: any;
+  let testPlan: any;
   let token: string;
 
   beforeEach(async () => {
@@ -26,6 +27,11 @@ describe('Users Routes', () => {
     testUser = await createTestUser({ passwordHash });
     testOrg = await createTestOrganization();
     await createTestMembership(testUser.id, testOrg.id, 'OWNER');
+    
+    // Create subscription plan and subscription to allow user creation
+    testPlan = await createTestSubscriptionPlan();
+    await createTestSubscription(testOrg.id, testPlan.id);
+    
     token = jwt.sign(
       { userId: testUser.id, organizationId: testOrg.id },
       env.JWT_SECRET
