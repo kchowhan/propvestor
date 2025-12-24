@@ -73,6 +73,7 @@ authRouter.post('/register', async (req, res, next) => {
 
 authRouter.post('/login', async (req, res, next) => {
   try {
+    console.log('Login request body:', JSON.stringify(req.body, null, 2));
     const data = parseBody(loginSchema, req.body);
     const user = await prisma.user.findUnique({
       where: { email: data.email },

@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../../context/AuthContext';
 import { Logo } from '../../components/Logo';
 
 export const LoginPage = () => {
-  const { login, register } = useAuth();
+  const { login, register, token } = useAuth();
   const router = useRouter();
   const [isRegister, setIsRegister] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -18,6 +18,13 @@ export const LoginPage = () => {
     password: '',
     organizationName: '',
   });
+
+  // Redirect to dashboard when token is set (after successful login)
+  useEffect(() => {
+    if (token) {
+      router.push('/dashboard');
+    }
+  }, [token, router]);
 
   const handleChange = (key: string, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -38,12 +45,11 @@ export const LoginPage = () => {
       } else {
         await login(form.email, form.password);
       }
-      // Navigate to dashboard after successful login/register
-      router.replace('/dashboard');
+      // Navigation will happen via the useEffect above when token is set
     } catch (err) {
       console.error('Login error:', err);
-      setError((err as Error).message || 'Failed to login. Please check your credentials.');
-    } finally {
+      const errorMessage = (err as Error).message || 'Failed to login. Please check your credentials.';
+      setError(errorMessage);
       setLoading(false);
     }
   };

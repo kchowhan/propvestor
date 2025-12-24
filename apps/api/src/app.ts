@@ -11,15 +11,25 @@ export interface AppOptions {
 }
 
 export const createApp = (options: AppOptions = {}) => {
-  const { enableRateLimiting = true } = options;
+  const { enableRateLimiting = process.env.NODE_ENV === 'production' } = options; // Enable rate limiting in production only
   const app = express();
   
   // Support multiple CORS origins (comma-separated) or single origin
-  const corsOrigins = env.CORS_ORIGIN.split(',').map(origin => origin.trim());
-  const corsOptions = corsOrigins.length === 1 && corsOrigins[0] === '*'
+  // In development, allow common localhost ports
+  const isDev = process.env.NODE_ENV !== 'production';
+  const devOrigins = ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:5173'];
+  
+  let corsOrigins: string[] = env.CORS_ORIGIN.split(',').map(origin => origin.trim());
+  
+  // In development, merge configured origins with common dev ports
+  if (isDev) {
+    corsOrigins = [...new Set([...corsOrigins, ...devOrigins])];
+  }
+  
+  const corsOptions = corsOrigins.includes('*')
     ? { origin: true, credentials: true } // Allow all origins (use with caution)
     : { 
-        origin: corsOrigins.length === 1 ? corsOrigins[0] : corsOrigins,
+        origin: corsOrigins,
         credentials: true 
       };
   
