@@ -456,7 +456,7 @@ adminRouter.get('/activity', async (req, res, next) => {
 adminRouter.post('/organizations/:id/impersonate', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const userId = (req as any).user?.id;
+    const userId = req.auth?.userId;
 
     if (!userId) {
       throw new AppError(401, 'UNAUTHORIZED', 'User not authenticated.');
