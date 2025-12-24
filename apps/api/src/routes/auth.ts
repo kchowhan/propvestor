@@ -7,6 +7,13 @@ import { AppError } from '../lib/errors.js';
 import { env } from '../config/env.js';
 import { parseBody } from '../validators/common.js';
 import { requireAuth } from '../middleware/auth.js';
+import {
+  generateVerificationToken,
+  getVerificationTokenExpiry,
+  sendVerificationEmail,
+  verifyEmailToken,
+  resendVerificationEmail,
+} from '../lib/verification.js';
 
 const registerSchema = z.object({
   name: z.string().min(1),
@@ -38,6 +45,10 @@ authRouter.post('/register', async (req, res, next) => {
     const passwordHash = await bcrypt.hash(data.password, 10);
     const slugBase = makeSlug(data.organizationName);
 
+    // Generate email verification token
+    const verificationToken = generateVerificationToken();
+    const verificationTokenExpiry = getVerificationTokenExpiry();
+
     const organization = await prisma.organization.create({
       data: {
         name: data.organizationName,
@@ -50,6 +61,8 @@ authRouter.post('/register', async (req, res, next) => {
         name: data.name,
         email: data.email,
         passwordHash,
+        emailVerificationToken: verificationToken,
+        emailVerificationTokenExpiry: verificationTokenExpiry,
         memberships: {
           create: {
             organizationId: organization.id,
@@ -59,12 +72,29 @@ authRouter.post('/register', async (req, res, next) => {
       },
     });
 
+    // Send verification email (don't block registration on email send)
+    sendVerificationEmail(user.email, user.name, verificationToken).catch((err) => {
+      console.error('Failed to send verification email:', err);
+    });
+
     const token = signToken({ userId: user.id, organizationId: organization.id });
 
     res.json({
       token,
-      user: { id: user.id, name: user.name, email: user.email, isSuperAdmin: user.isSuperAdmin },
-      organization,
+      user: { 
+        id: user.id, 
+        name: user.name, 
+        email: user.email, 
+        isSuperAdmin: user.isSuperAdmin,
+        emailVerified: user.emailVerified,
+      },
+      organization: {
+        id: organization.id,
+        name: organization.name,
+        slug: organization.slug,
+        paymentMethodSetupComplete: organization.paymentMethodSetupComplete,
+      },
+      message: 'Registration successful. Please check your email to verify your account.',
     });
   } catch (err) {
     next(err);
@@ -230,6 +260,49 @@ authRouter.post('/switch-organization', requireAuth, async (req, res, next) => {
       token,
       organization: membership.organization,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Email verification endpoint
+authRouter.post('/verify-email', async (req, res, next) => {
+  try {
+    const verifySchema = z.object({
+      token: z.string().min(1),
+    });
+    const data = parseBody(verifySchema, req.body);
+
+    const result = await verifyEmailToken(data.token);
+
+    if (!result.success) {
+      throw new AppError(400, 'BAD_REQUEST', result.message);
+    }
+
+    res.json({
+      message: result.message,
+      verified: true,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Resend verification email
+authRouter.post('/resend-verification', async (req, res, next) => {
+  try {
+    const resendSchema = z.object({
+      email: z.string().email(),
+    });
+    const data = parseBody(resendSchema, req.body);
+
+    const result = await resendVerificationEmail(data.email);
+
+    if (!result.success) {
+      throw new AppError(400, 'BAD_REQUEST', result.message);
+    }
+
+    res.json({ message: result.message });
   } catch (err) {
     next(err);
   }

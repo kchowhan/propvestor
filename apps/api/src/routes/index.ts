@@ -24,6 +24,7 @@ import { subscriptionRouter } from './subscriptions.js';
 import { organizationFeesRouter } from './organization-fees.js';
 import { adminRouter } from './admin.js';
 import { applicantRouter } from './applicants.js';
+import { paymentSetupRouter } from './payment-setup.js';
 
 export const router = Router();
 
@@ -64,3 +65,4 @@ router.use('/organizations', organizationRouter);
 router.use('/organization-fees', organizationFeesRouter);
 router.use('/admin', adminRouter);
 router.use('/applicants', applicantRouter);
+router.use('/payment-setup', paymentSetupRouter);
