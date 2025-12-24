@@ -11,10 +11,11 @@ export default function AdminPlans() {
   const queryClient = useQueryClient();
   const [editingPlan, setEditingPlan] = useState<any>(null);
 
-  const { data, isLoading, error } = useQuery({
+  const { data: plans, isLoading, error } = useQuery({
     queryKey: ['admin', 'plans'],
     queryFn: () => apiFetch('/admin/plans', { token }),
     retry: false,
+    enabled: !!token,
   });
 
   const updatePlan = useMutation({
@@ -25,8 +26,6 @@ export default function AdminPlans() {
       setEditingPlan(null);
     },
   });
-
-  const plans = data?.data || [];
 
   if (error) {
     return (
@@ -48,6 +47,8 @@ export default function AdminPlans() {
 
       {isLoading ? (
         <div className="text-center py-8 text-slate-600">Loading plans...</div>
+      ) : !plans || plans.length === 0 ? (
+        <div className="text-center py-8 text-slate-600">No plans found.</div>
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {plans.map((plan: any) => (
