@@ -204,6 +204,35 @@ async function cleanup() {
     console.log(`  - Organizations: ${e.message}`);
   }
 
+  console.log('\nCleaning up duplicate subscription plans...');
+  try {
+    // Keep only the main 4 plans (free, basic, pro, enterprise)
+    const mainPlanSlugs = ['free', 'basic', 'pro', 'enterprise'];
+    
+    // Get the main plans (the first occurrence of each slug)
+    const mainPlans = await prisma.subscriptionPlan.findMany({
+      where: { slug: { in: mainPlanSlugs } },
+      orderBy: { createdAt: 'asc' },
+      distinct: ['slug']
+    });
+    
+    const mainPlanIds = mainPlans.map(p => p.id);
+    
+    // Delete all test/duplicate plans
+    const deleted = await prisma.subscriptionPlan.deleteMany({
+      where: { id: { notIn: mainPlanIds } }
+    });
+    
+    if (deleted.count > 0) {
+      console.log(`  ✓ Deleted ${deleted.count} duplicate/test plans`);
+    }
+    
+    const remaining = await prisma.subscriptionPlan.count();
+    console.log(`  ✓ ${remaining} subscription plans remaining (${mainPlanSlugs.join(', ')})`);
+  } catch (e: any) {
+    console.log(`  - Subscription plans cleanup: ${e.message}`);
+  }
+
   console.log('\n✅ Database cleanup complete!');
 }
 
