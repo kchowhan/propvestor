@@ -8,13 +8,12 @@ import Link from 'next/link';
 export default function AdminDashboard() {
   const { token } = useAuth();
 
-  const { data: statsData, isLoading, error } = useQuery({
+  const { data: stats, isLoading, error } = useQuery({
     queryKey: ['admin', 'stats'],
     queryFn: () => apiFetch('/admin/stats', { token }),
     retry: false,
+    enabled: !!token, // Only fetch when token is available
   });
-
-  const stats = statsData?.data;
 
   if (isLoading) {
     return (

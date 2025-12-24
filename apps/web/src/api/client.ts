@@ -46,6 +46,12 @@ export const apiFetch = async (path: string, options: FetchOptions = {}) => {
 
     // Parse JSON response
     const data = await res.json();
+    
+    // If response has pagination, return the full object (for list endpoints)
+    // Otherwise, unwrap the data property if it exists
+    if (data.pagination) {
+      return data; // Return full object with data and pagination
+    }
     return data.data ?? data;
   } catch (error) {
     // Handle network errors (connection refused, CORS, etc.)
