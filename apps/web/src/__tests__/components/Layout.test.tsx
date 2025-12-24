@@ -171,29 +171,6 @@ describe('Layout Component', () => {
     });
   });
 
-  it.skip('should show "Create Organization" option for OWNER users', async () => {
-    currentMockAuth = {
-      ...mockAuth,
-      organizations: [
-        { id: 'org1', name: 'Org 1', slug: 'org-1', role: 'OWNER' },
-        { id: 'org2', name: 'Org 2', slug: 'org-2', role: 'OWNER' },
-      ],
-    };
-
-    renderWithProviders(
-      <Layout>
-        <div>Test</div>
-      </Layout>
-    );
-
-    const orgButton = screen.getByRole('button', { name: /Test Org/i });
-    fireEvent.click(orgButton);
-
-    await waitFor(() => {
-      expect(screen.getByText('+ Create Organization')).toBeInTheDocument();
-    });
-  });
-
   it('should not show "Create Organization" for non-OWNER users', async () => {
     currentMockAuth = {
       ...mockAuth,
@@ -214,76 +191,6 @@ describe('Layout Component', () => {
 
     await waitFor(() => {
       expect(screen.queryByText('+ Create Organization')).not.toBeInTheDocument();
-    });
-  });
-
-  it.skip('should show create organization form when clicked', async () => {
-    currentMockAuth = {
-      ...mockAuth,
-      organizations: [
-        { id: 'org1', name: 'Org 1', slug: 'org-1', role: 'OWNER' },
-        { id: 'org2', name: 'Org 2', slug: 'org-2', role: 'OWNER' },
-      ],
-    };
-
-    renderWithProviders(
-      <Layout>
-        <div>Test</div>
-      </Layout>
-    );
-
-    const orgButton = screen.getByRole('button', { name: /Test Org/i });
-    fireEvent.click(orgButton);
-
-    await waitFor(() => {
-      const createButton = screen.getByText('+ Create Organization');
-      fireEvent.click(createButton);
-    });
-
-    await waitFor(() => {
-      expect(screen.getByPlaceholderText('Organization name')).toBeInTheDocument();
-    });
-  });
-
-  it.skip('should create organization when form is submitted', async () => {
-    mockCreateOrganization.mockResolvedValue(undefined);
-    currentMockAuth = {
-      ...mockAuth,
-      organizations: [
-        { id: 'org1', name: 'Org 1', slug: 'org-1', role: 'OWNER' },
-        { id: 'org2', name: 'Org 2', slug: 'org-2', role: 'OWNER' },
-      ],
-    };
-
-    // Mock alert
-    global.alert = jest.fn();
-
-    renderWithProviders(
-      <Layout>
-        <div>Test</div>
-      </Layout>
-    );
-
-    const orgButton = screen.getByRole('button', { name: /Test Org/i });
-    fireEvent.click(orgButton);
-
-    await waitFor(() => {
-      const createButton = screen.getByText('+ Create Organization');
-      fireEvent.click(createButton);
-    });
-
-    await waitFor(() => {
-      const input = screen.getByPlaceholderText('Organization name');
-      fireEvent.change(input, { target: { value: 'New Org' } });
-    });
-
-    const form = screen.getByPlaceholderText('Organization name').closest('form');
-    if (form) {
-      fireEvent.submit(form);
-    }
-
-    await waitFor(() => {
-      expect(mockCreateOrganization).toHaveBeenCalledWith('New Org');
     });
   });
 
