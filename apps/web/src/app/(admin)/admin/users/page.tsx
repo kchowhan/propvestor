@@ -24,7 +24,7 @@ export default function AdminUsers() {
     },
     retry: false,
     staleTime: 0, // Don't cache, always fetch fresh data
-    cacheTime: 0, // Don't keep in cache
+    gcTime: 0, // Don't keep in cache (was 'cacheTime' in React Query v4)
   });
 
   const toggleAdmin = useMutation({
