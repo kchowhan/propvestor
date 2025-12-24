@@ -169,7 +169,7 @@ export default function AdminUsers() {
                             className="text-red-600 hover:underline text-sm"
                             disabled={toggleAdmin.isPending}
                           >
-                            Revoke Admin
+                            Revoke Super Admin
                           </button>
                         ) : (
                           <button
@@ -185,7 +185,7 @@ export default function AdminUsers() {
                             className="text-primary-600 hover:underline text-sm"
                             disabled={toggleAdmin.isPending}
                           >
-                            Make Admin
+                            Make Super Admin
                           </button>
                         )}
                       </td>
