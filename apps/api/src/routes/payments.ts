@@ -4,6 +4,7 @@ import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
 import { parseBody } from '../validators/common.js';
 import { processPayment, getPaymentIntentStatus } from '../lib/stripe.js';
+import { importBankTransactions } from '../lib/reconciliation.js';
 
 export const paymentRouter = Router();
 
@@ -14,6 +15,10 @@ const paymentSchema = z.object({
   receivedDate: z.coerce.date(),
   method: z.enum(['MANUAL', 'CASH', 'CHECK', 'BANK_TRANSFER', 'ONLINE_PROCESSOR']),
   reference: z.string().optional().nullable(),
+  // For check payments: create bank transaction when check is received
+  createBankTransaction: z.boolean().optional().default(false),
+  checkNumber: z.string().optional().nullable(),
+  checkDate: z.coerce.date().optional().nullable(),
 });
 
 const updateChargeStatus = async (chargeId: string) => {
@@ -98,15 +103,71 @@ paymentRouter.post('/', async (req, res, next) => {
         amount: data.amount,
         receivedDate: data.receivedDate,
         method: data.method,
-        reference: data.reference ?? undefined,
+        reference: data.reference ?? data.checkNumber ?? undefined,
       },
     });
+
+    // For check payments, optionally create a bank transaction record
+    // This represents the check being received (but not yet cleared)
+    let bankTransaction = null;
+    if (data.method === 'CHECK' && data.createBankTransaction) {
+      // Import as a bank transaction with status "pending" (not reconciled)
+      const transactions = await importBankTransactions(
+        req.auth.organizationId,
+        [
+          {
+            date: data.checkDate || data.receivedDate,
+            amount: data.amount,
+            description: `Check payment${data.checkNumber ? ` #${data.checkNumber}` : ''} - ${data.reference || 'Rent payment'}`,
+            reference: data.checkNumber || data.reference || undefined,
+            accountNumber: undefined,
+            accountName: undefined,
+          },
+        ],
+        'email' // Source: received via email
+      );
+
+      // Get the created transaction
+      if (transactions.imported > 0) {
+        bankTransaction = await prisma.bankTransaction.findFirst({
+          where: {
+            organizationId: req.auth.organizationId,
+            date: data.checkDate || data.receivedDate,
+            amount: data.amount,
+            reference: data.checkNumber || data.reference || undefined,
+          },
+          orderBy: { createdAt: 'desc' },
+        });
+
+        // Link payment to bank transaction (but don't mark as reconciled yet - wait for check to clear)
+        if (bankTransaction) {
+          await prisma.payment.update({
+            where: { id: payment.id },
+            data: { bankTransactionId: bankTransaction.id },
+          });
+        }
+      }
+    }
 
     if (payment.chargeId) {
       await updateChargeStatus(payment.chargeId);
     }
 
-    res.status(201).json({ data: payment });
+    res.status(201).json({
+      data: {
+        ...payment,
+        bankTransaction: bankTransaction
+          ? {
+              id: bankTransaction.id,
+              date: bankTransaction.date,
+              amount: bankTransaction.amount,
+              description: bankTransaction.description,
+              reference: bankTransaction.reference,
+              reconciled: bankTransaction.reconciled,
+            }
+          : null,
+      },
+    });
   } catch (err) {
     next(err);
   }

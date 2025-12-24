@@ -5,7 +5,7 @@ import { prisma } from './prisma.js';
 // Initialize Stripe client
 let stripeClient: Stripe | null = null;
 
-function getStripeClient(): Stripe {
+export function getStripeClient(): Stripe {
   if (!stripeClient) {
     const secretKey = process.env.STRIPE_SECRET_KEY;
     if (!secretKey) {

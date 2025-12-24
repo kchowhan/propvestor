@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import Stripe from 'stripe';
 import { prisma } from '../lib/prisma.js';
+import { importBankTransactions } from '../lib/reconciliation.js';
+import { getStripeClient } from '../lib/stripe.js';
 
 export const stripeWebhookRouter = Router();
 
@@ -96,11 +98,39 @@ async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
   }
 
   // Find payment record
-  const payment = await prisma.payment.findFirst({
+  let payment = await prisma.payment.findFirst({
     where: {
       stripePaymentIntentId: paymentIntent.id,
     },
   });
+
+  // Get charge to access organizationId
+  const charge = await prisma.charge.findUnique({
+    where: { id: chargeId },
+    include: { lease: true },
+  });
+
+  if (!charge) {
+    console.warn('Charge not found for payment intent:', paymentIntent.id);
+    return;
+  }
+
+  // Determine payment method type from payment intent
+  const paymentMethodType = paymentIntent.payment_method_types?.[0] === 'card' ? 'card' : 'ach';
+  const paymentMethod = paymentIntent.payment_method;
+  let actualPaymentMethodType: 'card' | 'ach' = paymentMethodType;
+  
+  // If we have a payment method ID, retrieve it to get the actual type
+  if (typeof paymentMethod === 'string') {
+    try {
+      const stripe = getStripeClient();
+      const pm = await stripe.paymentMethods.retrieve(paymentMethod);
+      actualPaymentMethodType = pm.type === 'card' ? 'card' : 'ach';
+    } catch (error) {
+      // Fall back to payment intent type
+      console.warn('Failed to retrieve payment method type:', error);
+    }
+  }
 
   if (payment) {
     // Update payment with charge ID if available
@@ -119,28 +149,87 @@ async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
     }
   } else {
     // Create payment record if it doesn't exist
-    const charge = await prisma.charge.findUnique({
-      where: { id: chargeId },
-      include: { lease: true },
+    payment = await prisma.payment.create({
+      data: {
+        organizationId: charge.organizationId,
+        leaseId: charge.leaseId ?? undefined,
+        chargeId: charge.id,
+        amount: charge.amount,
+        receivedDate: new Date(paymentIntent.created * 1000), // Use payment intent creation date
+        method: actualPaymentMethodType === 'card' ? 'STRIPE_CARD' : 'STRIPE_ACH',
+        stripePaymentIntentId: paymentIntent.id,
+        stripeChargeId: paymentIntent.charges?.data?.[0]?.id,
+        reference: paymentIntent.id,
+      },
     });
 
-    if (charge) {
-      await prisma.payment.create({
-        data: {
-          organizationId: charge.organizationId,
-          leaseId: charge.leaseId ?? undefined,
-          chargeId: charge.id,
-          amount: charge.amount,
-          receivedDate: new Date(),
-          method: 'STRIPE_ACH',
-          stripePaymentIntentId: paymentIntent.id,
-          stripeChargeId: paymentIntent.charges?.data?.[0]?.id,
-          reference: paymentIntent.id,
-        },
-      });
+    await updateChargeStatus(chargeId);
+  }
 
-      await updateChargeStatus(chargeId);
+  // Create organization fee for Stripe processing
+  try {
+    const { createStripeProcessingFee, getStripeFeeFromPaymentIntent } = await import('../lib/organization-fees.js');
+    const stripe = getStripeClient();
+    
+    // Try to get actual fee from Stripe
+    const actualFee = await getStripeFeeFromPaymentIntent(paymentIntent.id, stripe);
+    
+    // Create organization fee
+    await createStripeProcessingFee(
+      charge.organizationId,
+      payment.id,
+      Number(charge.amount),
+      actualPaymentMethodType,
+      paymentIntent.id,
+      actualFee ?? undefined
+    );
+  } catch (feeError: any) {
+    // Log error but don't fail the webhook - payment was successful
+    console.error('Failed to create Stripe processing fee:', feeError);
+  }
+
+  // Automatically create bank transaction for reconciliation
+  // Note: For ACH, actual bank deposit may be 2-7 days later, but we create the transaction
+  // record now for tracking. The date can be adjusted when the actual deposit clears.
+  try {
+    const stripeChargeId = paymentIntent.charges?.data?.[0]?.id || paymentIntent.id;
+    const amount = paymentIntent.amount / 100; // Convert from cents
+    const paymentDate = new Date(paymentIntent.created * 1000);
+
+    // Import as bank transaction
+    await importBankTransactions(
+      charge.organizationId,
+      [
+        {
+          date: paymentDate,
+          amount,
+          description: `Stripe payment - ${paymentIntent.id}${paymentIntent.description ? ` - ${paymentIntent.description}` : ''}`,
+          reference: stripeChargeId,
+          accountName: 'Stripe Account',
+        },
+      ],
+      'stripe'
+    );
+
+    // Link the bank transaction to the payment
+    const bankTransaction = await prisma.bankTransaction.findFirst({
+      where: {
+        organizationId: charge.organizationId,
+        reference: stripeChargeId,
+        date: paymentDate,
+      },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (bankTransaction && payment) {
+      await prisma.payment.update({
+        where: { id: payment.id },
+        data: { bankTransactionId: bankTransaction.id },
+      });
     }
+  } catch (error: any) {
+    // Log error but don't fail the webhook - payment was successful
+    console.error('Failed to create bank transaction for Stripe payment:', error);
   }
 }
 

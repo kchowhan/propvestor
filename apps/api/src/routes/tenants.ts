@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
 import { parseBody } from '../validators/common.js';
+import { requireLimit } from '../middleware/subscription.js';
 
 export const tenantRouter = Router();
 
@@ -72,7 +73,7 @@ tenantRouter.get('/', async (req, res, next) => {
   }
 });
 
-tenantRouter.post('/', async (req, res, next) => {
+tenantRouter.post('/', requireLimit('tenants'), async (req, res, next) => {
   try {
     if (!req.auth) {
       throw new AppError(401, 'UNAUTHORIZED', 'Missing auth context.');

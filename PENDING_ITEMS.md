@@ -143,24 +143,69 @@ This document lists all pending items that need to be implemented or configured 
 ## 🟢 Nice to Have - Missing Features
 
 ### 8. Bank Reconciliation API Endpoints
-**Status**: Library functions exist, but no API routes
+**Status**: ✅ Fully implemented
 
-**Location**: `apps/api/src/lib/reconciliation.ts` exists, but no route file
+**Location**: `apps/api/src/routes/reconciliation.ts`, `apps/web/src/pages/Billing.tsx`
 
-**What's Needed**:
-- [ ] Create `apps/api/src/routes/reconciliation.ts`
-- [ ] Add endpoints:
-  - `POST /reconciliation/import` - Import bank transactions
-  - `POST /reconciliation/create` - Create reconciliation
-  - `POST /reconciliation/match` - Manual match
-  - `GET /reconciliation/:id` - Get reconciliation details
+**What's Implemented**:
+- [x] Create `apps/api/src/routes/reconciliation.ts`
+- [x] Add endpoints:
+  - `POST /reconciliation` - Create reconciliation period
   - `GET /reconciliation` - List reconciliations
-- [ ] Add route to `apps/api/src/routes/index.ts`
-- [ ] Create frontend UI for reconciliation
+  - `GET /reconciliation/:id` - Get reconciliation details
+  - `POST /reconciliation/import-transactions` - Import bank transactions
+  - `POST /reconciliation/:id/match` - Manual match payment with transaction
+  - `POST /reconciliation/:id/auto-match` - Run auto-matching
+  - `PUT /reconciliation/:id/complete` - Complete reconciliation
+  - `PUT /reconciliation/bank-transactions/:id` - Update bank transaction
+  - `GET /reconciliation/unmatched/list` - List unmatched items
+- [x] Add route to `apps/api/src/routes/index.ts`
+- [x] Create frontend UI for reconciliation (Billing page with Reconciliation tab)
+- [x] Support for check payments with bank transaction creation
+- [x] Auto-matching algorithm (exact and fuzzy matching)
+- [x] Manual matching capability
+
+**See**: `apps/api/RECONCILIATION_WORKFLOW.md` for detailed workflow documentation
 
 ---
 
-### 9. Phase 2 - Investment Management
+### 9. Stripe Recurring Payment Tracking & Reconciliation
+**Status**: ✅ Partially implemented - Auto bank transaction creation added
+
+**Location**: `apps/api/src/routes/stripe-webhook.ts`, `apps/api/src/routes/billing.ts`
+
+**What's Implemented**:
+- [x] Automatic monthly rent generation via Google Cloud Scheduler
+- [x] Automatic payment processing using stored payment methods
+- [x] Stripe webhook handling for payment status updates
+- [x] Automatic bank transaction creation when Stripe payments succeed
+- [x] Payment records linked to bank transactions for reconciliation
+- [x] Documentation: `apps/api/STRIPE_RECURRING_PAYMENTS.md`
+
+**What's Needed**:
+- [ ] Import Stripe Balance Transactions API for accurate reconciliation
+  - [ ] Create endpoint to import Stripe balance transactions
+  - [ ] Match Stripe deposits with bank statement deposits
+  - [ ] Handle Stripe batching (multiple payments in one deposit)
+- [ ] Payment retry logic for failed payments
+  - [ ] Automatic retry for temporary failures
+  - [ ] Configurable retry schedule
+  - [ ] Notification system for failed payments
+- [ ] Payment analytics and monitoring
+  - [ ] Track payment success rates
+  - [ ] Monitor average processing times
+  - [ ] Identify problematic payment methods
+  - [ ] Dashboard for payment metrics
+- [ ] Enhanced reconciliation for Stripe
+  - [ ] Auto-reconcile Stripe payments monthly
+  - [ ] Email notifications for unmatched items
+  - [ ] Handle ACH timing differences (2-7 day delay)
+
+**See**: `apps/api/STRIPE_RECURRING_PAYMENTS.md` for detailed documentation
+
+---
+
+### 10. Phase 2 - Investment Management
 **Status**: Schema exists, no API or UI
 
 **Location**: `apps/api/prisma/schema.prisma` (Phase 2 models)
@@ -284,8 +329,8 @@ NEXT_PUBLIC_API_URL=http://localhost:5000
 - SMTP configuration
 
 **Nice to Have**:
-- Bank reconciliation API endpoints
+- Stripe recurring payment enhancements (Balance Transactions import, retry logic, analytics)
 - Phase 2 investment management features
 
-**Total Pending Items**: 9 major items + configuration for 7 external services
+**Total Pending Items**: 10 major items + configuration for 7 external services
 

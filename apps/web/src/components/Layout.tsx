@@ -16,6 +16,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
   const [isCreating, setIsCreating] = useState(false);
   
   // Check if user is OWNER in at least one organization
+  // Note: Backend will enforce additional restrictions (subscription plan, limits, feature flag)
   const canCreateOrganization = organizations.some((org) => org.role === 'OWNER');
 
   const handleOrgSwitch = async (orgId: string) => {

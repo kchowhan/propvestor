@@ -94,6 +94,14 @@ export const cleanupTestData = async () => {
   // Properties (reference organizations)
   try { await prisma.property.deleteMany(); } catch {}
   
+  // SaaS - Subscriptions (invoices before subscriptions, subscriptions before plans)
+  try { await prisma.invoice.deleteMany(); } catch {}
+  try { await prisma.subscription.deleteMany(); } catch {}
+  // Note: We don't delete subscription plans as they're shared across organizations
+  
+  // Organization fees (reference charges, payments, screening requests)
+  try { await prisma.organizationFee.deleteMany(); } catch {}
+  
   // Delete memberships before users and organizations (memberships reference both)
   try { await prisma.organizationMembership.deleteMany(); } catch {}
   // Delete users before organizations (users may have documents/reconciliations)

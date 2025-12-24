@@ -129,6 +129,55 @@ describe('Payments Routes', () => {
       expect(response.status).toBe(404);
     });
 
+    it('should create payment with check and bank transaction', async () => {
+      const response = await request(app)
+        .post('/api/payments')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          chargeId: testCharge.id,
+          amount: 1000,
+          receivedDate: '2024-01-15',
+          method: 'CHECK',
+          checkNumber: '1234',
+          createBankTransaction: true,
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.method).toBe('CHECK');
+      expect(response.body.data.bankTransaction).not.toBeNull();
+      expect(response.body.data.bankTransaction.reference).toBe('1234');
+      expect(response.body.data.bankTransaction.reconciled).toBe(false);
+
+      // Verify bank transaction was created in database
+      const bankTransaction = await prisma.bankTransaction.findFirst({
+        where: {
+          organizationId: testOrg.id,
+          reference: '1234',
+        },
+      });
+
+      expect(bankTransaction).not.toBeNull();
+      expect(Number(bankTransaction?.amount)).toBe(1000);
+    });
+
+    it('should create payment without bank transaction when not requested', async () => {
+      const response = await request(app)
+        .post('/api/payments')
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          chargeId: testCharge.id,
+          amount: 1000,
+          receivedDate: '2024-01-15',
+          method: 'CHECK',
+          checkNumber: '5678',
+          createBankTransaction: false,
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.data.method).toBe('CHECK');
+      expect(response.body.data.bankTransaction).toBeNull();
+    });
+
     it('should update charge status when payment is created', async () => {
       await request(app)
         .post('/api/payments')

@@ -50,6 +50,12 @@ const UsersIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
+const SubscriptionIcon = ({ className }: { className?: string }) => (
+  <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+  </svg>
+);
+
 const navItems = [
   { to: '/dashboard', label: 'Dashboard', icon: DashboardIcon },
   { to: '/properties', label: 'Properties', icon: PropertiesIcon },
@@ -57,6 +63,7 @@ const navItems = [
   { to: '/leases', label: 'Leases', icon: LeasesIcon },
   { to: '/billing', label: 'Billing / Rent Roll', icon: BillingIcon },
   { to: '/maintenance', label: 'Maintenance', icon: MaintenanceIcon },
+  { to: '/subscription', label: 'Subscription', icon: SubscriptionIcon },
 ];
 
 export const Sidebar = memo(() => {
@@ -72,7 +79,7 @@ export const Sidebar = memo(() => {
     if (path === '/dashboard') {
       return pathname === '/dashboard';
     }
-    return pathname.startsWith(path);
+    return pathname?.startsWith(path) ?? false;
   };
 
   return (

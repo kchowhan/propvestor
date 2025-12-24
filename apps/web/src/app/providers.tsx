@@ -3,7 +3,6 @@
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../context/AuthContext';
 import { ErrorBoundary } from '../components/ErrorBoundary';
-import { useState } from 'react';
 
 const queryClient = new QueryClient({
   defaultOptions: {

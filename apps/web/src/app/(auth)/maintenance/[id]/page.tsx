@@ -1,7 +1,7 @@
 'use client';
 
 import { Layout } from '@/components/Layout';
-import { WorkOrderDetailPage } from '@/pages/WorkOrderDetail';
+import { WorkOrderDetailPage } from '@/components/pages/WorkOrderDetail';
 
 export default function WorkOrderDetail() {
   return (

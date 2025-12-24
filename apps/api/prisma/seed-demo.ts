@@ -257,11 +257,11 @@ const run = async () => {
   // Create vendors for org1
   console.log('\n🔧 Creating vendors...');
   const vendors = [
-    { name: 'ABC Plumbing Services', email: 'contact@abcplumbing.com', phone: '(555) 123-4567', category: 'PLUMBING' },
-    { name: 'Bright Electric Co', email: 'service@brightelectric.com', phone: '(555) 345-6789', category: 'ELECTRICAL' },
-    { name: 'Cool Air Systems', email: 'info@coolairsystems.com', phone: '(555) 567-8901', category: 'HVAC' },
-    { name: 'Green Thumb Landscaping', email: 'info@greenthumb.com', phone: '(555) 901-2345', category: 'LANDSCAPING' },
-    { name: 'Pro Painters LLC', email: 'quote@propainters.com', phone: '(555) 123-7890', category: 'PAINTING' },
+    { name: 'ABC Plumbing Services', email: 'contact@abcplumbing.com', phone: '(555) 123-4567', website: 'https://www.abcplumbing.com', category: 'PLUMBING' },
+    { name: 'Bright Electric Co', email: 'service@brightelectric.com', phone: '(555) 345-6789', website: 'https://www.brightelectric.com', category: 'ELECTRICAL' },
+    { name: 'Cool Air Systems', email: 'info@coolairsystems.com', phone: '(555) 567-8901', website: 'https://www.coolairsystems.com', category: 'HVAC' },
+    { name: 'Green Thumb Landscaping', email: 'info@greenthumb.com', phone: '(555) 901-2345', website: 'https://www.greenthumb.com', category: 'LANDSCAPING' },
+    { name: 'Pro Painters LLC', email: 'quote@propainters.com', phone: '(555) 123-7890', website: 'https://www.propainters.com', category: 'PAINTING' },
   ];
 
   for (const vendorData of vendors) {

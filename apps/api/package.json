@@ -15,6 +15,7 @@
     "prisma:studio": "prisma studio",
     "seed": "tsx prisma/seed.ts",
     "seed:demo": "tsx prisma/seed-demo.ts",
+    "seed:plans": "tsx prisma/seed-plans.ts",
     "cleanup": "tsx prisma/cleanup.ts"
   },
   "dependencies": {

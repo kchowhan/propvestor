@@ -5,6 +5,7 @@ import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
 import { parseBody } from '../validators/common.js';
 import { sendWelcomeEmail } from '../lib/email.js';
+import { requireLimit } from '../middleware/subscription.js';
 
 export const userRouter = Router();
 
@@ -102,7 +103,7 @@ userRouter.get('/', async (req, res, next) => {
 });
 
 // Create new user and add to organization
-userRouter.post('/', async (req, res, next) => {
+userRouter.post('/', requireLimit('users'), async (req, res, next) => {
   try {
     if (!req.auth) {
       throw new AppError(401, 'UNAUTHORIZED', 'Missing auth context.');
@@ -215,7 +216,7 @@ userRouter.post('/', async (req, res, next) => {
 });
 
 // Add existing user to organization
-userRouter.post('/add-existing', async (req, res, next) => {
+userRouter.post('/add-existing', requireLimit('users'), async (req, res, next) => {
   try {
     if (!req.auth) {
       throw new AppError(401, 'UNAUTHORIZED', 'Missing auth context.');

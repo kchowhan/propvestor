@@ -19,11 +19,18 @@ const createOrganizationSchema = z.object({
 });
 
 // Create a new organization
-// Only users with OWNER role in at least one organization can create new organizations
+// Restricted: Only users with OWNER role AND appropriate subscription plan can create new organizations
+// This prevents abuse and ensures proper billing for multiple organizations
 organizationRouter.post('/', requireAuth, async (req, res, next) => {
   try {
     if (!req.auth) {
       throw new AppError(401, 'UNAUTHORIZED', 'Missing auth context.');
+    }
+
+    // Check if organization creation is enabled (feature flag)
+    const ORG_CREATION_ENABLED = process.env.ALLOW_ORG_CREATION !== 'false'; // Default: enabled
+    if (!ORG_CREATION_ENABLED) {
+      throw new AppError(403, 'FORBIDDEN', 'Organization creation is currently disabled. Please contact support.');
     }
 
     // Check if user has OWNER role in at least one organization
@@ -36,6 +43,48 @@ organizationRouter.post('/', requireAuth, async (req, res, next) => {
 
     if (!ownerMembership) {
       throw new AppError(403, 'FORBIDDEN', 'Only users with OWNER role can create new organizations.');
+    }
+
+    // Check subscription plan - only Enterprise plan allows multiple organizations
+    // OR if user has no subscription (first org creation during registration is allowed)
+    const subscription = await prisma.subscription.findUnique({
+      where: { organizationId: req.auth.organizationId },
+      include: { plan: true },
+    });
+    
+    if (subscription) {
+      const planSlug = subscription.plan.slug.toLowerCase();
+      const REQUIRES_ENTERPRISE = process.env.ORG_CREATION_REQUIRES_ENTERPRISE !== 'false'; // Default: requires Enterprise
+      
+      if (REQUIRES_ENTERPRISE && !planSlug.includes('enterprise')) {
+        throw new AppError(
+          403,
+          'SUBSCRIPTION_REQUIRED',
+          'Creating additional organizations requires an Enterprise plan. Please upgrade your subscription or contact support.'
+        );
+      }
+
+      // Optional: Limit number of organizations per user
+      const MAX_ORGS_PER_USER = process.env.MAX_ORGS_PER_USER 
+        ? parseInt(process.env.MAX_ORGS_PER_USER, 10) 
+        : null; // null = unlimited
+      
+      if (MAX_ORGS_PER_USER) {
+        const userOrgCount = await prisma.organizationMembership.count({
+          where: {
+            userId: req.auth.userId,
+            role: 'OWNER',
+          },
+        });
+
+        if (userOrgCount >= MAX_ORGS_PER_USER) {
+          throw new AppError(
+            403,
+            'LIMIT_EXCEEDED',
+            `You have reached the maximum number of organizations (${MAX_ORGS_PER_USER}). Please contact support to create additional organizations.`
+          );
+        }
+      }
     }
 
     const data = parseBody(createOrganizationSchema, req.body);

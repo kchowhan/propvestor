@@ -5,6 +5,7 @@ import { AppError } from '../lib/errors.js';
 import { parseBody } from '../validators/common.js';
 import { createScreeningApplication, getApplicationStatus } from '../lib/rentspree.js';
 import { sendAdverseActionNotice } from '../lib/email.js';
+import { createRentSpreeScreeningFee } from '../lib/organization-fees.js';
 
 export const screeningRouter = Router();
 
@@ -101,6 +102,22 @@ screeningRouter.post('/request', async (req, res, next) => {
         tenant: true,
       },
     });
+
+    // Create organization fee for RentSpree screening
+    // Default fee: $29.95 (typical RentSpree screening fee)
+    // This can be configured via environment variable or retrieved from RentSpree response
+    const rentspreeFeeAmount = parseFloat(process.env.RENTSPREE_SCREENING_FEE || '29.95');
+    try {
+      await createRentSpreeScreeningFee(
+        req.auth.organizationId,
+        screeningRequest.id,
+        rentspreeFeeAmount,
+        `Background check for ${tenant.firstName} ${tenant.lastName}`
+      );
+    } catch (feeError: any) {
+      // Log error but don't fail the screening request creation
+      console.error('Failed to create RentSpree screening fee:', feeError);
+    }
 
     // Update tenant status to SCREENING
     await prisma.tenant.update({

@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { PropertyDetailPage } from '../../pages/PropertyDetail';
+import { PropertyDetailPage } from '../../components/pages/PropertyDetail';
 
 const mockApiFetch = jest.fn();
 jest.mock('../../api/client', () => ({

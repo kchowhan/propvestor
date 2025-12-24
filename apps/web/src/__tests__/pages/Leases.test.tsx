@@ -1,6 +1,6 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
-import { LeasesPage } from '../../pages/Leases';
+import { LeasesPage } from '../../components/pages/Leases';
 
 const mockApiFetch = jest.fn();
 jest.mock('../../api/client', () => ({

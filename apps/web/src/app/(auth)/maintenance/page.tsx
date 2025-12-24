@@ -1,7 +1,7 @@
 'use client';
 
 import { Layout } from '@/components/Layout';
-import { MaintenancePage } from '@/pages/Maintenance';
+import { MaintenancePage } from '@/components/pages/Maintenance';
 
 export default function Maintenance() {
   return (

@@ -19,6 +19,9 @@ import { paymentMethodRouter } from './payment-methods.js';
 import { stripeWebhookRouter } from './stripe-webhook.js';
 import { screeningRouter } from './screening.js';
 import { rentspreeWebhookRouter } from './rentspree-webhook.js';
+import { reconciliationRouter } from './reconciliation.js';
+import { subscriptionRouter } from './subscriptions.js';
+import { organizationFeesRouter } from './organization-fees.js';
 
 export const router = Router();
 
@@ -32,6 +35,8 @@ router.use('/auth', authRouter);
 router.use('/docusign', docusignWebhookRouter);
 router.use('/stripe', stripeWebhookRouter);
 router.use('/rentspree', rentspreeWebhookRouter);
+// Subscriptions - webhook is public, other routes require auth (handled in subscriptionRouter)
+router.use('/subscriptions', subscriptionRouter);
 // Payment methods - publishable key endpoint (no auth required - safe to expose)
 router.use('/payment-methods', paymentMethodRouter);
 // Billing - can be called by scheduler (with secret) or authenticated user
@@ -46,9 +51,12 @@ router.use('/screening', screeningRouter);
 router.use('/leases', leaseRouter);
 router.use('/charges', chargeRouter);
 router.use('/payments', paymentRouter);
+router.use('/reconciliation', reconciliationRouter);
+router.use('/subscriptions', subscriptionRouter);
 router.use('/work-orders', workOrderRouter);
 router.use('/vendors', vendorRouter);
 router.use('/documents', documentRouter);
 router.use('/reports', reportRouter);
 router.use('/users', userRouter);
 router.use('/organizations', organizationRouter);
+router.use('/organization-fees', organizationFeesRouter);

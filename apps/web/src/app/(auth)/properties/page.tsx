@@ -1,7 +1,7 @@
 'use client';
 
 import { Layout } from '@/components/Layout';
-import { PropertiesPage } from '@/pages/Properties';
+import { PropertiesPage } from '@/components/pages/Properties';
 
 export default function Properties() {
   return (

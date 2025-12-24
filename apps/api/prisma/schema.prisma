@@ -45,6 +45,7 @@ enum ChargeType {
   RENT
   LATE_FEE
   UTILITY
+  SERVICE_FEE // Organization fees (RentSpree, Stripe processing, etc.)
   OTHER
 }
 
@@ -95,13 +96,13 @@ enum WorkOrderCategory {
 }
 
 enum TenantStatus {
-  PROSPECT      // Just added, not yet screened
-  SCREENING     // Screening in progress
-  APPROVED      // Approved but no active lease
-  ACTIVE        // Has active lease
-  INACTIVE      // No active lease (former tenant)
-  DECLINED      // Application declined
-  WITHDRAWN     // Applicant withdrew
+  PROSPECT // Just added, not yet screened
+  SCREENING // Screening in progress
+  APPROVED // Approved but no active lease
+  ACTIVE // Has active lease
+  INACTIVE // No active lease (former tenant)
+  DECLINED // Application declined
+  WITHDRAWN // Applicant withdrew
 }
 
 enum InvestmentEntityType {
@@ -113,44 +114,48 @@ enum InvestmentEntityType {
 }
 
 model User {
-  id           String                   @id @default(uuid()) @db.Uuid
-  email        String                   @unique
-  passwordHash String
-  name         String
-  createdAt    DateTime                 @default(now())
-  updatedAt    DateTime                 @updatedAt
-  memberships  OrganizationMembership[]
-  documents    Document[]               @relation("UploadedBy")
-  reconciliationsReviewed Reconciliation[] @relation("ReviewedBy")
+  id                      String                   @id @default(uuid()) @db.Uuid
+  email                   String                   @unique
+  passwordHash            String
+  name                    String
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  memberships             OrganizationMembership[]
+  documents               Document[]               @relation("UploadedBy")
+  reconciliationsReviewed Reconciliation[]         @relation("ReviewedBy")
 }
 
 // Organization is the central entity that contains BOTH property management and investment management data.
 // The same user with the same role can access all features within an organization.
 // There is no separation between property management and investment management - they are unified.
 model Organization {
-  id           String                   @id @default(uuid()) @db.Uuid
-  name         String
-  slug         String                   @unique
-  createdAt    DateTime                 @default(now())
-  updatedAt    DateTime                 @updatedAt
-  memberships  OrganizationMembership[]
+  id                   String                   @id @default(uuid()) @db.Uuid
+  name                 String
+  slug                 String                   @unique
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+  memberships          OrganizationMembership[]
   // Property Management (Phase 1)
-  properties   Property[]
-  tenants      Tenant[]
-  leases       Lease[]
-  charges      Charge[]
-  payments     Payment[]
-  workOrders   WorkOrder[]
-  vendors      Vendor[]
-  documents    Document[]
-  screeningRequests ScreeningRequest[]
+  properties           Property[]
+  tenants              Tenant[]
+  leases               Lease[]
+  charges              Charge[]
+  payments             Payment[]
+  workOrders           WorkOrder[]
+  vendors              Vendor[]
+  documents            Document[]
+  screeningRequests    ScreeningRequest[]
   // Investment Management (Phase 2)
-  investors    Investor[]
-  entities     InvestmentEntity[]
+  investors            Investor[]
+  entities             InvestmentEntity[]
   // Payment processing
   tenantPaymentMethods TenantPaymentMethod[]
-  bankTransactions BankTransaction[]
-  reconciliations Reconciliation[]
+  bankTransactions     BankTransaction[]
+  reconciliations      Reconciliation[]
+  // SaaS - Subscriptions
+  subscription         Subscription?
+  // Organization fees (RentSpree, Stripe processing, etc.)
+  organizationFees     OrganizationFee[]
 }
 
 // OrganizationMembership links a User to an Organization with a single role.
@@ -173,8 +178,8 @@ model OrganizationMembership {
 }
 
 model Property {
-  id              String          @id @default(uuid()) @db.Uuid
-  organizationId  String          @db.Uuid
+  id              String         @id @default(uuid()) @db.Uuid
+  organizationId  String         @db.Uuid
   name            String
   addressLine1    String
   addressLine2    String?
@@ -183,15 +188,15 @@ model Property {
   postalCode      String
   country         String
   type            PropertyType
-  status          PropertyStatus  @default(ACTIVE)
-  purchasePrice   Decimal?        @db.Decimal(12, 2)
+  status          PropertyStatus @default(ACTIVE)
+  purchasePrice   Decimal?       @db.Decimal(12, 2)
   acquisitionDate DateTime?
   notes           String?
   archivedAt      DateTime?
-  createdAt       DateTime        @default(now())
-  updatedAt       DateTime        @updatedAt
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
+  organization Organization        @relation(fields: [organizationId], references: [id])
   units        Unit[]
   charges      Charge[]
   workOrders   WorkOrder[]
@@ -204,19 +209,19 @@ model Property {
 }
 
 model Unit {
-  id          String     @id @default(uuid()) @db.Uuid
-  propertyId  String     @db.Uuid
-  name        String
-  bedrooms    Int?
-  bathrooms   Float?
-  squareFeet  Int?
-  marketRent  Decimal?   @db.Decimal(12, 2)
-  status      UnitStatus @default(VACANT)
-  archivedAt  DateTime?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+  id         String     @id @default(uuid()) @db.Uuid
+  propertyId String     @db.Uuid
+  name       String
+  bedrooms   Int?
+  bathrooms  Float?
+  squareFeet Int?
+  marketRent Decimal?   @db.Decimal(12, 2)
+  status     UnitStatus @default(VACANT)
+  archivedAt DateTime?
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
 
-  property   Property @relation(fields: [propertyId], references: [id])
+  property   Property    @relation(fields: [propertyId], references: [id])
   leases     Lease[]
   charges    Charge[]
   workOrders WorkOrder[]
@@ -229,23 +234,23 @@ model Unit {
 // Tenant represents both applicants and active tenants
 // Status determines their current stage in the rental process
 model Tenant {
-  id             String         @id @default(uuid()) @db.Uuid
-  organizationId String         @db.Uuid
-  firstName       String
-  lastName        String
-  email           String?
-  phone           String?
-  notes           String?
+  id               String       @id @default(uuid()) @db.Uuid
+  organizationId   String       @db.Uuid
+  firstName        String
+  lastName         String
+  email            String?
+  phone            String?
+  notes            String?
   // Application/Property context (for applicants/prospects)
-  propertyId     String?        @db.Uuid
-  unitId         String?        @db.Uuid
+  propertyId       String?      @db.Uuid
+  unitId           String?      @db.Uuid
   // Status: PROSPECT, SCREENING, APPROVED, ACTIVE, INACTIVE, DECLINED, WITHDRAWN
-  status         TenantStatus  @default(PROSPECT)
+  status           TenantStatus @default(PROSPECT)
   // Stripe integration (only for active tenants)
   stripeCustomerId String?      @unique
-  archivedAt     DateTime?
-  createdAt      DateTime       @default(now())
-  updatedAt      DateTime       @updatedAt
+  archivedAt       DateTime?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
 
   organization      Organization          @relation(fields: [organizationId], references: [id])
   property          Property?             @relation(fields: [propertyId], references: [id])
@@ -264,34 +269,35 @@ model Tenant {
 
 // ScreeningRequest tracks a tenant screening request via RentSpree
 model ScreeningRequest {
-  id                String   @id @default(uuid()) @db.Uuid
-  organizationId    String   @db.Uuid
-  tenantId          String   @db.Uuid
+  id                  String    @id @default(uuid()) @db.Uuid
+  organizationId      String    @db.Uuid
+  tenantId            String    @db.Uuid
   // RentSpree integration
-  externalRequestId String?  @unique // RentSpree application/request ID
-  applicationUrl    String?  // Link for applicant to complete screening
+  externalRequestId   String?   @unique // RentSpree application/request ID
+  applicationUrl      String? // Link for applicant to complete screening
   // Status tracking: PENDING, IN_PROGRESS, COMPLETED, APPROVED, BORDERLINE, DECLINED, ERROR
-  status            String   @default("PENDING")
+  status              String    @default("PENDING")
   // Screening results (summary fields from RentSpree)
-  recommendation    String?  // 'APPROVED', 'BORDERLINE', 'DECLINED'
-  creditScore       Int?     // Credit score if available
-  incomeVerified    Boolean? @default(false)
-  evictionHistory   Boolean? @default(false)
-  criminalHistory   Boolean? @default(false)
-  flags             String?  // JSON array of flags/warnings
+  recommendation      String? // 'APPROVED', 'BORDERLINE', 'DECLINED'
+  creditScore         Int? // Credit score if available
+  incomeVerified      Boolean?  @default(false)
+  evictionHistory     Boolean?  @default(false)
+  criminalHistory     Boolean?  @default(false)
+  flags               String? // JSON array of flags/warnings
   // PDF report
-  reportPdfUrl      String?  // URL to full screening report PDF
+  reportPdfUrl        String? // URL to full screening report PDF
   // FCRA compliance
-  adverseActionSent Boolean  @default(false)
+  adverseActionSent   Boolean   @default(false)
   adverseActionSentAt DateTime?
   // Metadata
-  requestedAt       DateTime @default(now())
-  completedAt       DateTime?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  requestedAt         DateTime  @default(now())
+  completedAt         DateTime?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  tenant        Tenant       @relation(fields: [tenantId], references: [id])
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  tenant           Tenant            @relation(fields: [tenantId], references: [id])
+  organizationFees OrganizationFee[]
 
   @@index([organizationId])
   @@index([tenantId])
@@ -300,24 +306,24 @@ model ScreeningRequest {
 }
 
 model Lease {
-  id                String        @id @default(uuid()) @db.Uuid
-  organizationId    String        @db.Uuid
-  unitId            String        @db.Uuid
-  startDate         DateTime
-  endDate           DateTime
-  rentAmount        Decimal       @db.Decimal(12, 2)
-  depositAmount     Decimal?      @db.Decimal(12, 2)
-  rentDueDay        Int
-  status            LeaseStatus   @default(DRAFT)
+  id                 String      @id @default(uuid()) @db.Uuid
+  organizationId     String      @db.Uuid
+  unitId             String      @db.Uuid
+  startDate          DateTime
+  endDate            DateTime
+  rentAmount         Decimal     @db.Decimal(12, 2)
+  depositAmount      Decimal?    @db.Decimal(12, 2)
+  rentDueDay         Int
+  status             LeaseStatus @default(DRAFT)
   // DocuSign tracking
-  docusignEnvelopeId String?      @unique
-  signatureStatus   String?       // 'sent', 'delivered', 'signed', 'completed', 'declined', 'voided'
-  signedPdfUrl      String?       // URL to the signed PDF in GCS
-  createdAt         DateTime      @default(now())
-  updatedAt         DateTime      @updatedAt
+  docusignEnvelopeId String?     @unique
+  signatureStatus    String? // 'sent', 'delivered', 'signed', 'completed', 'declined', 'voided'
+  signedPdfUrl       String? // URL to the signed PDF in GCS
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  unit         Unit         @relation(fields: [unitId], references: [id])
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  unit         Unit          @relation(fields: [unitId], references: [id])
   tenants      LeaseTenant[]
   charges      Charge[]
   payments     Payment[]
@@ -354,11 +360,12 @@ model Charge {
   createdAt      DateTime     @default(now())
   updatedAt      DateTime     @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  property     Property?    @relation(fields: [propertyId], references: [id])
-  unit         Unit?        @relation(fields: [unitId], references: [id])
-  lease        Lease?       @relation(fields: [leaseId], references: [id])
-  payments     Payment[]
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  property         Property?         @relation(fields: [propertyId], references: [id])
+  unit             Unit?             @relation(fields: [unitId], references: [id])
+  lease            Lease?            @relation(fields: [leaseId], references: [id])
+  payments         Payment[]
+  organizationFees OrganizationFee[]
 
   @@index([organizationId])
   @@index([leaseId])
@@ -381,17 +388,18 @@ model Payment {
   // Reconciliation
   reconciled            Boolean       @default(false)
   reconciliationId      String?       @db.Uuid
-  bankTransactionId     String?       @db.Uuid @unique
+  bankTransactionId     String?       @unique @db.Uuid
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
 
-  organization        Organization        @relation(fields: [organizationId], references: [id])
-  lease               Lease?              @relation(fields: [leaseId], references: [id])
-  charge              Charge?             @relation(fields: [chargeId], references: [id])
-  reconciliation      Reconciliation?     @relation(fields: [reconciliationId], references: [id])
-  bankTransaction     BankTransaction?    @relation(fields: [bankTransactionId], references: [id])
+  organization        Organization         @relation(fields: [organizationId], references: [id])
+  lease               Lease?               @relation(fields: [leaseId], references: [id])
+  charge              Charge?              @relation(fields: [chargeId], references: [id])
+  reconciliation      Reconciliation?      @relation(fields: [reconciliationId], references: [id])
+  bankTransaction     BankTransaction?     @relation(fields: [bankTransactionId], references: [id])
   paymentMethod       TenantPaymentMethod? @relation(fields: [stripePaymentMethodId], references: [stripePaymentMethodId])
   reconciliationMatch ReconciliationMatch? @relation("MatchPayment")
+  organizationFees    OrganizationFee[]
 
   @@index([organizationId])
   @@index([chargeId])
@@ -401,27 +409,27 @@ model Payment {
 
 // Payment methods stored for tenants (bank accounts, cards via Stripe)
 model TenantPaymentMethod {
-  id                   String   @id @default(uuid()) @db.Uuid
-  tenantId             String   @db.Uuid
-  organizationId       String   @db.Uuid
-  stripePaymentMethodId String  @unique // Stripe payment method ID
-  type                 String   // 'ach_debit', 'card', 'us_bank_account'
-  isDefault            Boolean  @default(false)
+  id                    String   @id @default(uuid()) @db.Uuid
+  tenantId              String   @db.Uuid
+  organizationId        String   @db.Uuid
+  stripePaymentMethodId String   @unique // Stripe payment method ID
+  type                  String // 'ach_debit', 'card', 'us_bank_account'
+  isDefault             Boolean  @default(false)
   // Bank account details (last 4 digits, bank name)
-  last4                String?
-  bankName             String?
+  last4                 String?
+  bankName              String?
   // Card details (last 4 digits, brand, expiry)
-  cardBrand            String?
-  cardExpMonth         Int?
-  cardExpYear          Int?
+  cardBrand             String?
+  cardExpMonth          Int?
+  cardExpYear           Int?
   // Status
-  isActive             Boolean  @default(true)
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
-  tenant        Tenant     @relation(fields: [tenantId], references: [id])
-  organization  Organization @relation(fields: [organizationId], references: [id])
-  payments      Payment[]
+  tenant       Tenant       @relation(fields: [tenantId], references: [id])
+  organization Organization @relation(fields: [organizationId], references: [id])
+  payments     Payment[]
 
   @@index([tenantId])
   @@index([organizationId])
@@ -430,29 +438,29 @@ model TenantPaymentMethod {
 
 // Bank transactions imported from bank statements
 model BankTransaction {
-  id             String   @id @default(uuid()) @db.Uuid
-  organizationId String   @db.Uuid
+  id               String   @id @default(uuid()) @db.Uuid
+  organizationId   String   @db.Uuid
   // Transaction details
-  date           DateTime
-  amount         Decimal  @db.Decimal(12, 2)
-  description    String
-  reference      String?  // Check number, transaction ID, etc.
+  date             DateTime
+  amount           Decimal  @db.Decimal(12, 2)
+  description      String
+  reference        String? // Check number, transaction ID, etc.
   // Bank account info
-  accountNumber  String?  // Last 4 digits
-  accountName    String?
+  accountNumber    String? // Last 4 digits
+  accountName      String?
   // Reconciliation
-  reconciled     Boolean  @default(false)
-  reconciliationId String? @db.Uuid
-  paymentId      String?  @db.Uuid
+  reconciled       Boolean  @default(false)
+  reconciliationId String?  @db.Uuid
+  paymentId        String?  @db.Uuid
   // Import metadata
-  importedAt     DateTime @default(now())
-  importSource   String?  // 'csv', 'ofx', 'manual', etc.
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  importedAt       DateTime @default(now())
+  importSource     String? // 'csv', 'ofx', 'manual', etc.
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
-  organization   Organization  @relation(fields: [organizationId], references: [id])
-  reconciliation Reconciliation? @relation(fields: [reconciliationId], references: [id])
-  payment        Payment?
+  organization        Organization         @relation(fields: [organizationId], references: [id])
+  reconciliation      Reconciliation?      @relation(fields: [reconciliationId], references: [id])
+  payment             Payment?
   reconciliationMatch ReconciliationMatch? @relation("MatchTransaction")
 
   @@index([organizationId])
@@ -462,26 +470,26 @@ model BankTransaction {
 
 // Reconciliation records
 model Reconciliation {
-  id             String   @id @default(uuid()) @db.Uuid
-  organizationId String   @db.Uuid
+  id             String    @id @default(uuid()) @db.Uuid
+  organizationId String    @db.Uuid
   // Period
   startDate      DateTime
   endDate        DateTime
   // Status: PENDING, IN_PROGRESS, COMPLETED, REVIEWED
-  status         String   @default("PENDING")
+  status         String    @default("PENDING")
   // Totals
-  expectedTotal  Decimal? @db.Decimal(12, 2)
-  actualTotal    Decimal? @db.Decimal(12, 2)
-  difference     Decimal? @db.Decimal(12, 2)
+  expectedTotal  Decimal?  @db.Decimal(12, 2)
+  actualTotal    Decimal?  @db.Decimal(12, 2)
+  difference     Decimal?  @db.Decimal(12, 2)
   // Metadata
   notes          String?
-  reviewedBy     String?  @db.Uuid
+  reviewedBy     String?   @db.Uuid
   reviewedAt     DateTime?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
 
-  organization     Organization      @relation(fields: [organizationId], references: [id])
-  reviewer         User?             @relation("ReviewedBy", fields: [reviewedBy], references: [id])
+  organization     Organization          @relation(fields: [organizationId], references: [id])
+  reviewer         User?                 @relation("ReviewedBy", fields: [reviewedBy], references: [id])
   payments         Payment[]
   bankTransactions BankTransaction[]
   matches          ReconciliationMatch[]
@@ -492,19 +500,19 @@ model Reconciliation {
 
 // Matches between payments and bank transactions
 model ReconciliationMatch {
-  id             String   @id @default(uuid()) @db.Uuid
-  reconciliationId String? @db.Uuid
-  paymentId      String?  @db.Uuid @unique
-  bankTransactionId String? @db.Uuid @unique
+  id                String   @id @default(uuid()) @db.Uuid
+  reconciliationId  String?  @db.Uuid
+  paymentId         String?  @unique @db.Uuid
+  bankTransactionId String?  @unique @db.Uuid
   // Match details
-  matchType      String   // 'auto', 'manual', 'suggested'
-  confidence     Decimal? @db.Decimal(5, 2) // 0-100, for auto matches
-  notes          String?
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+  matchType         String // 'auto', 'manual', 'suggested'
+  confidence        Decimal? @db.Decimal(5, 2) // 0-100, for auto matches
+  notes             String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  reconciliation Reconciliation? @relation(fields: [reconciliationId], references: [id])
-  payment        Payment?        @relation("MatchPayment", fields: [paymentId], references: [id])
+  reconciliation  Reconciliation?  @relation(fields: [reconciliationId], references: [id])
+  payment         Payment?         @relation("MatchPayment", fields: [paymentId], references: [id])
   bankTransaction BankTransaction? @relation("MatchTransaction", fields: [bankTransactionId], references: [id])
 
   @@index([reconciliationId])
@@ -531,11 +539,11 @@ model WorkOrder {
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
 
-  organization  Organization @relation(fields: [organizationId], references: [id])
-  property      Property     @relation(fields: [propertyId], references: [id])
-  unit          Unit?        @relation(fields: [unitId], references: [id])
-  requestedBy   Tenant?      @relation("RequestedBy", fields: [requestedByTenantId], references: [id])
-  assignedVendor Vendor?     @relation(fields: [assignedVendorId], references: [id])
+  organization   Organization @relation(fields: [organizationId], references: [id])
+  property       Property     @relation(fields: [propertyId], references: [id])
+  unit           Unit?        @relation(fields: [unitId], references: [id])
+  requestedBy    Tenant?      @relation("RequestedBy", fields: [requestedByTenantId], references: [id])
+  assignedVendor Vendor?      @relation(fields: [assignedVendorId], references: [id])
 
   @@index([organizationId])
   @@index([propertyId])
@@ -562,17 +570,17 @@ model Vendor {
 }
 
 model Document {
-  id               String     @id @default(uuid()) @db.Uuid
-  organizationId   String     @db.Uuid
-  propertyId       String?    @db.Uuid
-  unitId           String?    @db.Uuid
-  leaseId          String?    @db.Uuid
-  tenantId         String?    @db.Uuid
+  id               String   @id @default(uuid()) @db.Uuid
+  organizationId   String   @db.Uuid
+  propertyId       String?  @db.Uuid
+  unitId           String?  @db.Uuid
+  leaseId          String?  @db.Uuid
+  tenantId         String?  @db.Uuid
   fileName         String
   fileType         String
   storageKey       String
-  uploadedByUserId String     @db.Uuid
-  uploadedAt       DateTime   @default(now())
+  uploadedByUserId String   @db.Uuid
+  uploadedAt       DateTime @default(now())
 
   organization Organization @relation(fields: [organizationId], references: [id])
   property     Property?    @relation(fields: [propertyId], references: [id])
@@ -585,17 +593,17 @@ model Document {
 }
 
 model Investor {
-  id             String       @id @default(uuid()) @db.Uuid
-  organizationId String       @db.Uuid
+  id             String   @id @default(uuid()) @db.Uuid
+  organizationId String   @db.Uuid
   name           String
   email          String?
   phone          String?
   notes          String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  ownerships   Ownership[]
+  organization  Organization          @relation(fields: [organizationId], references: [id])
+  ownerships    Ownership[]
   contributions CapitalContribution[]
   distributions Distribution[]
 
@@ -610,24 +618,24 @@ model InvestmentEntity {
   createdAt      DateTime             @default(now())
   updatedAt      DateTime             @updatedAt
 
-  organization Organization @relation(fields: [organizationId], references: [id])
-  ownerships   Ownership[]
+  organization  Organization          @relation(fields: [organizationId], references: [id])
+  ownerships    Ownership[]
   contributions CapitalContribution[]
   distributions Distribution[]
-  valuations   ValuationSnapshot[]
+  valuations    ValuationSnapshot[]
 
   @@index([organizationId])
 }
 
 model Ownership {
-  id                 String            @id @default(uuid()) @db.Uuid
-  investmentEntityId String            @db.Uuid
-  investorId         String            @db.Uuid
-  propertyId         String?           @db.Uuid
-  percentage         Decimal           @db.Decimal(5, 2)
+  id                 String   @id @default(uuid()) @db.Uuid
+  investmentEntityId String   @db.Uuid
+  investorId         String   @db.Uuid
+  propertyId         String?  @db.Uuid
+  percentage         Decimal  @db.Decimal(5, 2)
   effectiveDate      DateTime
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   investmentEntity InvestmentEntity @relation(fields: [investmentEntityId], references: [id])
   investor         Investor         @relation(fields: [investorId], references: [id])
@@ -638,14 +646,14 @@ model Ownership {
 }
 
 model CapitalContribution {
-  id                 String            @id @default(uuid()) @db.Uuid
-  investmentEntityId String            @db.Uuid
-  investorId         String            @db.Uuid
+  id                 String   @id @default(uuid()) @db.Uuid
+  investmentEntityId String   @db.Uuid
+  investorId         String   @db.Uuid
   date               DateTime
-  amount             Decimal           @db.Decimal(12, 2)
+  amount             Decimal  @db.Decimal(12, 2)
   notes              String?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   investmentEntity InvestmentEntity @relation(fields: [investmentEntityId], references: [id])
   investor         Investor         @relation(fields: [investorId], references: [id])
@@ -655,14 +663,14 @@ model CapitalContribution {
 }
 
 model Distribution {
-  id                 String            @id @default(uuid()) @db.Uuid
-  investmentEntityId String            @db.Uuid
-  investorId         String            @db.Uuid
+  id                 String   @id @default(uuid()) @db.Uuid
+  investmentEntityId String   @db.Uuid
+  investorId         String   @db.Uuid
   date               DateTime
-  amount             Decimal           @db.Decimal(12, 2)
+  amount             Decimal  @db.Decimal(12, 2)
   notes              String?
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   investmentEntity InvestmentEntity @relation(fields: [investmentEntityId], references: [id])
   investor         Investor         @relation(fields: [investorId], references: [id])
@@ -672,17 +680,123 @@ model Distribution {
 }
 
 model ValuationSnapshot {
-  id                 String            @id @default(uuid()) @db.Uuid
-  investmentEntityId String            @db.Uuid
-  propertyId         String?           @db.Uuid
+  id                 String   @id @default(uuid()) @db.Uuid
+  investmentEntityId String   @db.Uuid
+  propertyId         String?  @db.Uuid
   date               DateTime
-  value              Decimal           @db.Decimal(14, 2)
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
+  value              Decimal  @db.Decimal(14, 2)
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
   investmentEntity InvestmentEntity @relation(fields: [investmentEntityId], references: [id])
   property         Property?        @relation(fields: [propertyId], references: [id])
 
   @@index([investmentEntityId])
   @@index([propertyId])
+}
+
+// SaaS - Subscription Management
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+enum InvoiceStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model SubscriptionPlan {
+  id              String   @id @default(uuid()) @db.Uuid
+  name            String // "Free", "Basic", "Pro", "Enterprise"
+  slug            String   @unique
+  price           Decimal  @db.Decimal(10, 2)
+  billingInterval String // "monthly", "annual"
+  features        Json // Feature flags: { properties: true, reports: true, api: false }
+  limits          Json // Usage limits: { properties: 10, tenants: 50, users: 5, storage: 1000 }
+  stripePriceId   String?  @unique // Stripe Price ID
+  isActive        Boolean  @default(true)
+  displayOrder    Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  subscriptions Subscription[]
+
+  @@index([isActive, displayOrder])
+}
+
+model Subscription {
+  id                   String             @id @default(uuid()) @db.Uuid
+  organizationId       String             @unique @db.Uuid
+  planId               String             @db.Uuid
+  status               SubscriptionStatus // ACTIVE, TRIAL, CANCELLED, EXPIRED, PAST_DUE
+  currentPeriodStart   DateTime
+  currentPeriodEnd     DateTime
+  cancelAtPeriodEnd    Boolean            @default(false)
+  trialEndsAt          DateTime?
+  stripeSubscriptionId String?            @unique
+  stripeCustomerId     String?
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+
+  organization Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  plan         SubscriptionPlan @relation(fields: [planId], references: [id])
+  invoices     Invoice[]
+
+  @@index([organizationId])
+  @@index([status])
+  @@index([stripeSubscriptionId])
+}
+
+model Invoice {
+  id              String        @id @default(uuid()) @db.Uuid
+  subscriptionId  String        @db.Uuid
+  amount          Decimal       @db.Decimal(10, 2)
+  status          InvoiceStatus // PENDING, PAID, FAILED, REFUNDED
+  stripeInvoiceId String?       @unique
+  dueDate         DateTime
+  paidAt          DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@index([subscriptionId])
+  @@index([status])
+  @@index([stripeInvoiceId])
+}
+
+// Organization fees that the organization pays (RentSpree screening, Stripe processing, etc.)
+model OrganizationFee {
+  id                 String   @id @default(uuid()) @db.Uuid
+  organizationId     String   @db.Uuid
+  feeType            String // 'RENTSPREE_SCREENING', 'STRIPE_PROCESSING', etc.
+  amount             Decimal  @db.Decimal(12, 2)
+  description        String
+  // Link to source
+  screeningRequestId String?  @db.Uuid // If fee is from RentSpree screening
+  paymentId          String?  @db.Uuid // If fee is from Stripe payment processing
+  chargeId           String?  @db.Uuid // Charge created for this fee
+  // Stripe-specific fields
+  stripeFeeAmount    Decimal? @db.Decimal(12, 2) // Actual Stripe fee (if applicable)
+  stripeFeeType      String? // 'application_fee', 'processing_fee', etc.
+  // Metadata
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+
+  organization     Organization      @relation(fields: [organizationId], references: [id])
+  screeningRequest ScreeningRequest? @relation(fields: [screeningRequestId], references: [id])
+  payment          Payment?          @relation(fields: [paymentId], references: [id])
+  charge           Charge?           @relation(fields: [chargeId], references: [id])
+
+  @@index([organizationId])
+  @@index([feeType])
+  @@index([screeningRequestId])
+  @@index([paymentId])
+  @@index([chargeId])
 }

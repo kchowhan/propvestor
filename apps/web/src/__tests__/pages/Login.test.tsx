@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { LoginPage } from '../../pages/Login';
+import { LoginPage } from '../../components/pages/Login';
 
 // Mock next/navigation
 const mockPush = jest.fn();
