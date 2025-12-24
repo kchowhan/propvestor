@@ -171,44 +171,43 @@ export default function PricingPage() {
                 </ul>
               </div>
 
-              <button
-                onClick={() => subscribe.mutate(plan.id)}
-                disabled={subscribe.isPending || isCurrentPlan}
-                className={`w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
-                  isCurrentPlan
-                    ? 'bg-slate-200 text-slate-600 cursor-not-allowed'
+              {isCurrentPlan ? (
+                <a
+                  href="/subscription"
+                  className="w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors bg-primary-600 text-white hover:bg-primary-700 text-center block"
+                >
+                  Manage
+                </a>
+              ) : (
+                <button
+                  onClick={() => subscribe.mutate(plan.id)}
+                  disabled={subscribe.isPending}
+                  className={`w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
+                    isDowngrade
+                      ? 'bg-orange-600 text-white hover:bg-orange-700'
+                      : isPopular
+                      ? 'bg-primary-600 text-white hover:bg-primary-700'
+                      : 'bg-ink text-white hover:bg-ink/90'
+                  } disabled:opacity-50`}
+                >
+                  {subscribe.isPending
+                    ? isDowngrade
+                      ? 'Downgrading...'
+                      : 'Subscribing...'
                     : isDowngrade
-                    ? 'bg-orange-600 text-white hover:bg-orange-700'
-                    : isPopular
-                    ? 'bg-primary-600 text-white hover:bg-primary-700'
-                    : 'bg-ink text-white hover:bg-ink/90'
-                } disabled:opacity-50`}
-              >
-                {isCurrentPlan
-                  ? 'Current Plan'
-                  : subscribe.isPending
-                  ? isDowngrade
-                    ? 'Downgrading...'
-                    : 'Subscribing...'
-                  : isDowngrade
-                  ? 'Downgrade'
-                  : plan.price === 0
-                  ? 'Get Started'
-                  : 'Upgrade'}
-              </button>
+                    ? 'Downgrade'
+                    : plan.price === 0
+                    ? 'Get Started'
+                    : 'Upgrade'}
+                </button>
+              )}
             </div>
           );
         })}
       </div>
 
       <div className="text-center text-slate-600 mt-12">
-        <p>All plans include a 14-day free trial. No credit card required.</p>
-        <p className="mt-2">
-          Already have a subscription?{' '}
-          <a href="/subscription" className="text-ink hover:underline font-medium">
-            Manage your subscription
-          </a>
-        </p>
+        <p>All plans include a 14-day free trial.</p>
       </div>
     </div>
   );
