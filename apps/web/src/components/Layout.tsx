@@ -2,18 +2,39 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Sidebar } from './Sidebar';
 import { useAuth } from '../context/AuthContext';
+import { apiFetch } from '../api/client';
 
 export const Layout = ({ children }: { children: React.ReactNode }) => {
-  const { user, organization, organizations, switchOrganization, logout, createOrganization, currentRole } = useAuth();
+  const { user, organization, organizations, switchOrganization, logout, createOrganization, currentRole, token } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isOrgMenuOpen, setIsOrgMenuOpen] = useState(false);
   const [showCreateOrg, setShowCreateOrg] = useState(false);
   const [newOrgName, setNewOrgName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
+  
+  const isSuperAdmin = user?.isSuperAdmin || false;
+
+  // For super admins, fetch ALL organizations
+  const { data: allOrganizationsData } = useQuery({
+    queryKey: ['admin', 'organizations', 'all'],
+    queryFn: () => apiFetch('/admin/organizations?limit=100', { token }),
+    enabled: isSuperAdmin && !!token,
+  });
+
+  // For super admins: show all organizations
+  // For regular users: show only their membership organizations
+  const availableOrganizations = isSuperAdmin && allOrganizationsData?.data
+    ? allOrganizationsData.data.map((org: any) => ({
+        id: org.id,
+        name: org.name,
+        slug: org.slug,
+        role: organizations.find((o) => o.id === org.id)?.role || 'SUPER_ADMIN',
+      }))
+    : organizations;
   
   // Check if user is OWNER in at least one organization
   // Note: Backend will enforce additional restrictions (subscription plan, limits, feature flag)
@@ -73,7 +94,7 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
         <div className="flex items-center justify-between mb-8 pb-6 border-b border-slate-200/60">
           <div className="flex items-center gap-4">
             <div>
-              {organizations.length > 1 ? (
+              {(availableOrganizations.length > 1 || isSuperAdmin) ? (
                 <div className="relative">
                   <button
                     onClick={() => setIsOrgMenuOpen(!isOrgMenuOpen)}
@@ -98,10 +119,10 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
                       <div className="absolute top-full left-0 mt-2 w-72 bg-white rounded-xl shadow-large border border-slate-200/60 z-20 animate-slide-down overflow-hidden">
                         <div className="p-3">
                           <div className="text-xs font-semibold text-slate-500 uppercase px-3 py-2 mb-1">
-                            Organizations
+                            {isSuperAdmin ? 'All Organizations' : 'Organizations'}
                           </div>
-                          <div className="space-y-1">
-                            {organizations.map((org) => (
+                          <div className="space-y-1 max-h-96 overflow-y-auto">
+                            {availableOrganizations.map((org) => (
                               <button
                                 key={org.id}
                                 onClick={() => handleOrgSwitch(org.id)}
