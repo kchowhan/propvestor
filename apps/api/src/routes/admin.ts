@@ -262,7 +262,17 @@ const listUsersSchema = z.object({
   page: z.coerce.number().min(1).default(1),
   limit: z.coerce.number().min(1).max(100).default(20),
   search: z.string().optional(),
-  superAdminOnly: z.coerce.boolean().optional().default(false),
+  superAdminOnly: z
+    .union([z.boolean(), z.string()])
+    .transform((val) => {
+      if (typeof val === 'boolean') return val;
+      if (typeof val === 'string') {
+        return val.toLowerCase() === 'true';
+      }
+      return false;
+    })
+    .optional()
+    .default(false),
 });
 
 adminRouter.get('/users', async (req, res, next) => {

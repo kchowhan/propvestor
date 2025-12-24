@@ -16,11 +16,12 @@ export default function AdminUsers() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'users', page, search, superAdminOnly],
-    queryFn: () =>
-      apiFetch(
-        `/admin/users?page=${page}&search=${search}&superAdminOnly=${superAdminOnly}`,
-        { token }
-      ),
+    queryFn: () => {
+      const url = `/admin/users?page=${page}&search=${search}&superAdminOnly=${superAdminOnly}`;
+      console.log('Fetching admin users with URL:', url);
+      console.log('Filters:', { page, search, superAdminOnly });
+      return apiFetch(url, { token });
+    },
     retry: false,
     staleTime: 0, // Don't cache, always fetch fresh data
     cacheTime: 0, // Don't keep in cache
@@ -45,9 +46,15 @@ export default function AdminUsers() {
   const users = data?.data || [];
   const pagination = data?.pagination || { page: 1, limit: 20, total: 0, totalPages: 1 };
 
-  // Debug: log the data structure (remove this after fixing)
+  // Debug: log the data structure
   if (data && !isLoading) {
-    console.log('Admin Users Data:', { users, pagination, raw: data });
+    console.log('=== ADMIN USERS DEBUG ===');
+    console.log('Raw API Response:', data);
+    console.log('Users Array Length:', users.length);
+    console.log('Users Array:', users);
+    console.log('Pagination:', pagination);
+    console.log('Current Filters:', { page, search, superAdminOnly });
+    console.log('========================');
   }
 
   if (error) {
