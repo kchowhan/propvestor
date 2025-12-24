@@ -19,19 +19,7 @@ export default function AdminOrganizationDetail() {
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['admin', 'organizations', orgId],
-    queryFn: async () => {
-      console.log('[DEBUG] Fetching org:', orgId);
-      console.log('[DEBUG] Token present:', !!token);
-      console.log('[DEBUG] Token (first 20 chars):', token?.substring(0, 20));
-      try {
-        const result = await apiFetch(`/admin/organizations/${orgId}`, { token });
-        console.log('[DEBUG] API Response:', result);
-        return result;
-      } catch (err) {
-        console.error('[DEBUG] API Error:', err);
-        throw err;
-      }
-    },
+    queryFn: () => apiFetch(`/admin/organizations/${orgId}`, { token }),
     retry: false,
   });
 
@@ -54,9 +42,7 @@ export default function AdminOrganizationDetail() {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin', 'organizations', orgId] }),
   });
 
-  console.log('[DEBUG] data object:', data);
-  console.log('[DEBUG] data?.data:', data?.data);
-  const org = data?.data;
+  const org = data;
 
   if (isLoading) {
     return (
@@ -68,23 +54,15 @@ export default function AdminOrganizationDetail() {
 
   if (error || !org) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+      <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
         <h2 className="text-xl font-semibold text-red-800 mb-2">Error</h2>
         <p className="text-red-600 mb-4">Could not load organization details.</p>
         {error && (
-          <div className="bg-white rounded p-4 mb-4 text-left">
-            <p className="text-sm font-mono text-red-700">
-              {(error as any)?.message || JSON.stringify(error)}
-            </p>
-          </div>
+          <p className="text-sm text-red-700 mb-4">
+            {(error as any)?.message || 'An unexpected error occurred'}
+          </p>
         )}
-        <div className="text-left bg-white rounded p-4 mb-4 text-sm">
-          <p className="font-semibold text-slate-700 mb-2">Debug Info:</p>
-          <p className="text-slate-600">Organization ID: <code className="bg-slate-100 px-1 rounded">{orgId}</code></p>
-          <p className="text-slate-600">Token present: {token ? 'Yes' : 'No'}</p>
-          <p className="text-slate-600">API URL: <code className="bg-slate-100 px-1 rounded">GET /api/admin/organizations/{orgId}</code></p>
-        </div>
-        <Link href="/admin/organizations" className="inline-block text-red-700 underline">
+        <Link href="/admin/organizations" className="text-red-700 hover:underline">
           ← Back to Organizations
         </Link>
       </div>
