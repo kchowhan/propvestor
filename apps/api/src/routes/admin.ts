@@ -5,12 +5,15 @@ import { AppError } from '../lib/errors.js';
 import { parseBody, parseQuery } from '../validators/common.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireSuperAdmin, getAdminStats } from '../middleware/admin.js';
+import { adminRateLimit } from '../middleware/rate-limit.js';
 
 export const adminRouter = Router();
 
-// All admin routes require authentication and super admin privileges
+// All admin routes require authentication, super admin privileges, and rate limiting
+// Rate limiting prevents DoS attacks on expensive database operations
 adminRouter.use(requireAuth);
 adminRouter.use(requireSuperAdmin);
+adminRouter.use(adminRateLimit);
 
 // Get admin dashboard statistics
 adminRouter.get('/stats', async (_req, res, next) => {

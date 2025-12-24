@@ -183,6 +183,22 @@ export const strictRateLimit = createRateLimiter({
 });
 
 /**
+ * Admin rate limiter for expensive operations (database queries, reports)
+ * Prevents DoS attacks on admin endpoints
+ * CodeQL: Addresses "Missing rate limiting" finding
+ */
+export const adminRateLimit = createRateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  max: 60, // 60 requests per minute (reasonable for admin operations)
+  keyGenerator: (req: Request) => {
+    // Use user ID if authenticated, otherwise IP
+    const userId = req.auth?.userId || 'anonymous';
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    return `admin:${userId}:${ip}`;
+  },
+});
+
+/**
  * Get current rate limit status for a request
  * Useful for debugging or displaying to users
  */
