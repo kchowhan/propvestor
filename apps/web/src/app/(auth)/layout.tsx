@@ -3,6 +3,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { Layout } from '@/components/Layout';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   const { token, loading } = useAuth();
@@ -26,6 +27,6 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
     return null; // Will redirect
   }
 
-  return <>{children}</>;
+  return <Layout>{children}</Layout>;
 }
 
