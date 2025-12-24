@@ -5,7 +5,7 @@ import { createApp } from '../app.js';
 import { env } from '../config/env.js';
 import { AppError } from '../lib/errors.js';
 
-const app = createApp();
+const app = createApp({ enableRateLimiting: false });
 
 describe('Middleware', () => {
   describe('requireAuth', () => {

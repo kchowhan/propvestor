@@ -22,6 +22,8 @@ import { rentspreeWebhookRouter } from './rentspree-webhook.js';
 import { reconciliationRouter } from './reconciliation.js';
 import { subscriptionRouter } from './subscriptions.js';
 import { organizationFeesRouter } from './organization-fees.js';
+import { adminRouter } from './admin.js';
+import { applicantRouter } from './applicants.js';
 
 export const router = Router();
 
@@ -60,3 +62,5 @@ router.use('/reports', reportRouter);
 router.use('/users', userRouter);
 router.use('/organizations', organizationRouter);
 router.use('/organization-fees', organizationFeesRouter);
+router.use('/admin', adminRouter);
+router.use('/applicants', applicantRouter);

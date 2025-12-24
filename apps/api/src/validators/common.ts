@@ -9,4 +9,12 @@ export const parseBody = <T>(schema: ZodSchema<T>, body: unknown): T => {
   return result.data;
 };
 
+export const parseQuery = <T>(schema: ZodSchema<T>, query: unknown): T => {
+  const result = schema.safeParse(query);
+  if (!result.success) {
+    throw new AppError(400, 'VALIDATION_ERROR', 'Invalid query parameters.', result.error.flatten());
+  }
+  return result.data;
+};
+
 export const uuidSchema = z.string().uuid();
