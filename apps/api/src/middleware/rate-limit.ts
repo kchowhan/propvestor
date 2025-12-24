@@ -199,6 +199,26 @@ export const adminRateLimit = createRateLimiter({
 });
 
 /**
+ * Webhook rate limiter for external service callbacks
+ * Prevents DoS attacks on webhook endpoints even with signature verification
+ * CodeQL: Ensures webhooks are rate-limited to prevent abuse
+ * 
+ * Limits:
+ * - 100 requests per minute per IP (protects against flooding)
+ * - Signature verification provides authentication, rate limiting provides DoS protection
+ */
+export const webhookRateLimit = createRateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // 100 requests per minute per IP (generous for legitimate webhooks)
+  keyGenerator: (req: Request) => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    // Use the webhook path in the key to track per-webhook-endpoint
+    const path = req.path || 'unknown';
+    return `webhook:${path}:${ip}`;
+  },
+});
+
+/**
  * Get current rate limit status for a request
  * Useful for debugging or displaying to users
  */

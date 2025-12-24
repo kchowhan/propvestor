@@ -2,8 +2,13 @@ import { Router, Request, Response } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { verifyWebhookSignature } from '../lib/rentspree.js';
 import { AppError } from '../lib/errors.js';
+import { webhookRateLimit } from '../middleware/rate-limit.js';
 
 export const rentspreeWebhookRouter = Router();
+
+// Apply rate limiting to prevent DoS attacks on webhooks
+// CodeQL: Webhook endpoints must be rate-limited to prevent abuse
+rentspreeWebhookRouter.use(webhookRateLimit);
 
 /**
  * RentSpree webhook handler for screening status updates

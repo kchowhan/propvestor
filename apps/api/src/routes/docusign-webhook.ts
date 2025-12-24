@@ -2,8 +2,13 @@ import { Router } from 'express';
 import { prisma } from '../lib/prisma.js';
 import { downloadCompletedDocument } from '../lib/docusign.js';
 import { AppError } from '../lib/errors.js';
+import { webhookRateLimit } from '../middleware/rate-limit.js';
 
 export const docusignWebhookRouter = Router();
+
+// Apply rate limiting to prevent DoS attacks on webhooks
+// CodeQL: Webhook endpoints must be rate-limited to prevent abuse
+docusignWebhookRouter.use(webhookRateLimit);
 
 /**
  * DocuSign webhook handler for envelope status updates

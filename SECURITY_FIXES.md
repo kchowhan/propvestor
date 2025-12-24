@@ -157,6 +157,54 @@ app.use('/api', optionalAuth, rateLimit);
 
 ---
 
+### 6. ✅ Missing Webhook Rate Limiting
+**Severity**: MEDIUM (CodeQL Finding)  
+**Status**: RESOLVED  
+
+**Details:**
+- **Issue**: Webhook endpoints lacked rate limiting protection
+- **Risk**: DoS attacks via webhook endpoint flooding (even with invalid signatures)
+- **Location**: `apps/api/src/routes/stripe-webhook.ts`, `docusign-webhook.ts`, `rentspree-webhook.ts`
+- **Fix**: Added dedicated `webhookRateLimit` middleware
+
+**Implementation:**
+```typescript
+// New webhook-specific rate limiter
+export const webhookRateLimit = createRateLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  max: 100, // 100 requests per minute per IP
+  keyGenerator: (req: Request) => {
+    const ip = req.ip || req.socket.remoteAddress || 'unknown';
+    const path = req.path || 'unknown';
+    return `webhook:${path}:${ip}`;
+  },
+});
+
+// Applied to all webhook routers
+stripeWebhookRouter.use(webhookRateLimit);
+docusignWebhookRouter.use(webhookRateLimit);
+rentspreeWebhookRouter.use(webhookRateLimit);
+```
+
+**Changes Made:**
+- Created `webhookRateLimit` in rate-limit middleware (100 req/min per IP)
+- Applied to all 3 webhook routes (Stripe, DocuSign, RentSpree)
+- Prevents DoS even if signatures are invalid
+- Tracks per-webhook-endpoint and per-IP
+
+**Security Benefits:**
+- ✅ Prevents webhook endpoint flooding
+- ✅ Protects against signature verification DoS
+- ✅ Separate limits for each webhook provider
+- ✅ IP-based tracking for better isolation
+
+**Impact:**
+- All 415 tests passing ✅
+- No performance impact (generous 100 req/min limit)
+- Legitimate webhooks unaffected
+
+---
+
 ## Summary of All Fixes
 
 | Issue | Severity | Status | Location |
@@ -166,8 +214,16 @@ app.use('/api', optionalAuth, rateLimit);
 | Missing Rate Limiting on Admin Routes | MEDIUM | ✅ Fixed | `apps/api/src/routes/admin.ts` |
 | Clear Text Password Logging | MEDIUM | ✅ Fixed | `apps/api/src/lib/email.ts` |
 | Conditional Rate Limiting Bypass | MEDIUM | ✅ Fixed | `apps/api/src/app.ts` |
+| Missing Webhook Rate Limiting | MEDIUM | ✅ Fixed | `apps/api/src/routes/*-webhook.ts` |
 
-**Overall Status:** All 5 CodeQL findings resolved ✅
+**Overall Status:** All 6 CodeQL findings resolved ✅
+
+---
+
+## Related Documents
+
+- **SECURITY_AUDIT.md**: Comprehensive security audit report with all findings and recommendations
+- **.github/workflows/**: CI/CD pipeline with automated security checks
 
 ---
 

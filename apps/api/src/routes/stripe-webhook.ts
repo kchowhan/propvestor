@@ -3,8 +3,13 @@ import Stripe from 'stripe';
 import { prisma } from '../lib/prisma.js';
 import { importBankTransactions } from '../lib/reconciliation.js';
 import { getStripeClient } from '../lib/stripe.js';
+import { webhookRateLimit } from '../middleware/rate-limit.js';
 
 export const stripeWebhookRouter = Router();
+
+// Apply rate limiting to prevent DoS attacks on webhooks
+// CodeQL: Webhook endpoints must be rate-limited to prevent abuse
+stripeWebhookRouter.use(webhookRateLimit);
 
 // Helper function to update charge status (duplicated from payments.ts for webhook use)
 async function updateChargeStatus(chargeId: string) {
