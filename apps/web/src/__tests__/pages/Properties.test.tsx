@@ -19,14 +19,17 @@ jest.mock('../../context/AuthContext', () => ({
 describe('PropertiesPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockApiFetch.mockResolvedValue([]);
+    mockApiFetch.mockResolvedValue({ data: [], pagination: { total: 0, page: 1, pageSize: 10 } });
   });
 
   it('should render properties list', async () => {
-    mockApiFetch.mockResolvedValue([
-      { id: '1', name: 'Property 1', city: 'City A' },
-      { id: '2', name: 'Property 2', city: 'City B' },
-    ]);
+    mockApiFetch.mockResolvedValue({
+      data: [
+        { id: '1', name: 'Property 1', city: 'City A' },
+        { id: '2', name: 'Property 2', city: 'City B' },
+      ],
+      pagination: { total: 2, page: 1, pageSize: 10 },
+    });
 
     renderWithProviders(<PropertiesPage />);
 
@@ -38,7 +41,7 @@ describe('PropertiesPage', () => {
 
   it('should create new property', async () => {
     mockApiFetch
-      .mockResolvedValueOnce([]) // Initial load
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, page: 1, pageSize: 10 } }) // Initial load
       .mockResolvedValueOnce({ data: { id: '1', name: 'New Property' } }); // Create
 
     renderWithProviders(<PropertiesPage />);
@@ -79,7 +82,7 @@ describe('PropertiesPage', () => {
   });
 
   it('should show empty state when no properties', async () => {
-    mockApiFetch.mockResolvedValue([]);
+    mockApiFetch.mockResolvedValue({ data: [], pagination: { total: 0, page: 1, pageSize: 10 } });
 
     renderWithProviders(<PropertiesPage />);
 
@@ -191,16 +194,19 @@ describe('PropertiesPage', () => {
   });
 
   it('should display property details in list', async () => {
-    mockApiFetch.mockResolvedValue([
-      {
-        id: '1',
-        name: 'Property 1',
-        city: 'City A',
-        state: 'CA',
-        postalCode: '12345',
-        type: 'SINGLE_FAMILY',
-      },
-    ]);
+    mockApiFetch.mockResolvedValue({
+      data: [
+        {
+          id: '1',
+          name: 'Property 1',
+          city: 'City A',
+          state: 'CA',
+          postalCode: '12345',
+          type: 'SINGLE_FAMILY',
+        },
+      ],
+      pagination: { total: 1, page: 1, pageSize: 10 },
+    });
 
     renderWithProviders(<PropertiesPage />);
 

@@ -27,10 +27,16 @@ const setupMocks = (options: {
       return Promise.reject(new Error('Failed to load'));
     }
     if (path === '/properties') {
-      return Promise.resolve(options.properties || []);
+      return Promise.resolve({
+        data: options.properties || [],
+        pagination: { total: options.properties?.length || 0, page: 1, pageSize: 10 },
+      });
     }
     if (path === '/tenants') {
-      return Promise.resolve(options.tenants || []);
+      return Promise.resolve({
+        data: options.tenants || [],
+        pagination: { total: options.tenants?.length || 0, page: 1, pageSize: 10 },
+      });
     }
     if (path === '/screening/request') {
       return Promise.resolve({ data: { id: 'screening-1' } });

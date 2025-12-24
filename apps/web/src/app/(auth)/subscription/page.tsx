@@ -18,11 +18,6 @@ export default function SubscriptionPage() {
     queryFn: () => apiFetch('/subscriptions/current', { token }),
   });
 
-  // Fetch available plans
-  const { data: plans, isLoading: plansLoading } = useQuery({
-    queryKey: ['subscription', 'plans'],
-    queryFn: () => apiFetch('/subscriptions/plans', { token }),
-  });
 
   // Fetch invoices
   const { data: invoices, isLoading: invoicesLoading } = useQuery({
@@ -51,7 +46,6 @@ export default function SubscriptionPage() {
     queryFn: () => apiFetch('/users', { token }),
   });
 
-  const plansList = plans || [];
   const invoicesList = invoices || [];
   const limitsData = limits || {};
   
@@ -63,33 +57,6 @@ export default function SubscriptionPage() {
     storageUsed: 0, // Would need to fetch documents and calculate
   };
 
-  // Subscribe mutation
-  const subscribe = useMutation({
-    mutationFn: (planId: string) =>
-      apiFetch('/subscriptions/subscribe', {
-        token,
-        method: 'POST',
-        body: { planId },
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subscription'] });
-      queryClient.invalidateQueries({ queryKey: ['subscription', 'limits'] });
-    },
-  });
-
-  // Upgrade mutation
-  const upgrade = useMutation({
-    mutationFn: (planId: string) =>
-      apiFetch('/subscriptions/upgrade', {
-        token,
-        method: 'POST',
-        body: { planId },
-      }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['subscription'] });
-      queryClient.invalidateQueries({ queryKey: ['subscription', 'limits'] });
-    },
-  });
 
   // Cancel mutation
   const cancel = useMutation({
@@ -105,7 +72,7 @@ export default function SubscriptionPage() {
     },
   });
 
-  if (subscriptionLoading || plansLoading) {
+  if (subscriptionLoading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-slate-600">Loading subscription information...</div>
@@ -211,24 +178,25 @@ export default function SubscriptionPage() {
 
               {/* Actions */}
               <div className="flex gap-3 pt-4 border-t border-slate-200">
+                <a
+                  href="/pricing"
+                  className="rounded-lg bg-primary-600 text-white px-4 py-2 hover:bg-primary-700 transition-colors inline-block text-center"
+                >
+                  View All Plans
+                </a>
                 {subscription.status !== 'CANCELLED' && subscription.status !== 'EXPIRED' && (
-                  <>
-                    <button
-                      onClick={() => setShowCancelConfirm(true)}
-                      className="rounded-lg border border-red-300 text-red-600 px-4 py-2 hover:bg-red-50 transition-colors"
-                    >
-                      Cancel Subscription
-                    </button>
-                  </>
-                )}
-                {subscription.status === 'CANCELLED' || subscription.status === 'EXPIRED' ? (
-                  <a
-                    href="/pricing"
-                    className="rounded-lg bg-ink text-white px-4 py-2 hover:bg-ink/90 transition-colors inline-block"
+                  <button
+                    onClick={() => setShowCancelConfirm(true)}
+                    className="rounded-lg border border-red-300 text-red-600 px-4 py-2 hover:bg-red-50 transition-colors"
                   >
-                    Subscribe to a Plan
-                  </a>
-                ) : null}
+                    Cancel Subscription
+                  </button>
+                )}
+                {subscription.status === 'CANCELLED' || subscription.status === 'EXPIRED' && (
+                  <p className="text-sm text-slate-600 self-center">
+                    Your subscription is {subscription.status.toLowerCase()}. Choose a plan to reactivate.
+                  </p>
+                )}
               </div>
             </div>
           ) : (
@@ -245,96 +213,6 @@ export default function SubscriptionPage() {
         </div>
       </div>
 
-      {/* Available Plans */}
-      {!subscription || subscription.status === 'CANCELLED' || subscription.status === 'EXPIRED' ? (
-        <div className="card">
-          <div className="card-header">Available Plans</div>
-          <div className="card-body">
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {plansList.map((plan: any) => (
-                <div
-                  key={plan.id}
-                  className="border border-slate-200 rounded-lg p-6 hover:shadow-lg transition-shadow"
-                >
-                  <h3 className="text-xl font-bold text-ink mb-2">{plan.name}</h3>
-                  <div className="mb-4">
-                    <span className="text-3xl font-bold text-ink">${Number(plan.price).toFixed(2)}</span>
-                    <span className="text-slate-600">/{plan.billingInterval}</span>
-                  </div>
-                  <ul className="space-y-2 mb-6">
-                    {Object.entries(plan.features || {}).map(([key, value]: [string, any]) => (
-                      <li key={key} className="flex items-center gap-2 text-sm">
-                        {value ? (
-                          <span className="text-green-600">✓</span>
-                        ) : (
-                          <span className="text-slate-400">✗</span>
-                        )}
-                        <span className={value ? 'text-slate-700' : 'text-slate-400'}>
-                          {key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1')}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
-                  <button
-                    onClick={() => subscribe.mutate(plan.id)}
-                    disabled={subscribe.isPending}
-                    className="w-full rounded-lg bg-ink text-white px-4 py-2 hover:bg-ink/90 transition-colors disabled:opacity-50"
-                  >
-                    {subscribe.isPending ? 'Subscribing...' : 'Subscribe'}
-                  </button>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="card">
-          <div className="card-header">Change Plan</div>
-          <div className="card-body">
-            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-              {plansList
-                .filter((plan: any) => plan.id !== currentPlan?.id)
-                .map((plan: any) => {
-                  const currentPrice = Number(currentPlan?.price || 0);
-                  const planPrice = Number(plan.price);
-                  const isUpgrade = planPrice > currentPrice;
-                  const isCurrentPlan = plan.id === currentPlan?.id;
-                  
-                  return (
-                    <div
-                      key={plan.id}
-                      className="border border-slate-200 rounded-lg p-6 hover:shadow-lg transition-shadow relative"
-                    >
-                      {isCurrentPlan && (
-                        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-blue-600 text-white text-xs font-semibold px-3 py-1 rounded-full">
-                          Current Plan
-                        </div>
-                      )}
-                      <h3 className="text-xl font-bold text-ink mb-2">{plan.name}</h3>
-                      <div className="mb-4">
-                        <span className="text-3xl font-bold text-ink">${planPrice.toFixed(2)}</span>
-                        <span className="text-slate-600">/{plan.billingInterval}</span>
-                      </div>
-                      <button
-                        onClick={() => upgrade.mutate(plan.id)}
-                        disabled={upgrade.isPending || isCurrentPlan}
-                        className={`w-full rounded-lg px-4 py-2 transition-colors disabled:opacity-50 ${
-                          isUpgrade
-                            ? 'bg-ink text-white hover:bg-ink/90'
-                            : 'bg-slate-200 text-slate-700 hover:bg-slate-300'
-                        }`}
-                      >
-                        {upgrade.isPending 
-                          ? (isUpgrade ? 'Upgrading...' : 'Downgrading...') 
-                          : (isUpgrade ? 'Upgrade' : 'Downgrade')}
-                      </button>
-                    </div>
-                  );
-                })}
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Invoices */}
       {subscription && invoicesList.length > 0 && (
