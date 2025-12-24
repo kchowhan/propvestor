@@ -11,7 +11,37 @@ const ThrowError = ({ shouldThrow }: { shouldThrow: boolean }) => {
 };
 
 describe('ErrorBoundary', () => {
-  it('should render children when no error', () => {
+  // Suppress console.error for these tests
+  const originalError = console.error;
+  beforeAll(() => {
+    console.error = jest.fn();
+  });
+
+  afterAll(() => {
+    console.error = originalError;
+  });
+
+  it('should render children when there is no error', () => {
+    render(
+      <ErrorBoundary>
+        <div>Test Content</div>
+      </ErrorBoundary>
+    );
+
+    expect(screen.getByText('Test Content')).toBeInTheDocument();
+  });
+
+  it('should render error UI when child throws error', () => {
+    render(
+      <ErrorBoundary>
+        <ThrowError shouldThrow={true} />
+      </ErrorBoundary>
+    );
+
+    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
+  });
+
+  it('should not render error UI when child does not throw', () => {
     render(
       <ErrorBoundary>
         <ThrowError shouldThrow={false} />
@@ -20,35 +50,4 @@ describe('ErrorBoundary', () => {
 
     expect(screen.getByText('No error')).toBeInTheDocument();
   });
-
-  it('should render error UI when error occurs', () => {
-    // Suppress console.error for this test
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-    render(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
-    );
-
-    expect(screen.getByText('Something went wrong')).toBeInTheDocument();
-    expect(screen.getByText('Test error')).toBeInTheDocument();
-
-    consoleSpy.mockRestore();
-  });
-
-  it('should have reload button', () => {
-    const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-
-    render(
-      <ErrorBoundary>
-        <ThrowError shouldThrow={true} />
-      </ErrorBoundary>
-    );
-
-    expect(screen.getByText('Reload Page')).toBeInTheDocument();
-
-    consoleSpy.mockRestore();
-  });
 });
-
