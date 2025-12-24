@@ -27,7 +27,9 @@ export const Layout = ({ children }: { children: React.ReactNode }) => {
 
   // For super admins: show all organizations
   // For regular users: show only their membership organizations
-  const availableOrganizations = isSuperAdmin && allOrganizationsData?.data
+  type OrgOption = { id: string; name: string; slug: string; role: string };
+  
+  const availableOrganizations: OrgOption[] = isSuperAdmin && allOrganizationsData?.data
     ? allOrganizationsData.data.map((org: any) => ({
         id: org.id,
         name: org.name,
