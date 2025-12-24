@@ -66,11 +66,16 @@ This is an automated message. Please do not reply.
       await transporter.sendMail(mailOptions);
       console.log(`Email sent to ${email}`);
     } else {
-      // Development mode: log to console
+      // Development mode: log to console (with sensitive data redacted)
+      // CodeQL: Redact passwords from logs to prevent exposure of sensitive data
+      const redactedBody = mailOptions.text
+        ? mailOptions.text.replace(/Password:.*$/gm, 'Password: [REDACTED]')
+        : '';
+      
       console.log('\n=== EMAIL (Development Mode) ===');
       console.log('To:', email);
       console.log('Subject:', mailOptions.subject);
-      console.log('Body:', mailOptions.text);
+      console.log('Body:', redactedBody);
       console.log('===============================\n');
     }
     return true;
