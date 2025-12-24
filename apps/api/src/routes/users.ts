@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
@@ -9,7 +10,11 @@ import { requireLimit } from '../middleware/subscription.js';
 
 export const userRouter = Router();
 
-// Generate a random password
+/**
+ * Generate a cryptographically secure random password
+ * Uses crypto.randomInt() instead of Math.random() for security compliance
+ * CodeQL: Fixes "Insecure randomness" finding
+ */
 const generatePassword = (length = 12): string => {
   const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const lowercase = 'abcdefghijklmnopqrstuvwxyz';
@@ -18,22 +23,25 @@ const generatePassword = (length = 12): string => {
   const all = uppercase + lowercase + numbers + symbols;
 
   let password = '';
-  // Ensure at least one of each type
-  password += uppercase[Math.floor(Math.random() * uppercase.length)];
-  password += lowercase[Math.floor(Math.random() * lowercase.length)];
-  password += numbers[Math.floor(Math.random() * numbers.length)];
-  password += symbols[Math.floor(Math.random() * symbols.length)];
+  // Ensure at least one of each type using cryptographically secure random
+  password += uppercase[crypto.randomInt(0, uppercase.length)];
+  password += lowercase[crypto.randomInt(0, lowercase.length)];
+  password += numbers[crypto.randomInt(0, numbers.length)];
+  password += symbols[crypto.randomInt(0, symbols.length)];
 
-  // Fill the rest randomly
+  // Fill the rest with cryptographically secure random characters
   for (let i = password.length; i < length; i++) {
-    password += all[Math.floor(Math.random() * all.length)];
+    password += all[crypto.randomInt(0, all.length)];
   }
 
-  // Shuffle the password
-  return password
-    .split('')
-    .sort(() => Math.random() - 0.5)
-    .join('');
+  // Shuffle using Fisher-Yates algorithm with cryptographically secure random
+  const chars = password.split('');
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = crypto.randomInt(0, i + 1);
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+  
+  return chars.join('');
 };
 
 // Check if user has permission to manage users (OWNER or ADMIN)
