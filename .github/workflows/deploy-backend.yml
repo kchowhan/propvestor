@@ -1,40 +1,41 @@
-name: Deploy Backend to GCP
+# TEMPORARILY DISABLED - Uncomment to re-enable backend deployments
 
-on:
-  push:
-    branches: [main]
-    paths:
-      - 'apps/api/**'
-      - 'cloudbuild-backend.yaml'
-      - '.github/workflows/deploy-backend.yml'
-
-env:
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
-  REGION: us-central1
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - id: 'auth'
-        name: 'Authenticate to Google Cloud'
-        uses: 'google-github-actions/auth@v2'
-        with:
-          credentials_json: '${{ secrets.GCP_SA_KEY }}'
-
-      - name: 'Set up Cloud SDK'
-        uses: 'google-github-actions/setup-gcloud@v2'
-
-      - name: 'Submit to Cloud Build'
-        run: |
-          gcloud builds submit \
-            --config=cloudbuild-backend.yaml \
-            --substitutions=_REGION=${{ env.REGION }},_CLOUDSQL_CONNECTION_NAME=${{ env.PROJECT_ID }}:${{ env.REGION }}:propvestor-db,_GCS_BUCKET_NAME=propvestor-documents-prod
-
+# name: Deploy Backend to GCP
+#
+# on:
+#   push:
+#     branches: [main]
+#     paths:
+#       - 'apps/api/**'
+#       - 'cloudbuild-backend.yaml'
+#       - '.github/workflows/deploy-backend.yml'
+#
+# env:
+#   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+#   REGION: us-central1
+#
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+#     permissions:
+#       contents: read
+#       id-token: write
+#
+#     steps:
+#       - name: Checkout code
+#         uses: actions/checkout@v4
+#
+#       - id: 'auth'
+#         name: 'Authenticate to Google Cloud'
+#         uses: 'google-github-actions/auth@v2'
+#         with:
+#           credentials_json: '${{ secrets.GCP_SA_KEY }}'
+#
+#       - name: 'Set up Cloud SDK'
+#         uses: 'google-github-actions/setup-gcloud@v2'
+#
+#       - name: 'Submit to Cloud Build'
+#         run: |
+#           gcloud builds submit \
+#             --config=cloudbuild-backend.yaml \
+#             --substitutions=_REGION=${{ env.REGION }},_CLOUDSQL_CONNECTION_NAME=${{ env.PROJECT_ID }}:${{ env.REGION }}:propvestor-db,_GCS_BUCKET_NAME=propvestor-documents-prod
