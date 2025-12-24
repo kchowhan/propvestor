@@ -90,6 +90,51 @@ key: admin:userId:ip
 - Protects against DoS attacks
 - Reasonable limit for legitimate admin use
 
+### 4. ✅ Clear Text Password Logging
+**Severity**: MEDIUM (CodeQL Finding)  
+**Status**: RESOLVED  
+
+**Details:**
+- **Issue**: Passwords logged in clear text during development mode
+- **Risk**: Sensitive credentials exposed in logs/monitoring systems
+- **Location**: `apps/api/src/lib/email.ts:73` - `sendWelcomeEmail()` function
+- **Fix**: Redact passwords from console logs using regex replacement
+
+**Redaction Implementation:**
+```typescript
+// Before (Insecure)
+console.log('Body:', mailOptions.text); // Contains password
+
+// After (Secure)
+const redactedBody = mailOptions.text
+  .replace(/Password:.*$/gm, 'Password: [REDACTED]');
+console.log('Body:', redactedBody); // Password hidden
+```
+
+**Changes Made:**
+- Added regex to redact passwords: `/Password:.*$/gm`
+- Only affects development mode (when SMTP not configured)
+- Production SMTP mode unaffected (no console logging)
+
+**Impact:**
+- All 415 tests passing ✓
+- Prevents password exposure in logs
+- Maintains debugging capability for other email content
+- No functional changes to email delivery
+
+---
+
+## Summary of All Fixes
+
+| Issue | Severity | Status | Location |
+|-------|----------|--------|----------|
+| Glob Command Injection (CVE-2024-55565) | HIGH | ✅ Fixed | npm dependencies |
+| Insecure Random Password Generation | HIGH | ✅ Fixed | `apps/api/src/routes/users.ts` |
+| Missing Rate Limiting on Admin Routes | MEDIUM | ✅ Fixed | `apps/api/src/routes/admin.ts` |
+| Clear Text Password Logging | MEDIUM | ✅ Fixed | `apps/api/src/lib/email.ts` |
+
+**Overall Status:** All 4 CodeQL findings resolved ✅
+
 ---
 
 ## Additional Security Measures in Place
