@@ -181,6 +181,21 @@ async function cleanup() {
     console.log(`  - Users: ${e.message}`);
   }
 
+  console.log('\nDeleting subscriptions and invoices...');
+  try { 
+    const count = await prisma.invoice.deleteMany();
+    if (count.count > 0) console.log(`  ✓ Deleted ${count.count} invoices`);
+  } catch (e: any) {
+    console.log(`  - Invoices: ${e.message}`);
+  }
+  
+  try { 
+    const count = await prisma.subscription.deleteMany();
+    if (count.count > 0) console.log(`  ✓ Deleted ${count.count} subscriptions`);
+  } catch (e: any) {
+    console.log(`  - Subscriptions: ${e.message}`);
+  }
+
   console.log('\nDeleting organizations...');
   try { 
     const count = await prisma.organization.deleteMany();
