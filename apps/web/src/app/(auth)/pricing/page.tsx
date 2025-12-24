@@ -185,8 +185,6 @@ export default function PricingPage() {
                   className={`w-full rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors ${
                     isDowngrade
                       ? 'bg-orange-600 text-white hover:bg-orange-700'
-                      : isPopular
-                      ? 'bg-primary-600 text-white hover:bg-primary-700'
                       : 'bg-ink text-white hover:bg-ink/90'
                   } disabled:opacity-50`}
                 >
