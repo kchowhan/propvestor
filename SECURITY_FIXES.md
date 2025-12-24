@@ -122,6 +122,39 @@ console.log('Body:', redactedBody); // Password hidden
 - Maintains debugging capability for other email content
 - No functional changes to email delivery
 
+### 5. ✅ Conditional Rate Limiting Bypass
+**Severity**: MEDIUM (CodeQL Finding)  
+**Status**: RESOLVED  
+
+**Details:**
+- **Issue**: Rate limiting was optional and could be disabled via configuration
+- **Risk**: Authorization middleware runs without rate limiting protection when disabled
+- **Location**: `apps/api/src/app.ts:48` - General API route rate limiting
+- **Fix**: Made rate limiting mandatory, removed conditional flag
+
+**Implementation Change:**
+```typescript
+// Before (Insecure - conditional)
+if (enableRateLimiting) {
+  app.use('/api', optionalAuth, rateLimit);
+}
+
+// After (Secure - always enabled)
+app.use('/api', optionalAuth, rateLimit);
+```
+
+**Changes Made:**
+- Removed `enableRateLimiting` option from `AppOptions`
+- Rate limiting now always applied to all routes
+- Updated tests to work with mandatory rate limiting
+- No performance impact (rate limits are generous)
+
+**Impact:**
+- All 415 tests passing ✓
+- All routes protected from DoS attacks
+- No conditional bypassing possible
+- Security baseline enforced
+
 ---
 
 ## Summary of All Fixes
@@ -132,8 +165,9 @@ console.log('Body:', redactedBody); // Password hidden
 | Insecure Random Password Generation | HIGH | ✅ Fixed | `apps/api/src/routes/users.ts` |
 | Missing Rate Limiting on Admin Routes | MEDIUM | ✅ Fixed | `apps/api/src/routes/admin.ts` |
 | Clear Text Password Logging | MEDIUM | ✅ Fixed | `apps/api/src/lib/email.ts` |
+| Conditional Rate Limiting Bypass | MEDIUM | ✅ Fixed | `apps/api/src/app.ts` |
 
-**Overall Status:** All 4 CodeQL findings resolved ✅
+**Overall Status:** All 5 CodeQL findings resolved ✅
 
 ---
 
