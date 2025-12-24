@@ -4,6 +4,8 @@
   "workspaces": ["apps/*"],
   "scripts": {
     "dev": "npm --workspace apps/api run dev & npm --workspace apps/web run dev",
+    "dev:all": "npm --workspace apps/api run dev & npm --workspace apps/web run dev & npm --workspace apps/marketing run dev",
+    "dev:marketing": "npm --workspace apps/marketing run dev",
     "lint": "npm --workspace apps/api run lint && npm --workspace apps/web run lint",
     "format": "prettier . --write",
     "prisma:generate": "npm --workspace apps/api run prisma:generate",
