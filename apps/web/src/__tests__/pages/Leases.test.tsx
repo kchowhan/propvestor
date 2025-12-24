@@ -1,6 +1,7 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { LeasesPage } from '../../components/pages/Leases';
+import { renderWithProviders } from '../../../jest.setup';
 
 const mockApiFetch = jest.fn();
 jest.mock('../../api/client', () => ({
@@ -32,7 +33,7 @@ describe('LeasesPage', () => {
       .mockResolvedValueOnce([]) // Properties
       .mockResolvedValueOnce([]); // Tenants
 
-    render(<LeasesPage />);
+    renderWithProviders(<LeasesPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Create Lease')).toBeInTheDocument();
@@ -47,7 +48,7 @@ describe('LeasesPage', () => {
       .mockResolvedValueOnce([]) // Properties
       .mockResolvedValueOnce([]); // Tenants
 
-    render(<LeasesPage />);
+    renderWithProviders(<LeasesPage />);
 
     const leasesTab = screen.getByText('Leases');
     fireEvent.click(leasesTab);
@@ -68,7 +69,7 @@ describe('LeasesPage', () => {
       ]) // Tenants
       .mockResolvedValueOnce({ data: { id: '1' } }); // Create
 
-    render(<LeasesPage />);
+    renderWithProviders(<LeasesPage />);
 
     await waitFor(() => {
       const submitButton = screen.getByText('Create Lease');

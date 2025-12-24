@@ -32,14 +32,14 @@ describe('LoginPage', () => {
     render(<LoginPage />);
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /log in/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
   });
 
   it('should switch to register mode', async () => {
     const user = userEvent.setup();
     render(<LoginPage />);
 
-    const switchButton = screen.getByText(/create account/i);
+    const switchButton = screen.getByText(/register/i);
     await user.click(switchButton);
 
     expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
@@ -53,7 +53,7 @@ describe('LoginPage', () => {
 
     await user.type(screen.getByLabelText(/email/i), 'test@example.com');
     await user.type(screen.getByLabelText(/password/i), 'password123');
-    await user.click(screen.getByRole('button', { name: /log in/i }));
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'password123');
@@ -94,7 +94,7 @@ describe('LoginPage', () => {
 
     await user.type(screen.getByLabelText(/email/i), 'test@example.com');
     await user.type(screen.getByLabelText(/password/i), 'wrongpassword');
-    await user.click(screen.getByRole('button', { name: /log in/i }));
+    await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/invalid credentials/i)).toBeInTheDocument();

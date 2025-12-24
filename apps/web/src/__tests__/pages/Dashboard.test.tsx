@@ -1,6 +1,7 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import { DashboardPage } from '../../components/pages/Dashboard';
+import { renderWithProviders } from '../../../jest.setup';
 
 const mockApiFetch = jest.fn();
 jest.mock('../../api/client', () => ({
@@ -23,7 +24,7 @@ describe('DashboardPage', () => {
   it('should render loading state', () => {
     mockApiFetch.mockImplementation(() => new Promise(() => {})); // Never resolves
 
-    render(<DashboardPage />);
+    renderWithProviders(<DashboardPage />);
 
     expect(screen.getByText('Loading dashboard...')).toBeInTheDocument();
   });
@@ -38,7 +39,7 @@ describe('DashboardPage', () => {
       openWorkOrders: 5,
     });
 
-    render(<DashboardPage />);
+    renderWithProviders(<DashboardPage />);
 
     await waitFor(() => {
       expect(screen.getByText('10')).toBeInTheDocument();
@@ -49,7 +50,7 @@ describe('DashboardPage', () => {
   it('should render error state', async () => {
     mockApiFetch.mockRejectedValue(new Error('Failed to fetch'));
 
-    render(<DashboardPage />);
+    renderWithProviders(<DashboardPage />);
 
     await waitFor(() => {
       expect(screen.getByText(/Failed to load KPIs/)).toBeInTheDocument();

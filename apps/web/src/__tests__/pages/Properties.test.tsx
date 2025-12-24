@@ -1,6 +1,8 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PropertiesPage } from '../../components/pages/Properties';
+import { renderWithProviders } from '../../../jest.setup';
 
 const mockApiFetch = jest.fn();
 jest.mock('../../api/client', () => ({
@@ -33,7 +35,7 @@ describe('PropertiesPage', () => {
       { id: '2', name: 'Property 2', city: 'City B' },
     ]);
 
-    render(<PropertiesPage />);
+    renderWithProviders(<PropertiesPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Property 1')).toBeInTheDocument();
@@ -46,7 +48,7 @@ describe('PropertiesPage', () => {
       .mockResolvedValueOnce([]) // Initial load
       .mockResolvedValueOnce({ data: { id: '1', name: 'New Property' } }); // Create
 
-    render(<PropertiesPage />);
+    renderWithProviders(<PropertiesPage />);
 
     await waitFor(() => {
       const nameInput = screen.getByPlaceholderText('Property name');
@@ -69,7 +71,7 @@ describe('PropertiesPage', () => {
   it('should show empty state when no properties', async () => {
     mockApiFetch.mockResolvedValue([]);
 
-    render(<PropertiesPage />);
+    renderWithProviders(<PropertiesPage />);
 
     await waitFor(() => {
       expect(screen.getByText(/No properties found/)).toBeInTheDocument();

@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {  screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithProviders } from '../../../jest.setup';
 import { TenantDetailPage } from '../../components/pages/TenantDetail';
 
 const mockApiFetch = jest.fn();
@@ -43,7 +44,7 @@ describe('TenantDetailPage', () => {
       .mockResolvedValueOnce([]) // Payment methods
       .mockResolvedValueOnce([]); // Payments
 
-    render(<TenantDetailPage />);
+    renderWithProviders(<TenantDetailPage />);
 
     await waitFor(() => {
       expect(screen.getByText('John Doe')).toBeInTheDocument();
@@ -62,7 +63,7 @@ describe('TenantDetailPage', () => {
       .mockResolvedValueOnce([]) // Payment methods
       .mockResolvedValueOnce([]); // Payments
 
-    render(<TenantDetailPage />);
+    renderWithProviders(<TenantDetailPage />);
 
     const screeningTab = screen.getByText('Screening');
     fireEvent.click(screeningTab);

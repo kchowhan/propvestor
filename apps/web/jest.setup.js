@@ -1,4 +1,31 @@
 import '@testing-library/jest-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import React from 'react';
+
+// Create a test QueryClient with default options
+export const createTestQueryClient = () => new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: false,
+      refetchOnWindowFocus: false,
+      refetchOnMount: false,
+      refetchOnReconnect: false,
+    },
+    mutations: {
+      retry: false,
+    },
+  },
+});
+
+// Helper to render with QueryClientProvider
+export const renderWithProviders = (ui) => {
+  const queryClient = createTestQueryClient();
+  const { render } = require('@testing-library/react');
+  const React = require('react');
+  return render(
+    React.createElement(QueryClientProvider, { client: queryClient }, ui)
+  );
+};
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({

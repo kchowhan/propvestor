@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {  screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithProviders } from '../../../jest.setup';
 import { BillingPage } from '../../components/pages/Billing';
 
 const mockApiFetch = jest.fn();
@@ -33,7 +34,7 @@ describe('BillingPage', () => {
       },
     ]);
 
-    render(<BillingPage />);
+    renderWithProviders(<BillingPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Property 1')).toBeInTheDocument();
@@ -45,7 +46,7 @@ describe('BillingPage', () => {
       .mockResolvedValueOnce([]) // Initial rent roll
       .mockResolvedValueOnce({ totalCreated: 5 }); // Generate
 
-    render(<BillingPage />);
+    renderWithProviders(<BillingPage />);
 
     const generateButton = screen.getByText('Generate monthly rent');
     fireEvent.click(generateButton);
@@ -63,7 +64,7 @@ describe('BillingPage', () => {
   it('should show empty state when no charges', async () => {
     mockApiFetch.mockResolvedValue([]);
 
-    render(<BillingPage />);
+    renderWithProviders(<BillingPage />);
 
     await waitFor(() => {
       expect(screen.getByText(/No rent charges found/)).toBeInTheDocument();

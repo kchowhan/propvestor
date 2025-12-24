@@ -1,6 +1,7 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { TenantsPage } from '../../components/pages/Tenants';
+import { renderWithProviders } from '../../../jest.setup';
 
 const mockApiFetch = jest.fn();
 jest.mock('../../api/client', () => ({
@@ -31,7 +32,7 @@ describe('TenantsPage', () => {
       .mockResolvedValueOnce([]) // Properties
       .mockResolvedValueOnce([]); // Tenants
 
-    render(<TenantsPage />);
+    renderWithProviders(<TenantsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Tenants')).toBeInTheDocument();
@@ -46,7 +47,7 @@ describe('TenantsPage', () => {
         { id: '2', firstName: 'Jane', lastName: 'Smith', status: 'PROSPECT', leases: [] },
       ]);
 
-    render(<TenantsPage />);
+    renderWithProviders(<TenantsPage />);
 
     await waitFor(() => {
       expect(screen.getByText('John Doe')).toBeInTheDocument();
@@ -62,7 +63,7 @@ describe('TenantsPage', () => {
         { id: '2', firstName: 'Jane', lastName: 'Smith', status: 'PROSPECT', leases: [] },
       ]);
 
-    render(<TenantsPage />);
+    renderWithProviders(<TenantsPage />);
 
     const prospectsTab = screen.getByText('Prospects & Applicants');
     fireEvent.click(prospectsTab);
@@ -79,7 +80,7 @@ describe('TenantsPage', () => {
       .mockResolvedValueOnce([]) // Tenants
       .mockResolvedValueOnce({ data: { id: '1' } }); // Create
 
-    render(<TenantsPage />);
+    renderWithProviders(<TenantsPage />);
 
     const prospectsTab = screen.getByText('Prospects & Applicants');
     fireEvent.click(prospectsTab);

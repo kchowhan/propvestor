@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {  screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithProviders } from '../../../jest.setup';
 import { PropertyDetailPage } from '../../components/pages/PropertyDetail';
 
 const mockApiFetch = jest.fn();
@@ -34,7 +35,7 @@ describe('PropertyDetailPage', () => {
       units: [],
     });
 
-    render(<PropertyDetailPage />);
+    renderWithProviders(<PropertyDetailPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Test Property')).toBeInTheDocument();
@@ -50,7 +51,7 @@ describe('PropertyDetailPage', () => {
       })
       .mockResolvedValueOnce({ data: { id: 'unit-1', name: 'Unit 1' } });
 
-    render(<PropertyDetailPage />);
+    renderWithProviders(<PropertyDetailPage />);
 
     await waitFor(() => {
       const nameInput = screen.getByPlaceholderText('Unit name');

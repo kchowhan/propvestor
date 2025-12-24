@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {  screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithProviders } from '../../../jest.setup';
 import { UserManagementPage } from '../../components/pages/UserManagement';
 
 const mockApiFetch = jest.fn();
@@ -24,7 +25,7 @@ describe('UserManagementPage', () => {
   it('should render create user tab by default', async () => {
     mockApiFetch.mockResolvedValue([]);
 
-    render(<UserManagementPage />);
+    renderWithProviders(<UserManagementPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Create User')).toBeInTheDocument();
@@ -36,7 +37,7 @@ describe('UserManagementPage', () => {
       .mockResolvedValueOnce([]) // Users
       .mockResolvedValueOnce({ data: { id: '1' } }); // Create
 
-    render(<UserManagementPage />);
+    renderWithProviders(<UserManagementPage />);
 
     await waitFor(() => {
       const nameInput = screen.getByPlaceholderText('Full Name');
@@ -66,7 +67,7 @@ describe('UserManagementPage', () => {
       useAuth: () => nonAdminAuth,
     }));
 
-    render(<UserManagementPage />);
+    renderWithProviders(<UserManagementPage />);
 
     expect(screen.getByText(/don't have permission/)).toBeInTheDocument();
   });

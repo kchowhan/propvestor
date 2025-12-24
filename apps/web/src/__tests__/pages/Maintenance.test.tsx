@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {  screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithProviders } from '../../../jest.setup';
 import { MaintenancePage } from '../../components/pages/Maintenance';
 
 const mockApiFetch = jest.fn();
@@ -32,7 +33,7 @@ describe('MaintenancePage', () => {
       .mockResolvedValueOnce([]) // Properties
       .mockResolvedValueOnce([]); // Vendors
 
-    render(<MaintenancePage />);
+    renderWithProviders(<MaintenancePage />);
 
     await waitFor(() => {
       expect(screen.getByText('Vendors')).toBeInTheDocument();
@@ -46,7 +47,7 @@ describe('MaintenancePage', () => {
       .mockResolvedValueOnce([]) // Vendors
       .mockResolvedValueOnce({ data: { id: '1' } }); // Create
 
-    render(<MaintenancePage />);
+    renderWithProviders(<MaintenancePage />);
 
     await waitFor(() => {
       const nameInput = screen.getByPlaceholderText('Vendor Name');
@@ -75,7 +76,7 @@ describe('MaintenancePage', () => {
       .mockResolvedValueOnce([]) // Vendors
       .mockResolvedValueOnce({ data: { id: '1' } }); // Create
 
-    render(<MaintenancePage />);
+    renderWithProviders(<MaintenancePage />);
 
     const createTab = screen.getByText('Create Work Order');
     fireEvent.click(createTab);

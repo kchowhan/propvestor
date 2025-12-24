@@ -1,5 +1,6 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import {  screen, fireEvent, waitFor } from '@testing-library/react';
+import { renderWithProviders } from '../../../jest.setup';
 import { LeaseDetailPage } from '../../components/pages/LeaseDetail';
 
 const mockApiFetch = jest.fn();
@@ -37,7 +38,7 @@ describe('LeaseDetailPage', () => {
       payments: [],
     });
 
-    render(<LeaseDetailPage />);
+    renderWithProviders(<LeaseDetailPage />);
 
     await waitFor(() => {
       expect(screen.getByText('Property 1')).toBeInTheDocument();
@@ -56,7 +57,7 @@ describe('LeaseDetailPage', () => {
       })
       .mockResolvedValueOnce({ data: { status: 'ACTIVE' } });
 
-    render(<LeaseDetailPage />);
+    renderWithProviders(<LeaseDetailPage />);
 
     await waitFor(() => {
       const activateButton = screen.getByText('Activate Lease');
@@ -85,7 +86,7 @@ describe('LeaseDetailPage', () => {
       })
       .mockResolvedValueOnce({ data: { id: 'charge-1' } });
 
-    render(<LeaseDetailPage />);
+    renderWithProviders(<LeaseDetailPage />);
 
     await waitFor(() => {
       const generateButton = screen.getByText('Generate Rent Charge');
