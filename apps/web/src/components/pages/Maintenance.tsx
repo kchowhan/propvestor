@@ -31,6 +31,11 @@ export const MaintenancePage = () => {
     queryFn: () => apiFetch('/vendors', { token }),
   });
 
+  // Extract data arrays from paginated responses
+  const workOrders = workOrdersQuery.data?.data || [];
+  const properties = propertiesQuery.data?.data || [];
+  const vendors = vendorsQuery.data?.data || [];
+
   const createWorkOrder = useMutation({
     mutationFn: () =>
       apiFetch('/work-orders', {
@@ -274,7 +279,7 @@ export const MaintenancePage = () => {
             <div className="card-body">
               {vendorsQuery.isLoading ? (
                 <div className="text-center py-8 text-slate-500">Loading vendors...</div>
-              ) : vendorsQuery.data?.length === 0 ? (
+              ) : vendors.length === 0 ? (
                 <div className="text-center py-8 text-slate-500">No vendors yet. Add your first vendor above.</div>
               ) : (
                 <div className="overflow-x-auto">
@@ -289,7 +294,7 @@ export const MaintenancePage = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {vendorsQuery.data?.map((vendor: any) => (
+                      {vendors.map((vendor: any) => (
                         <tr key={vendor.id} className="border-b border-slate-100 hover:bg-slate-50">
                           <td className="py-3 px-4 font-medium">{vendor.name}</td>
                           <td className="py-3 px-4 text-slate-600">
@@ -379,7 +384,7 @@ export const MaintenancePage = () => {
                 required
               >
                 <option value="">Select property</option>
-                {propertiesQuery.data?.map((property: any) => (
+                {properties.map((property: any) => (
                   <option key={property.id} value={property.id}>
                     {property.name}
                   </option>
@@ -440,15 +445,15 @@ export const MaintenancePage = () => {
                 onChange={(e) => setForm((prev) => ({ ...prev, assignedVendorId: e.target.value }))}
               >
                 <option value="">No vendor assigned</option>
-                {vendorsQuery.data
-                  ?.filter((vendor: any) => vendor.category === form.category)
+                {vendors
+                  .filter((vendor: any) => vendor.category === form.category)
                   .map((vendor: any) => (
                     <option key={vendor.id} value={vendor.id}>
                       {vendor.name}
                     </option>
                   ))}
               </select>
-              {form.category && vendorsQuery.data?.filter((v: any) => v.category === form.category).length === 0 && (
+              {form.category && vendors.filter((v: any) => v.category === form.category).length === 0 && (
                 <p className="text-xs text-slate-500 mt-1">No vendors available for this category</p>
               )}
             </div>
@@ -469,7 +474,7 @@ export const MaintenancePage = () => {
           <div className="card-body">
           <table className="w-full text-sm">
             <tbody>
-              {workOrdersQuery.data?.map((order: any) => (
+              {workOrders.map((order: any) => (
                 <tr key={order.id} className="border-t border-slate-100">
                   <td className="py-2 font-medium">
                     <Link className="underline" href={`/maintenance/${order.id}`}>
