@@ -21,8 +21,9 @@ export default function RootLayout({
           <div className="container mx-auto px-6">
             <div className="flex items-center justify-between h-16">
               {/* Logo */}
-              <Link href="/" className="flex items-center space-x-2">
+              <Link href="/" className="flex items-center space-x-3">
                 <Logo className="h-10 w-auto" />
+                <span className="text-xl font-bold text-ink">PropVestor</span>
               </Link>
 
               {/* Desktop Navigation */}
@@ -69,8 +70,9 @@ export default function RootLayout({
             <div className="grid md:grid-cols-4 gap-8 mb-8">
               {/* Company Info */}
               <div>
-                <div className="flex items-center space-x-2 mb-4">
-                  <Logo className="h-10 w-auto brightness-0 invert" />
+                <div className="flex items-center space-x-3 mb-4">
+                  <Logo className="h-10 w-auto" />
+                  <span className="text-xl font-bold text-white">PropVestor</span>
                 </div>
                 <p className="text-white/70 text-sm">
                   AI-powered property and investment management for landlords and investors.
