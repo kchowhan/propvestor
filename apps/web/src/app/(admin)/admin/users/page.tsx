@@ -39,8 +39,14 @@ export default function AdminUsers() {
     },
   });
 
+  // For paginated responses, apiFetch returns { data: [...], pagination: {...} }
   const users = data?.data || [];
   const pagination = data?.pagination || { page: 1, limit: 20, total: 0, totalPages: 1 };
+
+  // Debug: log the data structure (remove this after fixing)
+  if (data && !isLoading) {
+    console.log('Admin Users Data:', { users, pagination, raw: data });
+  }
 
   if (error) {
     return (

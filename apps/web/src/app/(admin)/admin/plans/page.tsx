@@ -52,7 +52,7 @@ export default function AdminPlans() {
       ) : (
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
           {plans.map((plan: any) => (
-            <div key={plan.id} className="card">
+            <div key={plan.id} className="card flex flex-col">
               <div className="card-header flex items-center justify-between">
                 <span>{plan.name}</span>
                 <span
@@ -63,7 +63,7 @@ export default function AdminPlans() {
                   {plan.isActive ? 'Active' : 'Inactive'}
                 </span>
               </div>
-              <div className="card-body">
+              <div className="card-body flex flex-col flex-grow">
                 <div className="mb-4">
                   <span className="text-3xl font-bold text-ink">
                     ${Number(plan.price).toFixed(2)}
@@ -93,7 +93,7 @@ export default function AdminPlans() {
                 </div>
 
                 {/* Features */}
-                <div className="mb-4 border-t border-slate-200 pt-4">
+                <div className="mb-4 border-t border-slate-200 pt-4 flex-grow">
                   <h4 className="text-sm font-semibold text-slate-700 mb-2">Features</h4>
                   <ul className="space-y-1 text-sm">
                     {Object.entries(plan.features || {}).map(([key, value]: [string, any]) => (
@@ -111,24 +111,26 @@ export default function AdminPlans() {
                   </ul>
                 </div>
 
-                {/* Stripe Info */}
-                <div className="border-t border-slate-200 pt-4">
-                  <p className="text-xs text-slate-500">
-                    Stripe Price ID:{' '}
-                    {plan.stripePriceId ? (
-                      <span className="font-mono">{plan.stripePriceId}</span>
-                    ) : (
-                      <span className="text-yellow-600">Not configured</span>
-                    )}
-                  </p>
-                </div>
+                {/* Stripe Info and Edit Button - Always at bottom */}
+                <div className="mt-auto">
+                  <div className="border-t border-slate-200 pt-4 mb-3">
+                    <p className="text-xs text-slate-500">
+                      Stripe Price ID:{' '}
+                      {plan.stripePriceId ? (
+                        <span className="font-mono">{plan.stripePriceId}</span>
+                      ) : (
+                        <span className="text-yellow-600">Not configured</span>
+                      )}
+                    </p>
+                  </div>
 
-                <button
-                  onClick={() => setEditingPlan(plan)}
-                  className="mt-4 w-full px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50"
-                >
-                  Edit Plan
-                </button>
+                  <button
+                    onClick={() => setEditingPlan(plan)}
+                    className="w-full px-4 py-2 border border-slate-300 rounded-lg hover:bg-slate-50"
+                  >
+                    Edit Plan
+                  </button>
+                </div>
               </div>
             </div>
           ))}
