@@ -22,6 +22,8 @@ export default function AdminUsers() {
         { token }
       ),
     retry: false,
+    staleTime: 0, // Don't cache, always fetch fresh data
+    cacheTime: 0, // Don't keep in cache
   });
 
   const toggleAdmin = useMutation({
