@@ -3,8 +3,12 @@ import { env } from '../config/env.js';
 import { prisma } from './prisma.js';
 import { AppError } from './errors.js';
 
+if (!env.STRIPE_SECRET_KEY) {
+  throw new Error('STRIPE_SECRET_KEY environment variable is required');
+}
+
 const stripe = new Stripe(env.STRIPE_SECRET_KEY, {
-  apiVersion: '2024-11-20.acacia',
+  apiVersion: '2025-12-15.clover',
 });
 
 /**

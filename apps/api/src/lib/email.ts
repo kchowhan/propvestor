@@ -25,6 +25,42 @@ const createTransporter = () => {
 
 const transporter = createTransporter();
 
+/**
+ * Generic email sending function
+ */
+export const sendEmail = async (
+  to: string,
+  subject: string,
+  text: string,
+  html?: string
+): Promise<boolean> => {
+  const mailOptions = {
+    from: env.SMTP_FROM || 'noreply@propvestor.dev',
+    to,
+    subject,
+    text,
+    html: html || text,
+  };
+
+  try {
+    if (env.SMTP_HOST && env.SMTP_USER && env.SMTP_PASS) {
+      await transporter.sendMail(mailOptions);
+      console.log(`Email sent to ${to}`);
+    } else {
+      // Development mode: log to console
+      console.log('\n=== EMAIL (Development Mode) ===');
+      console.log('To:', to);
+      console.log('Subject:', subject);
+      console.log('Body (text):', text.substring(0, 200) + '...');
+      console.log('================================\n');
+    }
+    return true;
+  } catch (error) {
+    console.error('Failed to send email:', error);
+    return false;
+  }
+};
+
 export const sendWelcomeEmail = async (email: string, name: string, password: string, organizationName: string) => {
   const mailOptions = {
     from: env.SMTP_FROM || 'noreply@propvestor.dev',

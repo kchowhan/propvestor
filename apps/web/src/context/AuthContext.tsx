@@ -25,7 +25,7 @@ type AuthContextValue = {
     email: string;
     password: string;
     organizationName: string;
-  }) => Promise<void>;
+  }) => Promise<any>;
   switchOrganization: (organizationId: string) => Promise<string>;
   createOrganization: (name: string) => Promise<void>;
   logout: () => void;
@@ -111,12 +111,13 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       method: 'POST',
       body: payload,
     });
-        setToken(data.token);
-        localStorage.setItem(TOKEN_KEY, data.token);
-        setUser(data.user);
-        setOrganization(data.organization);
-        setOrganizations([{ id: data.organization.id, name: data.organization.name, slug: data.organization.slug, role: 'OWNER' }]);
-        setCurrentRole('OWNER');
+    setToken(data.token);
+    localStorage.setItem(TOKEN_KEY, data.token);
+    setUser(data.user);
+    setOrganization(data.organization);
+    setOrganizations([{ id: data.organization.id, name: data.organization.name, slug: data.organization.slug, role: 'OWNER' }]);
+    setCurrentRole('OWNER');
+    return data; // Return response for caller to check message
   }, []);
 
   const switchOrganization = useCallback(async (organizationId: string) => {

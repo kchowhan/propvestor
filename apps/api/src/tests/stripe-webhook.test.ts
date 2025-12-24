@@ -3,20 +3,8 @@ import request from 'supertest';
 import { createApp } from '../app.js';
 import { prisma } from '../lib/prisma.js';
 import { createTestUser, createTestOrganization, createTestMembership, cleanupTestData } from './setup.js';
+import { mockStripeWebhooks } from './setup/stripe-mock.js';
 import Stripe from 'stripe';
-
-// Mock Stripe
-const mockStripeWebhooks = {
-  constructEvent: vi.fn(),
-};
-
-vi.mock('stripe', () => {
-  return {
-    default: vi.fn().mockImplementation(() => ({
-      webhooks: mockStripeWebhooks,
-    })),
-  };
-});
 
 const app = createApp();
 

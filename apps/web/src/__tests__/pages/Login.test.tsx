@@ -20,6 +20,7 @@ jest.mock('../../context/AuthContext', () => ({
   useAuth: () => ({
     login: mockLogin,
     register: mockRegister,
+    token: null,
   }),
 }));
 
@@ -98,6 +99,63 @@ describe('LoginPage', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/invalid credentials/i)).toBeInTheDocument();
+    });
+  });
+
+  it('should show verification notice after registration', async () => {
+    const user = userEvent.setup();
+    mockRegister.mockResolvedValue({
+      message: 'Registration successful. Please check your email for verification link.',
+      user: { email: 'test@example.com' },
+    });
+    render(<LoginPage />);
+
+    // Switch to register
+    await user.click(screen.getByText(/register/i));
+
+    // Fill form
+    await user.type(screen.getByLabelText(/full name/i), 'Test User');
+    await user.type(screen.getByLabelText(/email/i), 'test@example.com');
+    await user.type(screen.getByLabelText(/password/i), 'password123');
+    await user.type(screen.getByLabelText(/organization name/i), 'Test Org');
+
+    // Submit
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Check Your Email/i)).toBeInTheDocument();
+      expect(screen.getByText(/test@example.com/i)).toBeInTheDocument();
+    });
+  });
+
+  it('should allow returning to login from verification notice', async () => {
+    const user = userEvent.setup();
+    mockRegister.mockResolvedValue({
+      message: 'Registration successful. Please check your email for verification link.',
+    });
+    render(<LoginPage />);
+
+    // Switch to register and submit
+    await user.click(screen.getByText(/register/i));
+    await user.type(screen.getByLabelText(/full name/i), 'Test User');
+    await user.type(screen.getByLabelText(/email/i), 'test@example.com');
+    await user.type(screen.getByLabelText(/password/i), 'password123');
+    await user.type(screen.getByLabelText(/organization name/i), 'Test Org');
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    // Should show verification notice
+    await waitFor(() => {
+      expect(screen.getByText(/Check Your Email/i)).toBeInTheDocument();
+    });
+
+    // Click back to login
+    const backButton = screen.getByRole('button', { name: /Back to Login/i });
+    await user.click(backButton);
+
+    // Should return to login form
+    await waitFor(() => {
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
     });
   });
 });

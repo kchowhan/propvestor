@@ -27,7 +27,8 @@ export async function sendVerificationEmail(
   name: string,
   token: string
 ): Promise<void> {
-  const verificationUrl = `${env.FRONTEND_URL}/verify-email?token=${token}`;
+  const frontendUrl = env.APP_URL || 'http://localhost:3000';
+  const verificationUrl = `${frontendUrl}/verify-email?token=${token}`;
   
   const subject = 'Verify Your Email - PropVestor';
   const text = `

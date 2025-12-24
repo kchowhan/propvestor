@@ -11,6 +11,8 @@ export const LoginPage = () => {
   const [isRegister, setIsRegister] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [showVerificationNotice, setShowVerificationNotice] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState('');
 
   const [form, setForm] = useState({
     name: '',
@@ -36,12 +38,20 @@ export const LoginPage = () => {
     setLoading(true);
     try {
       if (isRegister) {
-        await register({
+        const response = await register({
           name: form.name,
           email: form.email,
           password: form.password,
           organizationName: form.organizationName,
         });
+        
+        // Show verification notice if message indicates verification is needed
+        if (response?.message && response.message.includes('verification')) {
+          setRegisteredEmail(form.email);
+          setShowVerificationNotice(true);
+          setLoading(false);
+          return;
+        }
       } else {
         await login(form.email, form.password);
       }
@@ -58,103 +68,155 @@ export const LoginPage = () => {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-primary-50 via-white to-accent-50 p-4">
       <div className="card w-full max-w-md shadow-large animate-slide-up">
         <div className="card-body">
-          <div className="text-center mb-6">
-            <div className="flex items-center justify-center gap-3 mb-4">
-              <Logo className="h-10 w-auto" />
-              <div className="text-2xl font-bold text-ink">
-                PropVestor
+          {showVerificationNotice ? (
+            <div className="text-center space-y-4">
+              <div className="mb-4">
+                <svg
+                  className="mx-auto h-16 w-16 text-primary-600"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76"
+                  />
+                </svg>
+              </div>
+              <h2 className="text-2xl font-bold text-ink">Check Your Email</h2>
+              <p className="text-slate-600">
+                We've sent a verification link to <strong>{registeredEmail}</strong>
+              </p>
+              <p className="text-sm text-slate-500">
+                Click the link in the email to verify your account. You can then log in and start using PropVestor.
+              </p>
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-left">
+                <p className="text-sm text-blue-900">
+                  <strong>💡 Tip:</strong> Check your spam folder if you don't see the email within a few minutes.
+                </p>
+              </div>
+              <div className="space-y-3 pt-4">
+                <button
+                  onClick={() => router.push('/resend-verification')}
+                  className="btn btn-outline w-full"
+                >
+                  Resend Verification Email
+                </button>
+                <button
+                  onClick={() => {
+                    setShowVerificationNotice(false);
+                    setIsRegister(false);
+                    setForm({ name: '', email: '', password: '', organizationName: '' });
+                  }}
+                  className="btn btn-secondary w-full"
+                >
+                  Back to Login
+                </button>
               </div>
             </div>
-            <p className="text-sm text-slate-600">
-              {isRegister ? 'Create your organization account' : 'Log in to manage your portfolio'}
-            </p>
-          </div>
-          
-          <form className="space-y-5" onSubmit={handleSubmit}>
-            {isRegister && (
-              <>
+          ) : (
+            <>
+              <div className="text-center mb-6">
+                <div className="flex items-center justify-center gap-3 mb-4">
+                  <Logo className="h-10 w-auto" />
+                  <div className="text-2xl font-bold text-ink">
+                    PropVestor
+                  </div>
+                </div>
+                <p className="text-sm text-slate-600">
+                  {isRegister ? 'Create your organization account' : 'Log in to manage your portfolio'}
+                </p>
+              </div>
+              
+              <form className="space-y-5" onSubmit={handleSubmit}>
+                {isRegister && (
+                  <>
+                    <div>
+                      <label htmlFor="name" className="label">Full Name</label>
+                      <input
+                        id="name"
+                        className="input"
+                        value={form.name}
+                        onChange={(e) => handleChange('name', e.target.value)}
+                        placeholder="John Doe"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="organizationName" className="label">Organization Name</label>
+                      <input
+                        id="organizationName"
+                        className="input"
+                        value={form.organizationName}
+                        onChange={(e) => handleChange('organizationName', e.target.value)}
+                        placeholder="Acme Properties"
+                        required
+                      />
+                    </div>
+                  </>
+                )}
                 <div>
-                  <label htmlFor="name" className="label">Full Name</label>
+                  <label htmlFor="email" className="label">Email</label>
                   <input
-                    id="name"
+                    id="email"
                     className="input"
-                    value={form.name}
-                    onChange={(e) => handleChange('name', e.target.value)}
-                    placeholder="John Doe"
+                    type="email"
+                    value={form.email}
+                    onChange={(e) => handleChange('email', e.target.value)}
+                    placeholder="you@example.com"
                     required
                   />
                 </div>
                 <div>
-                  <label htmlFor="organizationName" className="label">Organization Name</label>
+                  <label htmlFor="password" className="label">Password</label>
                   <input
-                    id="organizationName"
+                    id="password"
                     className="input"
-                    value={form.organizationName}
-                    onChange={(e) => handleChange('organizationName', e.target.value)}
-                    placeholder="Acme Properties"
+                    type="password"
+                    value={form.password}
+                    onChange={(e) => handleChange('password', e.target.value)}
+                    placeholder="••••••••"
                     required
                   />
                 </div>
-              </>
-            )}
-            <div>
-              <label htmlFor="email" className="label">Email</label>
-              <input
-                id="email"
-                className="input"
-                type="email"
-                value={form.email}
-                onChange={(e) => handleChange('email', e.target.value)}
-                placeholder="you@example.com"
-                required
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="label">Password</label>
-              <input
-                id="password"
-                className="input"
-                type="password"
-                value={form.password}
-                onChange={(e) => handleChange('password', e.target.value)}
-                placeholder="••••••••"
-                required
-              />
-            </div>
-            {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
-                <span>⚠️</span>
-                <span>{error}</span>
+                {error && (
+                  <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm flex items-center gap-2">
+                    <span>⚠️</span>
+                    <span>{error}</span>
+                  </div>
+                )}
+                <button
+                  type="submit"
+                  className="btn btn-primary w-full py-3 text-base"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <span className="flex items-center justify-center gap-2">
+                      <div className="spinner"></div>
+                      <span>Processing...</span>
+                    </span>
+                  ) : (
+                    isRegister ? 'Create Account' : 'Sign In'
+                  )}
+                </button>
+              </form>
+              
+              <div className="mt-6 text-center">
+                <button
+                  className="text-sm text-slate-600 hover:text-ink transition-colors"
+                  onClick={() => setIsRegister((prev) => !prev)}
+                >
+                  {isRegister ? (
+                    <>Already have an account? <span className="font-semibold text-primary-600">Sign in</span></>
+                  ) : (
+                    <>Need an account? <span className="font-semibold text-primary-600">Register</span></>
+                  )}
+                </button>
               </div>
-            )}
-            <button
-              type="submit"
-              className="btn btn-primary w-full py-3 text-base"
-              disabled={loading}
-            >
-              {loading ? (
-                <span className="flex items-center justify-center gap-2">
-                  <div className="spinner"></div>
-                  <span>Processing...</span>
-                </span>
-              ) : (
-                isRegister ? 'Create Account' : 'Sign In'
-              )}
-            </button>
-          </form>
-          
-          <div className="mt-6 text-center">
-            <button
-              className="text-sm text-slate-600 hover:text-ink transition-colors"
-              onClick={() => setIsRegister((prev) => !prev)}
-            >
-              {isRegister ? (
-                <>Already have an account? <span className="font-semibold text-primary-600">Sign in</span></>
-              ) : (
-                <>Need an account? <span className="font-semibold text-primary-600">Register</span></>
-              )}
-            </button>
-          </div>
+            </>
+          )}
         </div>
       </div>
     </div>
