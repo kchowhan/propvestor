@@ -27,25 +27,20 @@ export const renderWithProviders = (ui) => {
   );
 };
 
-// Mock Next.js router
+// Mock Next.js router - must be a function that returns the mock
 jest.mock('next/navigation', () => ({
-  useRouter() {
-    return {
-      push: jest.fn(),
-      replace: jest.fn(),
-      prefetch: jest.fn(),
-      back: jest.fn(),
-      pathname: '/',
-      query: {},
-      asPath: '/',
-    };
-  },
-  usePathname() {
-    return '/';
-  },
-  useSearchParams() {
-    return new URLSearchParams();
-  },
+  useRouter: jest.fn(() => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    prefetch: jest.fn(),
+    back: jest.fn(),
+    pathname: '/',
+    query: {},
+    asPath: '/',
+  })),
+  usePathname: jest.fn(() => '/'),
+  useSearchParams: jest.fn(() => new URLSearchParams()),
+  useParams: jest.fn(() => ({})),
 }));
 
 // Mock Stripe

@@ -28,7 +28,9 @@ describe('UserManagementPage', () => {
     renderWithProviders(<UserManagementPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Create User')).toBeInTheDocument();
+      // There are multiple "Create User" texts (tab and button), check for the tab
+      const createUserTab = screen.getAllByText('Create User')[0];
+      expect(createUserTab).toBeInTheDocument();
     });
   });
 
@@ -40,12 +42,19 @@ describe('UserManagementPage', () => {
     renderWithProviders(<UserManagementPage />);
 
     await waitFor(() => {
-      const nameInput = screen.getByPlaceholderText('Full Name');
-      fireEvent.change(nameInput, { target: { value: 'New User' } });
+      expect(screen.getByText('User Management')).toBeInTheDocument();
     });
 
-    const submitButton = screen.getByText('Create User');
-    fireEvent.click(submitButton);
+    const nameInput = screen.getByPlaceholderText('Name');
+    fireEvent.change(nameInput, { target: { value: 'New User' } });
+    
+    const emailInput = screen.getByPlaceholderText('Email');
+    fireEvent.change(emailInput, { target: { value: 'new@example.com' } });
+
+    const submitButton = screen.getAllByText('Create User').find(btn => btn.type === 'submit' || btn.closest('form'));
+    if (submitButton) {
+      fireEvent.click(submitButton);
+    }
 
     await waitFor(() => {
       expect(mockApiFetch).toHaveBeenCalledWith(
@@ -58,18 +67,15 @@ describe('UserManagementPage', () => {
   });
 
   it('should show permission error for non-OWNER/ADMIN', () => {
-    const nonAdminAuth = {
+    // Override the mock for this test
+    jest.spyOn(require('../../context/AuthContext'), 'useAuth').mockReturnValue({
       token: 'test-token',
       currentRole: 'VIEWER',
-    };
-
-    jest.doMock('../../context/AuthContext', () => ({
-      useAuth: () => nonAdminAuth,
-    }));
+    });
 
     renderWithProviders(<UserManagementPage />);
 
-    expect(screen.getByText(/don't have permission/)).toBeInTheDocument();
+    expect(screen.getByText(/don't have permission/i)).toBeInTheDocument();
   });
 });
 

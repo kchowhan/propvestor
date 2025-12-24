@@ -41,7 +41,8 @@ describe('LeaseDetailPage', () => {
     renderWithProviders(<LeaseDetailPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Property 1')).toBeInTheDocument();
+      // The property name appears in the format "Property 1 - Unit 1"
+      expect(screen.getByText(/Property 1.*Unit 1/)).toBeInTheDocument();
     });
   });
 

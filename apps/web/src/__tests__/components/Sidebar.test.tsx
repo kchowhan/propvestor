@@ -65,7 +65,7 @@ describe('Sidebar', () => {
     );
 
     // Logo component should be rendered
-    const logo = screen.getByAltText('PropVestor Logo');
+    const logo = screen.getByAltText('PropVestor');
     expect(logo).toBeInTheDocument();
   });
 });

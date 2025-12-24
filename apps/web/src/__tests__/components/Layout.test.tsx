@@ -1,6 +1,7 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { Layout } from '../../components/Layout';
+import { renderWithProviders } from '../../../jest.setup';
 
 // Mock dependencies
 jest.mock('next/navigation', () => ({
@@ -39,7 +40,7 @@ describe('Layout', () => {
   });
 
   it('should render children', () => {
-    render(
+    renderWithProviders(
       <Layout>
         <div>Test Content</div>
       </Layout>
@@ -49,7 +50,7 @@ describe('Layout', () => {
   });
 
   it('should show organization name', () => {
-    render(
+    renderWithProviders(
       <Layout>
         <div>Test</div>
       </Layout>
@@ -59,7 +60,7 @@ describe('Layout', () => {
   });
 
   it('should show organization switcher when multiple orgs', () => {
-    render(
+    renderWithProviders(
       <Layout>
         <div>Test</div>
       </Layout>
@@ -70,7 +71,7 @@ describe('Layout', () => {
   });
 
   it('should open organization menu on click', async () => {
-    render(
+    renderWithProviders(
       <Layout>
         <div>Test</div>
       </Layout>

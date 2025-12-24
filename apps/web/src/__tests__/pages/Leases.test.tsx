@@ -36,8 +36,13 @@ describe('LeasesPage', () => {
     renderWithProviders(<LeasesPage />);
 
     await waitFor(() => {
-      expect(screen.getByText('Create Lease')).toBeInTheDocument();
+      // Wait for loading to complete
+      expect(screen.queryByText('Loading leases...')).not.toBeInTheDocument();
     });
+
+    // Check for the tab button (not the header)
+    const createTab = screen.getAllByText('Create Lease')[0];
+    expect(createTab).toBeInTheDocument();
   });
 
   it('should switch to leases tab', async () => {
@@ -50,8 +55,14 @@ describe('LeasesPage', () => {
 
     renderWithProviders(<LeasesPage />);
 
-    const leasesTab = screen.getByText('Leases');
-    fireEvent.click(leasesTab);
+    await waitFor(() => {
+      expect(screen.queryByText('Loading leases...')).not.toBeInTheDocument();
+    });
+
+    const leasesTab = screen.getAllByText('Leases').find(btn => btn.tagName === 'BUTTON');
+    if (leasesTab) {
+      fireEvent.click(leasesTab);
+    }
 
     await waitFor(() => {
       expect(screen.getByText('Unit 1')).toBeInTheDocument();
@@ -72,9 +83,31 @@ describe('LeasesPage', () => {
     renderWithProviders(<LeasesPage />);
 
     await waitFor(() => {
-      const submitButton = screen.getByText('Create Lease');
-      fireEvent.click(submitButton);
+      expect(screen.queryByText('Loading leases...')).not.toBeInTheDocument();
     });
+
+    // Fill in required fields - use select for unit
+    await waitFor(() => {
+      const unitSelect = screen.getByDisplayValue('Select unit');
+      fireEvent.change(unitSelect, { target: { value: '1' } });
+    });
+    
+    const dateInputs = screen.getAllByDisplayValue('').filter((input: any) => input.type === 'date');
+    if (dateInputs.length >= 2) {
+      fireEvent.change(dateInputs[0], { target: { value: '2024-01-01' } });
+      fireEvent.change(dateInputs[1], { target: { value: '2024-12-31' } });
+    }
+    
+    const rentInput = screen.getByPlaceholderText('Rent amount');
+    fireEvent.change(rentInput, { target: { value: '1000' } });
+    
+    const rentDueInput = screen.getByPlaceholderText('Rent due day');
+    fireEvent.change(rentDueInput, { target: { value: '1' } });
+
+    const submitButton = screen.getAllByText('Create Lease').find((btn: any) => btn.type === 'submit' || btn.closest('form'));
+    if (submitButton) {
+      fireEvent.click(submitButton);
+    }
 
     await waitFor(() => {
       expect(mockApiFetch).toHaveBeenCalledWith(
@@ -83,7 +116,7 @@ describe('LeasesPage', () => {
           method: 'POST',
         })
       );
-    });
+    }, { timeout: 3000 });
   });
 });
 

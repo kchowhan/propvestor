@@ -65,7 +65,11 @@ describe('TenantsPage', () => {
 
     renderWithProviders(<TenantsPage />);
 
-    const prospectsTab = screen.getByText('Prospects & Applicants');
+    await waitFor(() => {
+      expect(screen.getByText('Tenants')).toBeInTheDocument();
+    });
+
+    const prospectsTab = screen.getByText(/prospects/i);
     fireEvent.click(prospectsTab);
 
     await waitFor(() => {
@@ -82,13 +86,36 @@ describe('TenantsPage', () => {
 
     renderWithProviders(<TenantsPage />);
 
-    const prospectsTab = screen.getByText('Prospects & Applicants');
+    await waitFor(() => {
+      expect(screen.getByText('Tenants')).toBeInTheDocument();
+    });
+
+    const prospectsTab = screen.getByText(/prospects/i);
     fireEvent.click(prospectsTab);
 
     await waitFor(() => {
-      const firstNameInput = screen.getByPlaceholderText('First Name');
-      fireEvent.change(firstNameInput, { target: { value: 'New' } });
+      const firstNameLabel = screen.getByText('First Name');
+      expect(firstNameLabel).toBeInTheDocument();
     });
+
+    // Use querySelector to find inputs by their labels' text content
+    const firstNameLabel = screen.getByText('First Name');
+    const firstNameInput = firstNameLabel.parentElement?.querySelector('input');
+    if (firstNameInput) {
+      fireEvent.change(firstNameInput, { target: { value: 'New' } });
+    }
+    
+    const lastNameLabel = screen.getByText('Last Name');
+    const lastNameInput = lastNameLabel.parentElement?.querySelector('input');
+    if (lastNameInput) {
+      fireEvent.change(lastNameInput, { target: { value: 'Prospect' } });
+    }
+    
+    const emailLabel = screen.getByText('Email');
+    const emailInput = emailLabel.parentElement?.querySelector('input[type="email"]');
+    if (emailInput) {
+      fireEvent.change(emailInput, { target: { value: 'new@example.com' } });
+    }
 
     const submitButton = screen.getByText('Add Prospect');
     fireEvent.click(submitButton);

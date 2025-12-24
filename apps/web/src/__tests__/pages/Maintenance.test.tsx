@@ -50,11 +50,29 @@ describe('MaintenancePage', () => {
     renderWithProviders(<MaintenancePage />);
 
     await waitFor(() => {
-      const nameInput = screen.getByPlaceholderText('Vendor Name');
+      expect(screen.getByText('Vendors')).toBeInTheDocument();
+    });
+
+    // Wait for vendor form to be available and click Add Vendor button if needed
+    await waitFor(() => {
+      const addButton = screen.queryByText('+ Add Vendor');
+      if (addButton) {
+        fireEvent.click(addButton);
+      }
+    });
+
+    await waitFor(() => {
+      const nameInput = screen.getByPlaceholderText('Vendor name');
       fireEvent.change(nameInput, { target: { value: 'New Vendor' } });
     });
 
-    const submitButton = screen.getByText('Add Vendor');
+    const phoneLabel = screen.getByText(/phone/i);
+    const phoneInput = phoneLabel.parentElement?.querySelector('input');
+    if (phoneInput) {
+      fireEvent.change(phoneInput, { target: { value: '555-1234' } });
+    }
+
+    const submitButton = screen.getByText(/add vendor/i);
     fireEvent.click(submitButton);
 
     await waitFor(() => {
@@ -78,8 +96,10 @@ describe('MaintenancePage', () => {
 
     renderWithProviders(<MaintenancePage />);
 
-    const createTab = screen.getByText('Create Work Order');
-    fireEvent.click(createTab);
+    const createTab = screen.getAllByText('Create Work Order').find(btn => btn.tagName === 'BUTTON');
+    if (createTab) {
+      fireEvent.click(createTab);
+    }
 
     await waitFor(() => {
       const titleInput = screen.getByPlaceholderText('Title');

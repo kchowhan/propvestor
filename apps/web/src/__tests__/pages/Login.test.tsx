@@ -66,7 +66,7 @@ describe('LoginPage', () => {
     render(<LoginPage />);
 
     // Switch to register
-    await user.click(screen.getByText(/create account/i));
+    await user.click(screen.getByText(/register/i));
 
     // Fill form
     await user.type(screen.getByLabelText(/full name/i), 'Test User');
