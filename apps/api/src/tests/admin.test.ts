@@ -416,17 +416,29 @@ describe('Admin Routes', () => {
   });
 
   describe('POST /api/admin/organizations/:id/impersonate', () => {
-    it('should return impersonation context', async () => {
+    it('should return impersonation token and context', async () => {
       const response = await request(app)
         .post(`/api/admin/organizations/${testOrg.id}/impersonate`)
         .set('Authorization', `Bearer ${superAdminToken}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.data).toMatchObject({
-        organizationId: testOrg.id,
-        organizationName: 'Test Org 1',
-        message: expect.any(String),
+      expect(response.body).toMatchObject({
+        token: expect.any(String),
+        user: {
+          id: expect.any(String),
+          name: expect.any(String),
+          email: expect.any(String),
+          isSuperAdmin: true,
+        },
+        organization: {
+          id: testOrg.id,
+          name: 'Test Org 1',
+          slug: expect.any(String),
+        },
       });
+      
+      // Verify the token is valid JWT
+      expect(response.body.token).toMatch(/^eyJ/);
     });
 
     it('should return 404 for non-existent organization', async () => {
