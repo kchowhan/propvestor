@@ -10,15 +10,15 @@ const nextConfig = {
   // Exclude pages directory from being treated as routes
   // The /pages directory contains components, not route files
   pageExtensions: ['tsx', 'ts', 'jsx', 'js'],
-  // Custom webpack config to ignore pages directory as routes
-  webpack: (config, { isServer }) => {
-    // Ignore pages directory from being treated as routes
-    if (!isServer) {
-      config.resolve.alias = {
-        ...config.resolve.alias,
-      };
-    }
-    return config;
+  // TypeScript config
+  typescript: {
+    // Allow build to continue even with type errors in CI (we check types separately)
+    ignoreBuildErrors: false,
+  },
+  // ESLint config
+  eslint: {
+    // Allow build to continue even with ESLint errors in CI (we check lint separately)
+    ignoreDuringBuilds: false,
   },
 };
 
