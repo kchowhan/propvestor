@@ -27,6 +27,7 @@ import { applicantRouter } from './applicants.js';
 import { paymentSetupRouter } from './payment-setup.js';
 import { associationRouter } from './associations.js';
 import { homeownerRouter } from './homeowners.js';
+import { boardMemberRouter } from './board-members.js';
 
 export const router = Router();
 
@@ -70,3 +71,4 @@ router.use('/applicants', applicantRouter);
 router.use('/payment-setup', paymentSetupRouter);
 router.use('/associations', associationRouter);
 router.use('/homeowners', homeownerRouter);
+router.use('/board-members', boardMemberRouter);
