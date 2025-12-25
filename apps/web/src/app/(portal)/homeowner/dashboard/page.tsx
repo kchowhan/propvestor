@@ -1,8 +1,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useHomeownerAuth } from '../../../../../context/HomeownerAuthContext';
-import { apiFetch } from '../../../../../api/client';
+import { useHomeownerAuth } from '@/context/HomeownerAuthContext';
+import { apiFetch } from '@/api/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 

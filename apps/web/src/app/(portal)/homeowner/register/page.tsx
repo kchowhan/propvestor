@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useHomeownerAuth } from '../../../../context/HomeownerAuthContext';
-import { Logo } from '../../../../components/Logo';
+import { useHomeownerAuth } from '@/context/HomeownerAuthContext';
+import { Logo } from '@/components/Logo';
 import Link from 'next/link';
 import { CheckCircleIcon } from '@heroicons/react/24/solid';
 

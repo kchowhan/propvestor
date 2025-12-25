@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@fontsource/tasa-explorer": "^5.2.2",
+    "@heroicons/react": "^2.2.0",
     "@stripe/react-stripe-js": "^5.4.1",
     "@stripe/stripe-js": "^8.6.0",
     "@tanstack/react-query": "^5.51.1",
