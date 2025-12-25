@@ -28,6 +28,8 @@ import { paymentSetupRouter } from './payment-setup.js';
 import { associationRouter } from './associations.js';
 import { homeownerRouter } from './homeowners.js';
 import { boardMemberRouter } from './board-members.js';
+import { homeownerAuthRouter } from './homeowner-auth.js';
+import { homeownerPortalRouter } from './homeowner-portal.js';
 
 export const router = Router();
 
@@ -37,6 +39,8 @@ router.get('/health', (req, res) => {
 });
 
 router.use('/auth', authRouter);
+// Homeowner authentication (public - no auth required)
+router.use('/homeowner-auth', homeownerAuthRouter);
 // Webhooks (no auth required - external services will call these)
 router.use('/docusign', docusignWebhookRouter);
 router.use('/stripe', stripeWebhookRouter);
@@ -72,3 +76,4 @@ router.use('/payment-setup', paymentSetupRouter);
 router.use('/associations', associationRouter);
 router.use('/homeowners', homeownerRouter);
 router.use('/board-members', boardMemberRouter);
+router.use('/homeowner-portal', homeownerPortalRouter);
