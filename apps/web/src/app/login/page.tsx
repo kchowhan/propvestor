@@ -6,11 +6,12 @@ import { useAuth } from '@/context/AuthContext';
 import { useHomeownerAuth } from '@/context/HomeownerAuthContext';
 import { Logo } from '@/components/Logo';
 import Link from 'next/link';
+import { apiFetch } from '@/api/client';
 
 export default function UnifiedLogin() {
   const router = useRouter();
-  const { token: pmToken, loading: pmLoading, login: pmLogin } = useAuth();
-  const { token: hoToken, loading: hoLoading, login: hoLogin } = useHomeownerAuth();
+  const { token: pmToken, loading: pmLoading } = useAuth();
+  const { token: hoToken, loading: hoLoading } = useHomeownerAuth();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState({
@@ -36,42 +37,39 @@ export default function UnifiedLogin() {
     setLoading(true);
 
     try {
-      // Try homeowner login first (most common for end-users), then property manager
-      let hoError: any = null;
-      try {
-        await hoLogin(form.email, form.password, form.associationId || undefined);
-        router.push('/homeowner/dashboard');
-        return; // Success, exit early
-      } catch (err) {
-        hoError = err;
-        // If homeowner login fails, try property manager
-      }
+      // Use unified login endpoint - single API call
+      const data = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: {
+          email: form.email,
+          password: form.password,
+          ...(form.associationId && { associationId: form.associationId }),
+        },
+      });
 
-      // Try property manager login
-      try {
-        await pmLogin(form.email, form.password);
-        router.push('/dashboard');
-        return; // Success, exit early
-      } catch (pmError: any) {
-        // Both logins failed - use the most specific error message
-        const pmErrorMsg = pmError?.message || '';
-        const hoErrorMsg = hoError?.message || '';
-        
-        // Prefer property manager error message (usually more specific)
-        // But check for common error patterns
-        if (pmErrorMsg.includes('not part of an organization')) {
-          setError('Your account is not associated with any organization. Please contact support.');
-        } else if (pmErrorMsg && pmErrorMsg !== 'Request failed') {
-          setError(pmErrorMsg);
-        } else if (hoErrorMsg && hoErrorMsg !== 'Request failed') {
-          setError(hoErrorMsg);
+      if (data.userType === 'homeowner') {
+        // Homeowner login - set homeowner auth context directly
+        if (data.token && data.homeowner && data.association) {
+          localStorage.setItem('propvestor_homeowner_token', data.token);
+          // Reload page to trigger auth context update
+          window.location.href = '/homeowner/dashboard';
         } else {
-          setError('Invalid email or password. Please check your credentials.');
+          throw new Error('Invalid response from server: missing homeowner data');
         }
-        setLoading(false);
+      } else if (data.userType === 'property-manager') {
+        // Property manager login - set property manager auth context directly
+        if (data.token && data.user) {
+          localStorage.setItem('propvestor_token', data.token);
+          // Reload page to trigger auth context update
+          window.location.href = '/dashboard';
+        } else {
+          throw new Error('Invalid response from server: missing user data');
+        }
+      } else {
+        throw new Error('Invalid response from server: unknown user type');
       }
-    } catch (err) {
-      const errorMessage = (err as Error).message || 'Failed to login. Please check your credentials.';
+    } catch (err: any) {
+      const errorMessage = err?.message || 'Failed to login. Please check your credentials.';
       setError(errorMessage);
       setLoading(false);
     }

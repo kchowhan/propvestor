@@ -101,9 +101,65 @@ authRouter.post('/register', async (req, res, next) => {
   }
 });
 
+// Unified login endpoint - tries homeowner first, then property manager
 authRouter.post('/login', async (req, res, next) => {
   try {
-    const data = parseBody(loginSchema, req.body);
+    const data = parseBody(
+      z.object({
+        email: z.string().email(),
+        password: z.string().min(1),
+        associationId: z.string().uuid().optional(), // Optional for homeowners
+      }),
+      req.body
+    );
+
+    // Try homeowner login first (most common for end-users)
+    const where: any = { email: data.email };
+    if (data.associationId) {
+      where.associationId = data.associationId;
+    }
+
+    const homeowner = await prisma.homeowner.findFirst({
+      where,
+      include: {
+        association: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (homeowner && homeowner.passwordHash) {
+      const matches = await bcrypt.compare(data.password, homeowner.passwordHash);
+      if (matches && !homeowner.archivedAt) {
+        // Homeowner login successful
+        const signHomeownerToken = (payload: { homeownerId: string; associationId: string }) =>
+          jwt.sign(payload, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN } as any);
+        const token = signHomeownerToken({
+          homeownerId: homeowner.id,
+          associationId: homeowner.associationId,
+        });
+
+        return res.json({
+          token,
+          userType: 'homeowner',
+          homeowner: {
+            id: homeowner.id,
+            firstName: homeowner.firstName,
+            lastName: homeowner.lastName,
+            email: homeowner.email,
+            emailVerified: homeowner.emailVerified,
+            status: homeowner.status,
+            accountBalance: homeowner.accountBalance,
+          },
+          association: homeowner.association,
+        });
+      }
+    }
+
+    // If homeowner login failed, try property manager login
     const user = await prisma.user.findUnique({
       where: { email: data.email },
       include: {
@@ -131,13 +187,13 @@ authRouter.post('/login', async (req, res, next) => {
         // Super admin without memberships - create a temporary token with a placeholder organization
         // They can access admin routes which don't require organizationId
         const token = signToken({ userId: user.id, organizationId: '00000000-0000-0000-0000-000000000000' });
-        res.json({
+        return res.json({
           token,
+          userType: 'property-manager',
           user: { id: user.id, name: user.name, email: user.email, isSuperAdmin: user.isSuperAdmin },
           organization: null,
           organizations: [],
         });
-        return;
       }
       throw new AppError(403, 'FORBIDDEN', 'User is not part of an organization.');
     }
@@ -146,8 +202,9 @@ authRouter.post('/login', async (req, res, next) => {
     const defaultMembership = user.memberships[0];
     const token = signToken({ userId: user.id, organizationId: defaultMembership.organizationId });
 
-    res.json({
+    return res.json({
       token,
+      userType: 'property-manager',
       user: { id: user.id, name: user.name, email: user.email, isSuperAdmin: user.isSuperAdmin },
       organization: defaultMembership.organization,
       organizations: user.memberships.map((m) => ({
@@ -161,6 +218,7 @@ authRouter.post('/login', async (req, res, next) => {
     next(err);
   }
 });
+
 
 authRouter.get('/me', requireAuth, async (req, res, next) => {
   try {
