@@ -82,6 +82,7 @@ const hoaNavItems = [
   { to: '/associations', label: 'Associations', icon: HOAIcon },
   { to: '/homeowners', label: 'Homeowners', icon: TenantsIcon },
   { to: '/board-members', label: 'Board Members', icon: UsersIcon },
+  { to: '/violations', label: 'Violations', icon: MaintenanceIcon },
 ];
 
 export const Sidebar = memo(() => {

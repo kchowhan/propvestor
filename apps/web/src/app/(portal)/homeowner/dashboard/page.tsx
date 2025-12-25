@@ -233,6 +233,9 @@ export default function HomeownerDashboardPage() {
               <Link href="/homeowner/maintenance" className="btn btn-secondary">
                 Submit Maintenance Request
               </Link>
+              <Link href="/homeowner/violations" className="btn btn-secondary">
+                View Violations
+              </Link>
             </div>
           </div>
         </div>

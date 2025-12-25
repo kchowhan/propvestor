@@ -146,6 +146,29 @@ enum HOAFeeStatus {
   CANCELLED
 }
 
+enum ViolationSeverity {
+  MINOR
+  MODERATE
+  MAJOR
+  CRITICAL
+}
+
+enum ViolationStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  APPEALED
+  CLOSED
+}
+
+enum ViolationLetterType {
+  FIRST_NOTICE
+  SECOND_NOTICE
+  FINAL_NOTICE
+  HEARING_NOTICE
+  CUSTOM
+}
+
 model User {
   id                           String                   @id @default(uuid()) @db.Uuid
   email                        String                   @unique
@@ -161,6 +184,8 @@ model User {
   documents                    Document[]               @relation("UploadedBy")
   reconciliationsReviewed      Reconciliation[]         @relation("ReviewedBy")
   boardMemberships             BoardMember[]            @relation("BoardMemberUser") // HOA board memberships
+  violationsCreated            Violation[]              @relation("CreatedViolation") // Violations created by this user
+  violationLettersSent         ViolationLetter[]        @relation("SentViolationLetter") // Violation letters sent by this user
 }
 
 // Organization is the central entity that contains BOTH property management and investment management data.
@@ -251,7 +276,8 @@ model Association {
   hoaFees        HOAFee[] // HOA fees for all homeowners
   payments       HomeownerPayment[] // Payments from homeowners
   paymentMethods HomeownerPaymentMethod[] // Payment methods for homeowners
-  // Future: violations, architectural reviews, funds, events, etc.
+  violations     Violation[] // Violations issued in this association
+  // Future: architectural reviews, funds, events, etc.
 
   @@index([organizationId])
   @@index([isActive])
@@ -292,6 +318,7 @@ model Homeowner {
   payments            HomeownerPayment[] // Payments made by homeowner
   paymentMethods      HomeownerPaymentMethod[] // Payment methods (Stripe)
   maintenanceRequests WorkOrder[]              @relation("RequestedByHomeowner") // Maintenance requests submitted by homeowner
+  violations          Violation[] // Violations issued to homeowner
 
   @@unique([associationId, email])
   @@index([associationId])
@@ -350,6 +377,7 @@ model Property {
 
   organization Organization        @relation(fields: [organizationId], references: [id])
   units        Unit[]
+  violations   Violation[] // Violations for this property
   charges      Charge[]
   workOrders   WorkOrder[]
   documents    Document[]
@@ -378,6 +406,7 @@ model Unit {
   leases     Lease[]
   charges    Charge[]
   workOrders WorkOrder[]
+  violations Violation[] // Violations for this unit
   documents  Document[]
   tenants    Tenant[]
   homeowners Homeowner[] // HOA homeowners who own this unit
@@ -824,6 +853,7 @@ model Document {
   unitId           String?  @db.Uuid
   leaseId          String?  @db.Uuid
   tenantId         String?  @db.Uuid
+  violationId      String?  @db.Uuid // For violation photo attachments
   fileName         String
   fileType         String
   storageKey       String
@@ -835,9 +865,79 @@ model Document {
   unit         Unit?        @relation(fields: [unitId], references: [id])
   lease        Lease?       @relation(fields: [leaseId], references: [id])
   tenant       Tenant?      @relation(fields: [tenantId], references: [id])
+  violation    Violation?   @relation(fields: [violationId], references: [id])
   uploadedBy   User         @relation("UploadedBy", fields: [uploadedByUserId], references: [id])
 
   @@index([organizationId])
+  @@index([violationId])
+}
+
+// Violation represents a violation issued to a homeowner in an association
+model Violation {
+  id             String           @id @default(uuid()) @db.Uuid
+  associationId  String           @db.Uuid
+  homeownerId    String           @db.Uuid
+  unitId         String?          @db.Uuid
+  propertyId     String?          @db.Uuid
+  // Violation details
+  type           String // e.g., 'NOISE', 'PARKING', 'TRASH', 'LANDSCAPING', 'ARCHITECTURAL', 'PET', 'OTHER'
+  severity       ViolationSeverity @default(MINOR)
+  description    String
+  // Status tracking
+  status         ViolationStatus  @default(OPEN)
+  violationDate  DateTime         @default(now())
+  resolvedDate   DateTime?
+  // Metadata
+  createdByUserId String           @db.Uuid // User who created the violation
+  notes           String?
+  // Relations
+  documents       Document[] // Photo/document attachments
+  letters         ViolationLetter[] // Letters sent for this violation
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+
+  association Association @relation(fields: [associationId], references: [id])
+  homeowner    Homeowner   @relation(fields: [homeownerId], references: [id])
+  unit         Unit?       @relation(fields: [unitId], references: [id])
+  property     Property?   @relation(fields: [propertyId], references: [id])
+  createdBy    User        @relation("CreatedViolation", fields: [createdByUserId], references: [id])
+
+  @@index([associationId])
+  @@index([homeownerId])
+  @@index([unitId])
+  @@index([propertyId])
+  @@index([status])
+  @@index([violationDate])
+  @@index([createdByUserId])
+}
+
+// ViolationLetter represents a letter sent to a homeowner regarding a violation
+model ViolationLetter {
+  id              String   @id @default(uuid()) @db.Uuid
+  violationId     String   @db.Uuid
+  // Letter details
+  letterType      ViolationLetterType @default(FIRST_NOTICE)
+  subject         String
+  content         String // HTML or plain text content
+  // Delivery
+  sentDate        DateTime?
+  sentByUserId    String?  @db.Uuid // User who sent the letter
+  emailSent       Boolean  @default(false)
+  emailSentAt     DateTime?
+  // PDF storage
+  pdfUrl          String? // URL to generated PDF
+  pdfStorageKey   String? // Storage key for PDF file
+  // Metadata
+  notes           String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  violation Violation @relation(fields: [violationId], references: [id], onDelete: Cascade)
+  sentBy    User?     @relation("SentViolationLetter", fields: [sentByUserId], references: [id])
+
+  @@index([violationId])
+  @@index([sentDate])
+  @@index([letterType])
 }
 
 model Investor {

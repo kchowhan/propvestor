@@ -18,7 +18,11 @@ const DEFAULT_SUGGESTIONS = [
   'Show me a KPI summary for this month',
   'List open work orders',
   'Show delinquent charges',
+  'Show tenant status summary',
   'List leases expiring in the next 30 days',
+  'Show HOA fees overdue',
+  'List active vendors',
+  'Show reconciliation status',
   'Show recent payments',
   'List properties',
 ];
@@ -294,6 +298,183 @@ const intents: IntentMatch[] = [
             leaseId: payment.leaseId,
             property: payment.lease?.unit.property,
             unit: payment.lease?.unit,
+          })),
+        },
+      };
+    },
+  },
+  {
+    id: 'tenant_summary',
+    description: 'Tenant status summary across the portfolio.',
+    match: (text) => /tenants?|applicants?|screening/.test(text),
+    handle: async (orgId) => {
+      const [total, statusCounts, recentTenants] = await Promise.all([
+        prisma.tenant.count({ where: { organizationId: orgId, archivedAt: null } }),
+        prisma.tenant.groupBy({
+          by: ['status'],
+          where: { organizationId: orgId, archivedAt: null },
+          _count: { _all: true },
+        }),
+        prisma.tenant.findMany({
+          where: { organizationId: orgId, archivedAt: null },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          select: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            status: true,
+            email: true,
+            createdAt: true,
+            property: { select: { id: true, name: true } },
+            unit: { select: { id: true, name: true } },
+          },
+        }),
+      ]);
+
+      const breakdown = statusCounts.map((row) => ({
+        status: row.status,
+        count: row._count._all,
+      }));
+
+      return {
+        reply: `Tenant summary: ${total} total. Status breakdown: ${breakdown
+          .map((row) => `${row.status} ${row.count}`)
+          .join(', ')}.`,
+        data: { total, breakdown, recentTenants },
+      };
+    },
+  },
+  {
+    id: 'vendor_list',
+    description: 'Active vendors with categories and contact info.',
+    match: (text) => /vendors?|contractors?|service providers?/.test(text),
+    handle: async (orgId) => {
+      const [total, vendors] = await Promise.all([
+        prisma.vendor.count({ where: { organizationId: orgId } }),
+        prisma.vendor.findMany({
+          where: { organizationId: orgId },
+          orderBy: { createdAt: 'desc' },
+          take: 30,
+          select: {
+            id: true,
+            name: true,
+            category: true,
+            phone: true,
+            email: true,
+            website: true,
+          },
+        }),
+      ]);
+
+      const replySuffix = total > vendors.length ? ` Showing ${vendors.length} of ${total}.` : '';
+      return {
+        reply: `Found ${total} vendors.${replySuffix}`,
+        data: { total, vendors },
+      };
+    },
+  },
+  {
+    id: 'hoa_fees_overview',
+    description: 'HOA fee status summary and overdue fees.',
+    match: (text) => /hoa fees?|homeowner fees?|dues|assessments?/.test(text),
+    handle: async (orgId) => {
+      const where = {
+        association: { organizationId: orgId },
+      } as const;
+
+      const [total, statusCounts, overdueFees] = await Promise.all([
+        prisma.hOAFee.count({ where }),
+        prisma.hOAFee.groupBy({
+          by: ['status'],
+          where,
+          _count: { _all: true },
+        }),
+        prisma.hOAFee.findMany({
+          where: {
+            association: { organizationId: orgId },
+            status: { in: ['PENDING', 'PARTIALLY_PAID', 'OVERDUE'] },
+          },
+          orderBy: { dueDate: 'asc' },
+          take: 20,
+          include: {
+            homeowner: { select: { id: true, firstName: true, lastName: true, email: true } },
+            association: { select: { id: true, name: true } },
+          },
+        }),
+      ]);
+
+      const breakdown = statusCounts.map((row) => ({
+        status: row.status,
+        count: row._count._all,
+      }));
+
+      return {
+        reply: `HOA fees: ${total} total. Status breakdown: ${breakdown
+          .map((row) => `${row.status} ${row.count}`)
+          .join(', ')}.`,
+        data: {
+          total,
+          breakdown,
+          overdueFees: overdueFees.map((fee) => ({
+            id: fee.id,
+            description: fee.description,
+            status: fee.status,
+            amount: Number(fee.amount),
+            dueDate: fee.dueDate,
+            homeowner: fee.homeowner,
+            association: fee.association,
+          })),
+        },
+      };
+    },
+  },
+  {
+    id: 'reconciliation_status',
+    description: 'Recent reconciliations and status summary.',
+    match: (text) => /reconciliation|bank match|bank transactions?/.test(text),
+    handle: async (orgId) => {
+      const [total, statusCounts, recent] = await Promise.all([
+        prisma.reconciliation.count({ where: { organizationId: orgId } }),
+        prisma.reconciliation.groupBy({
+          by: ['status'],
+          where: { organizationId: orgId },
+          _count: { _all: true },
+        }),
+        prisma.reconciliation.findMany({
+          where: { organizationId: orgId },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+          select: {
+            id: true,
+            status: true,
+            startDate: true,
+            endDate: true,
+            expectedTotal: true,
+            actualTotal: true,
+            difference: true,
+            createdAt: true,
+          },
+        }),
+      ]);
+
+      const breakdown = statusCounts.map((row) => ({
+        status: row.status,
+        count: row._count._all,
+      }));
+
+      return {
+        reply: `Reconciliation status: ${total} total. Breakdown: ${breakdown
+          .map((row) => `${row.status} ${row.count}`)
+          .join(', ')}.`,
+        data: {
+          total,
+          breakdown,
+          recent: recent.map((item) => ({
+            ...item,
+            expectedTotal: Number(item.expectedTotal ?? 0),
+            actualTotal: Number(item.actualTotal ?? 0),
+            difference: Number(item.difference ?? 0),
           })),
         },
       };

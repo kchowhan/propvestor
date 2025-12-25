@@ -23,6 +23,7 @@ const documentSchema = z.object({
   unitId: z.string().uuid().optional().nullable(),
   leaseId: z.string().uuid().optional().nullable(),
   tenantId: z.string().uuid().optional().nullable(),
+  violationId: z.string().uuid().optional().nullable(),
   fileName: z.string().min(1),
   fileType: z.string().min(1),
   storageKey: z.string().min(1),
@@ -71,6 +72,7 @@ documentRouter.post('/upload', requireAuth, upload.single('file'), async (req, r
       unitId: z.string().uuid().optional().nullable(),
       leaseId: z.string().uuid().optional().nullable(),
       tenantId: z.string().uuid().optional().nullable(),
+      violationId: z.string().uuid().optional().nullable(),
     });
 
     const metadata = parseBody(bodySchema, req.body);
@@ -84,6 +86,8 @@ documentRouter.post('/upload', requireAuth, upload.single('file'), async (req, r
     let folder = 'documents';
     if (metadata.leaseId) {
       folder = 'leases';
+    } else if (metadata.violationId) {
+      folder = 'violations';
     } else if (metadata.propertyId) {
       folder = 'properties';
     } else if (metadata.tenantId) {
@@ -106,6 +110,7 @@ documentRouter.post('/upload', requireAuth, upload.single('file'), async (req, r
         unitId: metadata.unitId ?? undefined,
         leaseId: metadata.leaseId ?? undefined,
         tenantId: metadata.tenantId ?? undefined,
+        violationId: metadata.violationId ?? undefined,
         fileName: originalFileName,
         fileType: req.file.mimetype,
         storageKey,
@@ -144,6 +149,7 @@ documentRouter.post('/', requireAuth, async (req, res, next) => {
         unitId: data.unitId ?? undefined,
         leaseId: data.leaseId ?? undefined,
         tenantId: data.tenantId ?? undefined,
+        violationId: data.violationId ?? undefined,
         fileName: data.fileName,
         fileType: data.fileType,
         storageKey: data.storageKey,

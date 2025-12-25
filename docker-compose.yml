@@ -18,6 +18,19 @@ services:
       timeout: 5s
       retries: 5
 
+  redis:
+    image: redis:7-alpine
+    container_name: propvestor-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   api:
     build:
       context: .
@@ -29,11 +42,14 @@ services:
       JWT_SECRET: ${JWT_SECRET:-change-me-in-production}
       JWT_EXPIRES_IN: 7d
       CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:5173,http://localhost:80}
+      REDIS_URL: ${REDIS_URL:-redis://redis:6379}
       # Add other environment variables as needed
     ports:
       - "4000:4000"
     depends_on:
       postgres:
+        condition: service_healthy
+      redis:
         condition: service_healthy
     volumes:
       # Mount .env file or use environment variables
@@ -55,4 +71,4 @@ services:
 
 volumes:
   postgres_data:
-
+  redis_data:

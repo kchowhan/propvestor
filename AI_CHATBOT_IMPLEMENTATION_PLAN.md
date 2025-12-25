@@ -4,6 +4,20 @@
 
 This document outlines the implementation plan for adding an AI-powered chatbot to PropVestor that can query and interact with all integrated data sources.
 
+## Current Implementation Status
+
+- ✅ `/api/chat` endpoint (org-scoped, authenticated)
+- ✅ Ops assistant rule-based intent routing
+- ✅ KPI summary, work orders, delinquency, expiring leases, recent payments, properties
+- ✅ Tenant status summary
+- ✅ Vendor list
+- ✅ HOA fees status + overdue list
+- ✅ Reconciliation status summary
+- ✅ Floating chat overlay UI in the web app
+- ⏳ Chat history storage (ChatSession/ChatMessage models)
+- ⏳ LLM provider integration and tool/function calling
+- ⏳ RAG/document retrieval and embeddings
+
 ## Architecture
 
 ### High-Level Architecture
@@ -430,4 +444,3 @@ CHAT_TEMPERATURE=0.7  # Creativity level (0-1)
 - **Custom Training**: Fine-tune model on PropVestor-specific data
 - **Proactive Alerts**: AI suggests actions based on data patterns
 - **Document Q&A**: Answer questions about uploaded documents
-

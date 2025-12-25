@@ -248,3 +248,96 @@ Handlebars.registerHelper('add', (a: number, b: number) => {
   return a + b;
 });
 
+export interface ViolationLetterTemplateData {
+  // Association
+  associationName: string;
+  associationAddress: string;
+  associationCity: string;
+  associationState: string;
+  associationPostalCode: string;
+  
+  // Homeowner
+  homeownerName: string;
+  homeownerAddress: string;
+  
+  // Violation
+  violationType: string;
+  violationSeverity: string;
+  violationDescription: string;
+  violationDate: string;
+  
+  // Letter
+  letterType: string;
+  subject: string;
+  content: string;
+  sentDate: string;
+  
+  // Property/Unit
+  propertyName?: string;
+  unitName?: string;
+  propertyAddress?: string;
+}
+
+/**
+ * Generate violation letter PDF from HTML template
+ */
+export async function generateViolationLetterPdf(
+  data: ViolationLetterTemplateData
+): Promise<Buffer> {
+  // Load and compile template
+  const template = await loadTemplate('violation-letter');
+  const html = template(data);
+
+  // Launch Puppeteer
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+  });
+
+  try {
+    const page = await browser.newPage();
+    
+    // Set content
+    await page.setContent(html, { waitUntil: 'networkidle0' });
+    
+    // Generate PDF
+    const pdf = await page.pdf({
+      format: 'Letter',
+      margin: {
+        top: '0.75in',
+        right: '0.75in',
+        bottom: '0.75in',
+        left: '0.75in',
+      },
+      printBackground: true,
+    });
+
+    return Buffer.from(pdf);
+  } finally {
+    await browser.close();
+  }
+}
+
+/**
+ * Generate violation letter PDF and upload to GCS
+ */
+export async function generateAndUploadViolationLetterPdf(
+  data: ViolationLetterTemplateData,
+  associationId: string,
+  violationId: string,
+  letterId: string
+): Promise<{ storageKey: string; url: string }> {
+  // Generate PDF
+  const pdfBuffer = await generateViolationLetterPdf(data);
+  
+  // Upload to GCS
+  const fileName = `violation-letter-${letterId}-${Date.now()}.pdf`;
+  const storageKey = await uploadFile(pdfBuffer, fileName, 'application/pdf', `violations/${associationId}`);
+  
+  // Get signed URL (valid for 1 year)
+  const { getSignedUrl } = await import('./storage.js');
+  const url = await getSignedUrl(storageKey, 365 * 24 * 60);
+  
+  return { storageKey, url };
+}
+

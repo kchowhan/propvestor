@@ -33,6 +33,7 @@ import { homeownerPortalRouter } from './homeowner-portal.js';
 import { hoaFeeRouter } from './hoa-fees.js';
 import { homeownerPaymentMethodRouter } from './homeowner-payment-methods.js';
 import { homeownerPaymentRouter } from './homeowner-payments.js';
+import { violationRouter } from './violations.js';
 import { cronRouter } from './cron.js';
 import { chatRouter } from './chat.js';
 
@@ -86,6 +87,7 @@ router.use('/board-members', boardMemberRouter);
 router.use('/homeowner-portal', homeownerPortalRouter);
 router.use('/hoa-fees', hoaFeeRouter);
 router.use('/homeowner-payments', homeownerPaymentRouter);
+router.use('/violations', violationRouter);
 router.use('/chat', chatRouter);
 // Cron jobs (protected by secret token)
 router.use('/cron', cronRouter);
