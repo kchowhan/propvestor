@@ -1,10 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { HomeownerAuthProvider, useHomeownerAuth } from '../../../context/HomeownerAuthContext';
 
-function PortalLayoutContent({ children }: { children: React.ReactNode }) {
+function PortalLayoutContent({ children }: { children: ReactNode }) {
   const { token, loading } = useHomeownerAuth();
   const router = useRouter();
 
@@ -29,7 +29,7 @@ function PortalLayoutContent({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-export default function HomeownerPortalLayout({ children }: { children: React.ReactNode }) {
+export default function HomeownerPortalLayout({ children }: { children: ReactNode }) {
   return (
     <HomeownerAuthProvider>
       <PortalLayoutContent>{children}</PortalLayoutContent>
