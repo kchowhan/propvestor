@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { render } from '@testing-library/react';
 import React from 'react';
 
 // Create a test QueryClient with default options
@@ -20,11 +21,14 @@ export const createTestQueryClient = () => new QueryClient({
 // Helper to render with QueryClientProvider
 export const renderWithProviders = (ui) => {
   const queryClient = createTestQueryClient();
-  const { render } = require('@testing-library/react');
-  const React = require('react');
-  return render(
-    React.createElement(QueryClientProvider, { client: queryClient }, ui)
-  );
+  const AllTheProviders = ({ children }) => {
+    return (
+      <QueryClientProvider client={queryClient}>
+        {children}
+      </QueryClientProvider>
+    );
+  };
+  return render(ui, { wrapper: AllTheProviders });
 };
 
 // Mock Next.js router - must be a function that returns the mock
