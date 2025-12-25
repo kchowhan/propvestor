@@ -23,8 +23,8 @@ const updateBoardMemberSchema = createBoardMemberSchema.partial().extend({
 
 const querySchema = z.object({
   associationId: z.string().uuid().optional(),
-  isActive: z.string().optional().transform((val) => val === 'true'),
-  role: z.string().optional(),
+  isActive: z.string().optional().transform((val) => val !== undefined ? val === 'true' : undefined),
+  role: z.enum(['PRESIDENT', 'VICE_PRESIDENT', 'SECRETARY', 'TREASURER', 'MEMBER_AT_LARGE']).optional(),
 });
 
 // List board members
