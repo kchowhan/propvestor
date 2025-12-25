@@ -4,20 +4,20 @@ export default function AboutPage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary-600 to-primary-800 text-white py-20">
+      <section className="bg-ink text-white py-16">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl font-bold mb-6">About PropVestor</h1>
-            <p className="text-xl text-primary-100">
+            <p className="text-xl text-primary-300">
               We're on a mission to revolutionize property and investment management with agentic AI-first technology. 
-              Built from the ground up with autonomous AI agents that proactively manage properties for landlords and investors everywhere.
+              Built from the ground up with autonomous AI agents that proactively manage properties for landlords, HOA boards, and investors everywhere.
             </p>
           </div>
         </div>
       </section>
 
       {/* Our Story */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-gradient-to-b from-white to-primary-50/30">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-4xl font-bold text-ink mb-6">Our Story</h2>
@@ -44,13 +44,13 @@ export default function AboutPage() {
       </section>
 
       {/* Mission & Values */}
-      <section className="py-20 bg-surface">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-6">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-4xl font-bold text-ink text-center mb-12">Our Mission & Values</h2>
 
             <div className="grid md:grid-cols-3 gap-8">
-              <div className="bg-white p-8 rounded-xl border border-ink/10">
+              <div className="bg-white p-8 rounded-xl border-2 border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all">
                 <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-lg flex items-center justify-center text-2xl mb-4">
                   🎯
                 </div>
@@ -61,7 +61,7 @@ export default function AboutPage() {
                 </p>
               </div>
 
-              <div className="bg-white p-8 rounded-xl border border-ink/10">
+              <div className="bg-white p-8 rounded-xl border-2 border-primary-100 hover:border-primary-300 hover:shadow-lg transition-all">
                 <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-lg flex items-center justify-center text-2xl mb-4">
                   🤝
                 </div>
@@ -72,8 +72,8 @@ export default function AboutPage() {
                 </p>
               </div>
 
-              <div className="bg-white p-8 rounded-xl border border-ink/10">
-                <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-lg flex items-center justify-center text-2xl mb-4">
+              <div className="bg-primary-50 p-8 rounded-xl border-2 border-primary-300 hover:border-primary-500 hover:shadow-lg transition-all">
+                <div className="w-12 h-12 bg-ink text-white rounded-lg flex items-center justify-center text-2xl mb-4">
                   💡
                 </div>
                 <h3 className="text-2xl font-semibold text-ink mb-3">AI-First Innovation</h3>
@@ -88,26 +88,26 @@ export default function AboutPage() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-gradient-to-b from-primary-50/50 to-white">
         <div className="container mx-auto px-6">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-4xl font-bold text-ink text-center mb-12">PropVestor by the Numbers</h2>
 
             <div className="grid md:grid-cols-4 gap-8 text-center">
               <div>
-                <div className="text-5xl font-bold text-primary-600 mb-2">5,000+</div>
+                <div className="text-5xl font-bold text-ink mb-2">5,000+</div>
                 <div className="text-xl text-ink/70">Active Users</div>
               </div>
               <div>
-                <div className="text-5xl font-bold text-primary-600 mb-2">25,000+</div>
+                <div className="text-5xl font-bold text-ink mb-2">25,000+</div>
                 <div className="text-xl text-ink/70">Properties Managed</div>
               </div>
               <div>
-                <div className="text-5xl font-bold text-primary-600 mb-2">$100M+</div>
+                <div className="text-5xl font-bold text-ink mb-2">$100M+</div>
                 <div className="text-xl text-ink/70">Rent Collected</div>
               </div>
               <div>
-                <div className="text-5xl font-bold text-primary-600 mb-2">99.9%</div>
+                <div className="text-5xl font-bold text-ink mb-2">99.9%</div>
                 <div className="text-xl text-ink/70">Uptime</div>
               </div>
             </div>
@@ -116,7 +116,7 @@ export default function AboutPage() {
       </section>
 
       {/* Team Section */}
-      <section className="py-20 bg-surface">
+      <section className="py-20 bg-white">
         <div className="container mx-auto px-6">
           <div className="max-w-6xl mx-auto">
             <h2 className="text-4xl font-bold text-ink text-center mb-6">Meet the Team</h2>
@@ -126,34 +126,34 @@ export default function AboutPage() {
             </p>
 
             <div className="grid md:grid-cols-3 gap-8">
-              <div className="text-center">
-                <div className="w-32 h-32 bg-primary-200 rounded-full mx-auto mb-4 flex items-center justify-center text-6xl">
+              <div className="text-center p-6 rounded-xl hover:bg-primary-50 transition-colors">
+                <div className="w-32 h-32 bg-gradient-to-br from-primary-200 to-primary-300 rounded-full mx-auto mb-4 flex items-center justify-center text-6xl shadow-lg">
                   👨‍💼
                 </div>
                 <h3 className="text-xl font-semibold text-ink mb-1">John Smith</h3>
-                <p className="text-primary-600 mb-2">CEO & Co-Founder</p>
+                <p className="text-accent-600 mb-2 font-medium">CEO & Co-Founder</p>
                 <p className="text-sm text-ink/70">
                   15 years in real estate investing and property management
                 </p>
               </div>
 
-              <div className="text-center">
-                <div className="w-32 h-32 bg-primary-200 rounded-full mx-auto mb-4 flex items-center justify-center text-6xl">
+              <div className="text-center p-6 rounded-xl hover:bg-primary-50 transition-colors">
+                <div className="w-32 h-32 bg-gradient-to-br from-primary-200 to-primary-300 rounded-full mx-auto mb-4 flex items-center justify-center text-6xl shadow-lg">
                   👩‍💻
                 </div>
                 <h3 className="text-xl font-semibold text-ink mb-1">Sarah Johnson</h3>
-                <p className="text-primary-600 mb-2">CTO & Co-Founder</p>
+                <p className="text-accent-600 mb-2 font-medium">CTO & Co-Founder</p>
                 <p className="text-sm text-ink/70">
                   Former engineer at leading SaaS companies
                 </p>
               </div>
 
-              <div className="text-center">
-                <div className="w-32 h-32 bg-primary-200 rounded-full mx-auto mb-4 flex items-center justify-center text-6xl">
+              <div className="text-center p-6 rounded-xl hover:bg-primary-50 transition-colors">
+                <div className="w-32 h-32 bg-gradient-to-br from-primary-200 to-primary-300 rounded-full mx-auto mb-4 flex items-center justify-center text-6xl shadow-lg">
                   👨‍🎨
                 </div>
                 <h3 className="text-xl font-semibold text-ink mb-1">Mike Chen</h3>
-                <p className="text-primary-600 mb-2">Head of Product</p>
+                <p className="text-accent-600 mb-2 font-medium">Head of Product</p>
                 <p className="text-sm text-ink/70">
                   Design thinking expert with a passion for user experience
                 </p>
@@ -164,22 +164,22 @@ export default function AboutPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-primary-600 to-primary-800 text-white">
+      <section className="py-16 bg-ink text-white">
         <div className="container mx-auto px-6 text-center">
           <h2 className="text-4xl font-bold mb-6">Join Thousands of Happy Customers</h2>
-          <p className="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-primary-300 mb-8 max-w-2xl mx-auto">
             Start managing your properties more efficiently today
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="http://localhost:3000/login"
-              className="inline-block bg-white text-primary-700 font-semibold px-10 py-4 rounded-lg hover:bg-primary-50 transition-colors text-lg"
+              className="inline-block bg-white text-ink font-semibold px-10 py-4 rounded-lg hover:bg-primary-100 transition-colors text-lg"
             >
               Start Free Trial
             </Link>
             <Link
               href="/contact"
-              className="inline-block bg-primary-500 text-white font-semibold px-10 py-4 rounded-lg hover:bg-primary-400 transition-colors text-lg"
+              className="inline-block bg-primary-700 text-white font-semibold px-10 py-4 rounded-lg hover:bg-primary-600 transition-colors text-lg"
             >
               Contact Us
             </Link>

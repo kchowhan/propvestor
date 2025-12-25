@@ -80,15 +80,15 @@ export default function PricingPage() {
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary-600 to-primary-800 text-white py-20">
+      <section className="bg-ink text-white py-16">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl font-bold mb-6">Simple, Transparent Pricing</h1>
-            <p className="text-xl text-primary-100 mb-4">
+            <p className="text-xl text-primary-300 mb-4">
               Choose the plan that fits your portfolio size. All plans include our agentic AI-first platform 
-              with autonomous AI agents that work intelligently to manage your properties.
+              with autonomous AI agents that work intelligently to manage your properties, HOA communities, and investment portfolios.
             </p>
-            <p className="text-primary-200">
+            <p className="text-primary-400">
               All plans include a 14-day free trial • Cancel anytime
             </p>
           </div>
@@ -104,12 +104,12 @@ export default function PricingPage() {
                 key={idx}
                 className={`rounded-2xl p-8 ${
                   plan.highlighted
-                    ? 'bg-primary-600 text-white shadow-2xl transform scale-105 border-4 border-primary-400 relative'
-                    : 'bg-white border-2 border-ink/10 hover:border-primary-400 transition-colors'
+                    ? 'bg-ink text-white shadow-2xl transform scale-105 border-4 border-primary-300 relative'
+                    : 'bg-white border-2 border-primary-200 hover:border-primary-400 transition-colors'
                 }`}
               >
                 {plan.highlighted && (
-                  <div className="absolute top-0 right-0 bg-yellow-400 text-ink text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
+                  <div className="absolute top-0 right-0 bg-accent-500 text-white text-xs font-bold px-3 py-1 rounded-bl-lg rounded-tr-lg">
                     MOST POPULAR
                   </div>
                 )}
@@ -135,8 +135,8 @@ export default function PricingPage() {
                   href={plan.name === 'Enterprise' ? '/contact' : 'http://localhost:3000/login'}
                   className={`block w-full py-3 px-6 rounded-lg font-semibold text-center transition-colors mb-6 ${
                     plan.highlighted
-                      ? 'bg-white text-primary-700 hover:bg-primary-50'
-                      : 'bg-primary-600 text-white hover:bg-primary-700'
+                      ? 'bg-white text-ink hover:bg-primary-100'
+                      : 'bg-ink text-white hover:bg-primary-800'
                   }`}
                 >
                   {plan.cta}
@@ -147,7 +147,7 @@ export default function PricingPage() {
                     <li key={featureIdx} className="flex items-start">
                       <span
                         className={`mr-2 mt-1 ${
-                          plan.highlighted ? 'text-primary-200' : 'text-green-500'
+                          plan.highlighted ? 'text-primary-300' : 'text-accent-600'
                         }`}
                       >
                         ✓
@@ -220,15 +220,15 @@ export default function PricingPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-primary-600 to-primary-800 text-white">
+      <section className="py-16 bg-ink text-white">
         <div className="container mx-auto px-6 text-center">
           <h2 className="text-4xl font-bold mb-6">Still Have Questions?</h2>
-          <p className="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
+          <p className="text-xl text-primary-300 mb-8 max-w-2xl mx-auto">
             Our team is here to help you find the perfect plan for your needs
           </p>
           <Link
             href="/contact"
-            className="inline-block bg-white text-primary-700 font-semibold px-10 py-4 rounded-lg hover:bg-primary-50 transition-colors text-lg"
+            className="inline-block bg-white text-ink font-semibold px-10 py-4 rounded-lg hover:bg-primary-100 transition-colors text-lg"
           >
             Contact Sales
           </Link>

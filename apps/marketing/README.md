@@ -98,9 +98,69 @@ The contact form currently logs to console. Implement a proper backend endpoint 
 
 ### Vercel (Recommended)
 
-```bash
-vercel --prod
-```
+#### Option 1: Deploy via Vercel Dashboard (Easiest)
+
+1. **Push your code to GitHub/GitLab/Bitbucket**
+   ```bash
+   git add .
+   git commit -m "Prepare for Vercel deployment"
+   git push origin main
+   ```
+
+2. **Go to [vercel.com](https://vercel.com)** and sign in
+
+3. **Click "Add New Project"**
+
+4. **Import your repository**
+
+5. **Configure the project:**
+   - **Framework Preset:** Next.js (auto-detected)
+   - **Root Directory:** `apps/marketing`
+   - **Build Command:** `cd ../.. && npm install && cd apps/marketing && npm run build`
+   - **Output Directory:** `.next` (leave default)
+   - **Install Command:** `cd ../.. && npm install`
+
+6. **Add Environment Variables** (if needed):
+   - `NEXT_PUBLIC_APP_URL` = `https://app.propvestor.com` (or your app URL)
+
+7. **Click "Deploy"**
+
+#### Option 2: Deploy via Vercel CLI
+
+1. **Install Vercel CLI:**
+   ```bash
+   npm i -g vercel
+   ```
+
+2. **Login to Vercel:**
+   ```bash
+   vercel login
+   ```
+
+3. **Navigate to marketing app:**
+   ```bash
+   cd apps/marketing
+   ```
+
+4. **Deploy:**
+   ```bash
+   vercel
+   ```
+   - Follow the prompts
+   - When asked for root directory, specify: `apps/marketing`
+   - When asked for build command, use: `cd ../.. && npm install && cd apps/marketing && npm run build`
+
+5. **Deploy to production:**
+   ```bash
+   vercel --prod
+   ```
+
+#### Monorepo Configuration
+
+The `vercel.json` file in the root directory is configured for monorepo support. Vercel will automatically:
+- Install dependencies from the root
+- Build the marketing app
+- Deploy it correctly
 
 ### Docker
 

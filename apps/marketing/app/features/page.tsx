@@ -1,3 +1,6 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
 export default function FeaturesPage() {
@@ -113,28 +116,6 @@ export default function FeaturesPage() {
       ],
     },
     {
-      category: 'Team & Organization',
-      icon: '👨‍💼',
-      items: [
-        {
-          title: 'Multi-User Access',
-          description: 'Invite team members with customizable role-based permissions.',
-        },
-        {
-          title: 'Organization Management',
-          description: 'Manage multiple organizations or property portfolios under one account.',
-        },
-        {
-          title: 'Activity Logs',
-          description: 'Track all user actions and changes for accountability and audit trails.',
-        },
-        {
-          title: 'Admin Dashboard',
-          description: 'Super admin tools for managing organizations, users, and subscriptions.',
-        },
-      ],
-    },
-    {
       category: 'HOA Management',
       icon: '🏘️',
       items: [
@@ -161,6 +142,28 @@ export default function FeaturesPage() {
         {
           title: 'Account Balance Tracking',
           description: 'Real-time account balance tracking for homeowners with payment history and fee details.',
+        },
+      ],
+    },
+    {
+      category: 'Team & Organization',
+      icon: '👨‍💼',
+      items: [
+        {
+          title: 'Multi-User Access',
+          description: 'Invite team members with customizable role-based permissions.',
+        },
+        {
+          title: 'Organization Management',
+          description: 'Manage multiple organizations or property portfolios under one account.',
+        },
+        {
+          title: 'Activity Logs',
+          description: 'Track all user actions and changes for accountability and audit trails.',
+        },
+        {
+          title: 'Admin Dashboard',
+          description: 'Super admin tools for managing organizations, users, and subscriptions.',
         },
       ],
     },
@@ -196,20 +199,41 @@ export default function FeaturesPage() {
     },
   ];
 
+  const [activeTab, setActiveTab] = useState(0);
+
+  // Set initial tab from URL hash if present
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const hash = window.location.hash.slice(1);
+      if (hash) {
+        const index = features.findIndex(
+          (f) => f.category.toLowerCase().replace(/\s+/g, '-') === hash
+        );
+        if (index !== -1) {
+          setActiveTab(index);
+        }
+      }
+    }
+  }, []);
+
+  const activeCategory = features[activeTab];
+
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen bg-white">
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-primary-600 to-primary-800 text-white py-20">
+      <section className="bg-ink text-white py-16 border-b border-primary-200">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-5xl font-bold mb-6">Agentic AI-First Features for Property & Investment Management</h1>
-            <p className="text-xl text-primary-100 mb-8">
+            <h1 className="text-5xl md:text-6xl font-bold mb-6 tracking-tight">
+              Agentic AI-First Features
+            </h1>
+            <p className="text-xl text-primary-300 mb-8 leading-relaxed">
               Built with agentic AI at the core, PropVestor delivers autonomous agents that proactively 
-              manage your rental properties and investments with intelligent automation and real-time insights
+              manage your rental properties, HOA communities, and investment portfolios with intelligent automation.
             </p>
             <Link
               href="http://localhost:3000/login"
-              className="inline-block bg-white text-primary-700 font-semibold px-8 py-4 rounded-lg hover:bg-primary-50 transition-colors text-lg"
+              className="inline-block bg-white text-ink font-semibold px-8 py-4 rounded-lg hover:bg-primary-100 transition-colors text-lg"
             >
               Start Free Trial
             </Link>
@@ -217,54 +241,112 @@ export default function FeaturesPage() {
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="py-20 bg-white">
+      {/* Main Content with Vertical Tabs */}
+      <section className="py-12 md:py-16 bg-white">
         <div className="container mx-auto px-6">
-          <div className="space-y-20">
-            {features.map((category, idx) => (
-              <div key={idx} className="max-w-6xl mx-auto">
-                <div className="flex items-center gap-4 mb-10">
-                  <div className="w-16 h-16 bg-primary-100 text-primary-600 rounded-xl flex items-center justify-center text-3xl">
-                    {category.icon}
-                  </div>
-                  <h2 className="text-4xl font-bold text-ink">{category.category}</h2>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-6">
-                  {category.items.map((feature, featureIdx) => (
-                    <div
-                      key={featureIdx}
-                      className="bg-surface p-6 rounded-xl border border-ink/10 hover:border-primary-400 transition-all hover:shadow-lg"
-                    >
-                      <h3 className="text-xl font-semibold text-ink mb-3">{feature.title}</h3>
-                      <p className="text-ink/70">{feature.description}</p>
-                    </div>
-                  ))}
-                </div>
+          <div className="flex flex-col lg:flex-row gap-8 max-w-7xl mx-auto">
+            {/* Vertical Sidebar */}
+            <aside className="lg:w-80 flex-shrink-0">
+              <div className="sticky top-24 bg-white border border-primary-200 rounded-xl p-4 shadow-sm">
+                <nav className="space-y-2">
+                  {features.map((category, idx) => {
+                    const isActive = idx === activeTab;
+                    const isHOA = category.category === 'HOA Management';
+                    const isAI = category.category === 'Agentic AI & Automation';
+                    
+                    return (
+                      <button
+                        key={idx}
+                        onClick={() => {
+                          setActiveTab(idx);
+                          window.history.replaceState(
+                            null,
+                            '',
+                            `#${category.category.toLowerCase().replace(/\s+/g, '-')}`
+                          );
+                        }}
+                        className={`w-full text-left px-4 py-4 rounded-lg font-medium transition-all ${
+                          isActive
+                            ? isHOA
+                              ? 'bg-accent-50 border-2 border-accent-500 text-accent-700 shadow-sm'
+                              : isAI
+                              ? 'bg-primary-50 border-2 border-primary-500 text-primary-700 shadow-sm'
+                              : 'bg-primary-50 border-2 border-primary-500 text-primary-700 shadow-sm'
+                            : 'border-2 border-transparent text-slate-700 hover:bg-primary-50 hover:text-ink'
+                        }`}
+                      >
+                        <div className="flex items-center gap-3">
+                          <span className="text-2xl">{category.icon}</span>
+                          <span className="text-base">{category.category}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </nav>
               </div>
-            ))}
+            </aside>
+
+            {/* Content Area */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-4 mb-8">
+                <div className={`w-16 h-16 rounded-xl flex items-center justify-center text-4xl ${
+                  activeCategory.category === 'HOA Management' 
+                    ? 'bg-accent-100 text-accent-700' 
+                    : activeCategory.category === 'Agentic AI & Automation'
+                    ? 'bg-primary-100 text-primary-700'
+                    : 'bg-primary-100 text-primary-700'
+                }`}>
+                  {activeCategory.icon}
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold text-ink">{activeCategory.category}</h2>
+              </div>
+
+              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {activeCategory.items.map((feature, featureIdx) => (
+                  <div
+                    key={featureIdx}
+                    className={`group p-6 rounded-xl border transition-all hover:shadow-lg ${
+                      activeCategory.category === 'HOA Management'
+                        ? 'bg-white border-accent-200 hover:border-accent-400'
+                        : activeCategory.category === 'Agentic AI & Automation'
+                        ? 'bg-primary-50 border-primary-200 hover:border-primary-400'
+                        : 'bg-white border-primary-200 hover:border-primary-400'
+                    }`}
+                  >
+                    <h3 className={`text-lg font-semibold mb-2 ${
+                      activeCategory.category === 'HOA Management'
+                        ? 'text-accent-700'
+                        : 'text-ink'
+                    }`}>
+                      {feature.title}
+                    </h3>
+                    <p className="text-slate-600 text-sm leading-relaxed">{feature.description}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 bg-gradient-to-br from-primary-600 to-primary-800 text-white">
+      <section className="py-16 bg-ink text-white border-t border-primary-200">
         <div className="container mx-auto px-6 text-center">
-          <h2 className="text-4xl font-bold mb-6">Ready to Experience AI-First Management?</h2>
-          <p className="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of property managers who trust PropVestor's agentic AI to autonomously 
-            manage their properties with intelligent automation
+          <h2 className="text-4xl font-bold mb-4 tracking-tight">Ready to Experience AI-First Management?</h2>
+          <p className="text-xl text-primary-300 mb-8 max-w-2xl mx-auto">
+            Join property managers, HOA boards, and real estate investors who trust PropVestor's agentic AI 
+            to autonomously manage their properties with intelligent automation.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="http://localhost:3000/login"
-              className="inline-block bg-white text-primary-700 font-semibold px-10 py-4 rounded-lg hover:bg-primary-50 transition-colors text-lg"
+              className="inline-block bg-white text-ink font-semibold px-10 py-4 rounded-lg hover:bg-primary-100 transition-colors text-lg"
             >
               Start Free Trial
             </Link>
             <Link
               href="/pricing"
-              className="inline-block bg-primary-500 text-white font-semibold px-10 py-4 rounded-lg hover:bg-primary-400 transition-colors text-lg"
+              className="inline-block bg-primary-700 text-white font-semibold px-10 py-4 rounded-lg hover:bg-primary-600 transition-colors text-lg"
             >
               View Pricing
             </Link>
@@ -274,4 +356,3 @@ export default function FeaturesPage() {
     </div>
   );
 }
-

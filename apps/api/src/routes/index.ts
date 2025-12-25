@@ -34,6 +34,7 @@ import { hoaFeeRouter } from './hoa-fees.js';
 import { homeownerPaymentMethodRouter } from './homeowner-payment-methods.js';
 import { homeownerPaymentRouter } from './homeowner-payments.js';
 import { cronRouter } from './cron.js';
+import { chatRouter } from './chat.js';
 
 export const router = Router();
 
@@ -85,5 +86,6 @@ router.use('/board-members', boardMemberRouter);
 router.use('/homeowner-portal', homeownerPortalRouter);
 router.use('/hoa-fees', hoaFeeRouter);
 router.use('/homeowner-payments', homeownerPaymentRouter);
+router.use('/chat', chatRouter);
 // Cron jobs (protected by secret token)
 router.use('/cron', cronRouter);
