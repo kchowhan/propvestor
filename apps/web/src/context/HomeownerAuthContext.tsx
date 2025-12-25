@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useMemo, type ReactNode } from 'react';
 import { apiFetch } from '../api/client';
 
 type Homeowner = {
@@ -49,7 +49,7 @@ const HomeownerAuthContext = createContext<HomeownerAuthContextValue | undefined
 
 const HOMEOWNER_TOKEN_KEY = 'propvestor_homeowner_token';
 
-export const HomeownerAuthProvider = ({ children }: { children: React.ReactNode }) => {
+export const HomeownerAuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
   const [homeowner, setHomeowner] = useState<Homeowner | null>(null);
   const [association, setAssociation] = useState<Association | null>(null);
