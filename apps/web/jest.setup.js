@@ -19,16 +19,22 @@ export const createTestQueryClient = () => new QueryClient({
 });
 
 // Helper to render with QueryClientProvider
+// React 19 compatible version - use JSX which handles children properly
 export const renderWithProviders = (ui) => {
   const queryClient = createTestQueryClient();
-  const AllTheProviders = ({ children }) => {
+  
+  // React 19: Use JSX syntax which properly handles React elements as children
+  // The wrapper function receives children as a prop, which React 19 handles correctly
+  function TestWrapper({ children }) {
     return (
       <QueryClientProvider client={queryClient}>
         {children}
       </QueryClientProvider>
     );
-  };
-  return render(ui, { wrapper: AllTheProviders });
+  }
+  
+  // React Testing Library's render function properly converts ui to children for the wrapper
+  return render(ui, { wrapper: TestWrapper });
 };
 
 // Mock Next.js router - must be a function that returns the mock
