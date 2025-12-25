@@ -37,17 +37,38 @@ export default function UnifiedLogin() {
 
     try {
       // Try homeowner login first (most common for end-users), then property manager
+      let hoError: any = null;
       try {
         await hoLogin(form.email, form.password, form.associationId || undefined);
         router.push('/homeowner/dashboard');
-      } catch (hoError) {
+        return; // Success, exit early
+      } catch (err) {
+        hoError = err;
         // If homeowner login fails, try property manager
-        try {
-          await pmLogin(form.email, form.password);
-          router.push('/dashboard');
-        } catch (pmError) {
-          throw new Error('Invalid email or password. Please check your credentials.');
+      }
+
+      // Try property manager login
+      try {
+        await pmLogin(form.email, form.password);
+        router.push('/dashboard');
+        return; // Success, exit early
+      } catch (pmError: any) {
+        // Both logins failed - use the most specific error message
+        const pmErrorMsg = pmError?.message || '';
+        const hoErrorMsg = hoError?.message || '';
+        
+        // Prefer property manager error message (usually more specific)
+        // But check for common error patterns
+        if (pmErrorMsg.includes('not part of an organization')) {
+          setError('Your account is not associated with any organization. Please contact support.');
+        } else if (pmErrorMsg && pmErrorMsg !== 'Request failed') {
+          setError(pmErrorMsg);
+        } else if (hoErrorMsg && hoErrorMsg !== 'Request failed') {
+          setError(hoErrorMsg);
+        } else {
+          setError('Invalid email or password. Please check your credentials.');
         }
+        setLoading(false);
       }
     } catch (err) {
       const errorMessage = (err as Error).message || 'Failed to login. Please check your credentials.';
@@ -117,7 +138,7 @@ export default function UnifiedLogin() {
 
             <div>
               <label htmlFor="associationId" className="label">
-                Association ID <span className="text-slate-400 font-normal">(Optional - for homeowners)</span>
+                Association ID <span className="text-slate-400 font-normal">(Optional - for homeowners only)</span>
               </label>
               <input
                 id="associationId"
