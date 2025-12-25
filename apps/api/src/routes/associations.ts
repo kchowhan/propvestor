@@ -60,27 +60,61 @@ associationRouter.get('/', requireAuth, async (req, res, next) => {
       orderBy: { createdAt: 'desc' },
     });
 
+    // Get property counts for each association
+    const associationsWithPropertyCounts = await Promise.all(
+      associations.map(async (a) => {
+        // Get unique property IDs from homeowners
+        const homeowners = await prisma.homeowner.findMany({
+          where: {
+            associationId: a.id,
+            archivedAt: null,
+          },
+          select: {
+            unitId: true,
+            propertyId: true,
+            unit: {
+              select: {
+                propertyId: true,
+              },
+            },
+          },
+        });
+
+        const propertyIds = new Set<string>();
+        homeowners.forEach((ho) => {
+          if (ho.unit?.propertyId) {
+            propertyIds.add(ho.unit.propertyId);
+          } else if (ho.propertyId) {
+            propertyIds.add(ho.propertyId);
+          }
+        });
+
+        return {
+          id: a.id,
+          name: a.name,
+          addressLine1: a.addressLine1,
+          addressLine2: a.addressLine2,
+          city: a.city,
+          state: a.state,
+          postalCode: a.postalCode,
+          country: a.country,
+          phone: a.phone,
+          email: a.email,
+          website: a.website,
+          fiscalYearStart: a.fiscalYearStart,
+          notes: a.notes,
+          isActive: a.isActive,
+          homeownerCount: a._count.homeowners,
+          propertyCount: propertyIds.size,
+          boardMemberCount: a._count.boardMembers,
+          createdAt: a.createdAt,
+          updatedAt: a.updatedAt,
+        };
+      })
+    );
+
     res.json({
-      data: associations.map((a) => ({
-        id: a.id,
-        name: a.name,
-        addressLine1: a.addressLine1,
-        addressLine2: a.addressLine2,
-        city: a.city,
-        state: a.state,
-        postalCode: a.postalCode,
-        country: a.country,
-        phone: a.phone,
-        email: a.email,
-        website: a.website,
-        fiscalYearStart: a.fiscalYearStart,
-        notes: a.notes,
-        isActive: a.isActive,
-        homeownerCount: a._count.homeowners,
-        boardMemberCount: a._count.boardMembers,
-        createdAt: a.createdAt,
-        updatedAt: a.updatedAt,
-      })),
+      data: associationsWithPropertyCounts,
     });
   } catch (err) {
     next(err);
@@ -149,11 +183,117 @@ associationRouter.get('/:id', requireAuth, async (req, res, next) => {
       throw new AppError(404, 'NOT_FOUND', 'Association not found.');
     }
 
+    // Get all unique properties and units linked to homeowners in this association
+    const homeowners = await prisma.homeowner.findMany({
+      where: {
+        associationId: association.id,
+        archivedAt: null,
+      },
+      select: {
+        unitId: true,
+        propertyId: true,
+        unit: {
+          select: {
+            id: true,
+            name: true,
+            bedrooms: true,
+            bathrooms: true,
+            squareFeet: true,
+            status: true,
+            property: {
+              select: {
+                id: true,
+                name: true,
+                addressLine1: true,
+                addressLine2: true,
+                city: true,
+                state: true,
+                postalCode: true,
+                type: true,
+              },
+            },
+          },
+        },
+        property: {
+          select: {
+            id: true,
+            name: true,
+            addressLine1: true,
+            addressLine2: true,
+            city: true,
+            state: true,
+            postalCode: true,
+            type: true,
+            units: {
+              select: {
+                id: true,
+                name: true,
+                bedrooms: true,
+                bathrooms: true,
+                squareFeet: true,
+                status: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // Collect unique properties and units
+    const propertyMap = new Map();
+    const unitMap = new Map();
+
+    homeowners.forEach((ho) => {
+      // If homeowner has a unit, add the unit and its property
+      if (ho.unit && ho.unit.property) {
+        const prop = ho.unit.property;
+        if (!propertyMap.has(prop.id)) {
+          propertyMap.set(prop.id, {
+            ...prop,
+            units: [],
+          });
+        }
+        if (!unitMap.has(ho.unit.id)) {
+          unitMap.set(ho.unit.id, {
+            ...ho.unit,
+            property: {
+              id: prop.id,
+              name: prop.name,
+            },
+          });
+          propertyMap.get(prop.id).units.push({
+            id: ho.unit.id,
+            name: ho.unit.name,
+            bedrooms: ho.unit.bedrooms,
+            bathrooms: ho.unit.bathrooms,
+            squareFeet: ho.unit.squareFeet,
+            status: ho.unit.status,
+          });
+        }
+      }
+      // If homeowner has a property (but no unit), add the property
+      if (ho.property && !ho.unitId) {
+        if (!propertyMap.has(ho.property.id)) {
+          propertyMap.set(ho.property.id, {
+            ...ho.property,
+            units: ho.property.units || [],
+          });
+        }
+      }
+    });
+
+    const properties = Array.from(propertyMap.values());
+    const units = Array.from(unitMap.values());
+
     res.json({
       data: {
         ...association,
         homeownerCount: association._count.homeowners,
         boardMemberCount: association._count.boardMembers,
+        propertyCount: properties.length,
+        unitCount: units.length,
+        properties,
+        units,
       },
     });
   } catch (err) {

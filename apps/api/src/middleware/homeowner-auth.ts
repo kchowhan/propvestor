@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { AppError } from '../lib/errors.js';
 import { env } from '../config/env.js';
+import { prisma } from '../lib/prisma.js';
+import { AuthPayload } from './auth.js';
 
 export interface HomeownerAuthPayload {
   homeownerId: string;
@@ -11,10 +13,11 @@ export interface HomeownerAuthPayload {
 declare module 'express-serve-static-core' {
   interface Request {
     homeownerAuth?: HomeownerAuthPayload;
+    isSuperAdminImpersonating?: boolean; // Flag to indicate superadmin is viewing as homeowner
   }
 }
 
-export const requireHomeownerAuth = (req: Request, _res: Response, next: NextFunction) => {
+export const requireHomeownerAuth = async (req: Request, _res: Response, next: NextFunction) => {
   const header = req.headers.authorization;
   if (!header || !header.startsWith('Bearer ')) {
     return next(new AppError(401, 'UNAUTHORIZED', 'Missing authorization header.'));
@@ -22,15 +25,48 @@ export const requireHomeownerAuth = (req: Request, _res: Response, next: NextFun
 
   const token = header.replace('Bearer ', '');
   try {
-    const payload = jwt.verify(token, env.JWT_SECRET) as HomeownerAuthPayload;
+    const payload = jwt.verify(token, env.JWT_SECRET) as HomeownerAuthPayload | AuthPayload;
     
-    // Verify it's a homeowner token (has homeownerId, not userId)
-    if (!payload.homeownerId) {
-      return next(new AppError(401, 'UNAUTHORIZED', 'Invalid token type.'));
+    // Check if it's a homeowner token
+    if ('homeownerId' in payload && payload.homeownerId) {
+      req.homeownerAuth = payload as HomeownerAuthPayload;
+      return next();
     }
 
-    req.homeownerAuth = payload;
-    return next();
+    // Check if it's a user token and user is superadmin
+    if ('userId' in payload && payload.userId) {
+      const user = await prisma.user.findUnique({
+        where: { id: payload.userId },
+        select: { isSuperAdmin: true },
+      });
+
+      if (user?.isSuperAdmin) {
+        // Superadmin can access homeowner portal by providing homeownerId in query params
+        const homeownerId = req.query.homeownerId as string;
+        if (!homeownerId) {
+          return next(new AppError(400, 'BAD_REQUEST', 'Superadmin access requires homeownerId query parameter.'));
+        }
+
+        // Verify homeowner exists and get associationId
+        const homeowner = await prisma.homeowner.findUnique({
+          where: { id: homeownerId },
+          select: { id: true, associationId: true },
+        });
+
+        if (!homeowner) {
+          return next(new AppError(404, 'NOT_FOUND', 'Homeowner not found.'));
+        }
+
+        req.homeownerAuth = {
+          homeownerId: homeowner.id,
+          associationId: homeowner.associationId,
+        };
+        req.isSuperAdminImpersonating = true;
+        return next();
+      }
+    }
+
+    return next(new AppError(401, 'UNAUTHORIZED', 'Invalid token type.'));
   } catch (err) {
     return next(new AppError(401, 'UNAUTHORIZED', 'Invalid or expired token.'));
   }

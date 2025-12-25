@@ -134,6 +134,66 @@ export default function FeaturesPage() {
         },
       ],
     },
+    {
+      category: 'HOA Management',
+      icon: '🏘️',
+      items: [
+        {
+          title: 'Association Management',
+          description: 'Create and manage HOA associations with homeowner and board member tracking.',
+        },
+        {
+          title: 'Homeowner Portal',
+          description: 'Dedicated portal for homeowners to view fees, make payments, and submit maintenance requests.',
+        },
+        {
+          title: 'Online HOA Fee Payments',
+          description: 'Secure online payment processing for HOA fees with Stripe integration, payment method management, and automatic late fee calculation.',
+        },
+        {
+          title: 'Board Member Management',
+          description: 'Track board member roles, tenure, and permissions with historical records.',
+        },
+        {
+          title: 'Maintenance Requests',
+          description: 'Homeowners can submit maintenance requests directly through the portal with email notifications and status tracking.',
+        },
+        {
+          title: 'Account Balance Tracking',
+          description: 'Real-time account balance tracking for homeowners with payment history and fee details.',
+        },
+      ],
+    },
+    {
+      category: 'Agentic AI & Automation',
+      icon: '🤖',
+      items: [
+        {
+          title: 'Autonomous AI Agents',
+          description: 'Agentic AI agents that work autonomously to manage properties, automate workflows, and make intelligent decisions without constant manual intervention.',
+        },
+        {
+          title: 'Proactive Insights',
+          description: 'AI agents proactively analyze your portfolio, identify opportunities, predict issues, and recommend actions before problems arise.',
+        },
+        {
+          title: 'Intelligent Automation',
+          description: 'Automate repetitive tasks like rent reminders, maintenance scheduling, document organization, and financial reporting with AI that learns your preferences.',
+        },
+        {
+          title: 'AI-First Architecture',
+          description: 'Built from the ground up with AI at the core, not as an afterthought. Every feature leverages agentic AI to work smarter and more efficiently.',
+        },
+        {
+          title: 'Natural Language Interface',
+          description: 'Interact with your property data using natural language. Ask questions, get insights, and manage properties through conversational AI.',
+        },
+        {
+          title: 'Predictive Analytics',
+          description: 'AI-powered predictions for occupancy rates, maintenance needs, rent optimization, and portfolio growth opportunities.',
+        },
+      ],
+    },
   ];
 
   return (
@@ -142,9 +202,10 @@ export default function FeaturesPage() {
       <section className="bg-gradient-to-br from-primary-600 to-primary-800 text-white py-20">
         <div className="container mx-auto px-6">
           <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-5xl font-bold mb-6">AI-Powered Features for Property & Investment Management</h1>
+            <h1 className="text-5xl font-bold mb-6">Agentic AI-First Features for Property & Investment Management</h1>
             <p className="text-xl text-primary-100 mb-8">
-              Everything you need to manage your rental properties and investments efficiently with intelligent automation
+              Built with agentic AI at the core, PropVestor delivers autonomous agents that proactively 
+              manage your rental properties and investments with intelligent automation and real-time insights
             </p>
             <Link
               href="http://localhost:3000/login"
@@ -189,9 +250,10 @@ export default function FeaturesPage() {
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-br from-primary-600 to-primary-800 text-white">
         <div className="container mx-auto px-6 text-center">
-          <h2 className="text-4xl font-bold mb-6">Ready to Get Started?</h2>
+          <h2 className="text-4xl font-bold mb-6">Ready to Experience AI-First Management?</h2>
           <p className="text-xl text-primary-100 mb-8 max-w-2xl mx-auto">
-            Join thousands of property managers who trust PropVestor
+            Join thousands of property managers who trust PropVestor's agentic AI to autonomously 
+            manage their properties with intelligent automation
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link

@@ -9,7 +9,8 @@ type FetchOptions = {
 
 export const apiFetch = async (path: string, options: FetchOptions = {}) => {
   try {
-    const res = await fetch(`${API_URL}${path}`, {
+    const url = `${API_URL}${path}`;
+    const res = await fetch(url, {
       method: options.method ?? 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -32,15 +33,17 @@ export const apiFetch = async (path: string, options: FetchOptions = {}) => {
         } else {
           errorMessage = `HTTP ${res.status}: ${res.statusText}`;
         }
-      } catch {
+      } catch (parseError) {
         // If response is not JSON, use status text
         errorMessage = `HTTP ${res.status}: ${res.statusText}`;
+        console.error('Failed to parse error response:', parseError);
       }
       const error = new Error(errorMessage);
       // Attach the full error data for debugging (if available)
       if (errorData) {
         (error as any).errorData = errorData;
       }
+      console.error(`API Error [${res.status}]:`, url, errorMessage, errorData);
       throw error;
     }
 
@@ -56,9 +59,12 @@ export const apiFetch = async (path: string, options: FetchOptions = {}) => {
   } catch (error) {
     // Handle network errors (connection refused, CORS, etc.)
     if (error instanceof TypeError && error.message.includes('fetch')) {
-      throw new Error(`Unable to connect to server. Please ensure the API is running at ${API_URL}`);
+      const networkError = new Error(`Unable to connect to server. Please ensure the API is running at ${API_URL}`);
+      console.error('Network error:', networkError.message, error);
+      throw networkError;
     }
     // Re-throw other errors
+    console.error('API fetch error:', path, error);
     throw error;
   }
 };

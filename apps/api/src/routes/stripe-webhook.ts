@@ -96,9 +96,17 @@ stripeWebhookRouter.post('/webhook', async (req: Request, res: Response) => {
 
 async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
   const chargeId = paymentIntent.metadata?.chargeId;
+  const hoaFeeId = paymentIntent.metadata?.hoaFeeId;
 
+  // Handle homeowner payments (HOA fees)
+  if (hoaFeeId) {
+    await handleHomeownerPaymentSucceeded(paymentIntent, hoaFeeId);
+    return;
+  }
+
+  // Handle tenant payments (charges)
   if (!chargeId) {
-    console.warn('Payment intent missing chargeId metadata');
+    console.warn('Payment intent missing chargeId or hoaFeeId metadata');
     return;
   }
 
@@ -243,10 +251,144 @@ async function handlePaymentSucceeded(paymentIntent: Stripe.PaymentIntent) {
   }
 }
 
+// Helper function to update HOA fee status
+async function updateHOAFeeStatus(hoaFeeId: string) {
+  try {
+    const { updateFeeStatuses } = await import('../lib/hoa-late-fees.js');
+    await updateFeeStatuses(hoaFeeId);
+  } catch (error) {
+    console.error('Failed to update HOA fee status:', error);
+    // Fallback to manual calculation
+    const payments = await prisma.homeownerPayment.findMany({ where: { hoaFeeId } });
+    const fee = await prisma.hOAFee.findUnique({ where: { id: hoaFeeId } });
+
+    if (!fee) {
+      return;
+    }
+
+    const paidTotal = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+    let status: 'PENDING' | 'PARTIALLY_PAID' | 'PAID' | 'OVERDUE' | 'CANCELLED' = 'PENDING';
+
+    if (paidTotal <= 0) {
+      status = fee.dueDate < new Date() ? 'OVERDUE' : 'PENDING';
+    } else if (paidTotal < Number(fee.amount)) {
+      status = 'PARTIALLY_PAID';
+    } else {
+      status = 'PAID';
+    }
+
+    await prisma.hOAFee.update({ where: { id: hoaFeeId }, data: { status } });
+  }
+}
+
+async function handleHomeownerPaymentSucceeded(paymentIntent: Stripe.PaymentIntent, hoaFeeId: string) {
+  // Find homeowner payment record
+  let payment = await prisma.homeownerPayment.findFirst({
+    where: {
+      stripePaymentIntentId: paymentIntent.id,
+    },
+  });
+
+  // Get fee to access association and homeowner info
+  const fee = await prisma.hOAFee.findUnique({
+    where: { id: hoaFeeId },
+    include: {
+      association: true,
+      homeowner: true,
+    },
+  });
+
+  if (!fee) {
+    console.warn('HOA fee not found for payment intent:', paymentIntent.id);
+    return;
+  }
+
+  // Determine payment method type
+  const paymentMethodType = paymentIntent.payment_method_types?.[0] === 'card' ? 'card' : 'ach';
+  const paymentMethod = paymentIntent.payment_method;
+  let actualPaymentMethodType: 'card' | 'ach' = paymentMethodType;
+  
+  if (typeof paymentMethod === 'string') {
+    try {
+      const stripe = getStripeClient();
+      const pm = await stripe.paymentMethods.retrieve(paymentMethod);
+      actualPaymentMethodType = pm.type === 'card' ? 'card' : 'ach';
+    } catch (error) {
+      console.warn('Failed to retrieve payment method type:', error);
+    }
+  }
+
+  const stripeChargeId = typeof paymentIntent.latest_charge === 'string' 
+    ? paymentIntent.latest_charge 
+    : paymentIntent.latest_charge?.id;
+
+  if (payment) {
+    // Update payment with charge ID if available
+    if (stripeChargeId) {
+      await prisma.homeownerPayment.update({
+        where: { id: payment.id },
+        data: {
+          stripeChargeId,
+        },
+      });
+    }
+
+    // Update fee status
+    if (payment.hoaFeeId) {
+      await updateHOAFeeStatus(payment.hoaFeeId);
+    }
+  } else {
+    // Create payment record if it doesn't exist
+    payment = await prisma.homeownerPayment.create({
+      data: {
+        associationId: fee.associationId,
+        homeownerId: fee.homeownerId,
+        hoaFeeId: fee.id,
+        amount: fee.amount,
+        receivedDate: new Date(paymentIntent.created * 1000),
+        method: actualPaymentMethodType === 'card' ? 'STRIPE_CARD' : 'STRIPE_ACH',
+        stripePaymentIntentId: paymentIntent.id,
+        stripeChargeId: stripeChargeId ?? undefined,
+        reference: paymentIntent.id,
+      },
+    });
+
+    // Update homeowner account balance
+    await prisma.homeowner.update({
+      where: { id: fee.homeownerId },
+      data: {
+        accountBalance: {
+          decrement: Number(fee.amount),
+        },
+      },
+    });
+
+    await updateHOAFeeStatus(hoaFeeId);
+  }
+}
+
 async function handlePaymentFailed(paymentIntent: Stripe.PaymentIntent) {
   console.log('Payment failed:', paymentIntent.id, paymentIntent.last_payment_error);
 
-  // Update payment record if it exists
+  const hoaFeeId = paymentIntent.metadata?.hoaFeeId;
+  
+  // Handle homeowner payment failure
+  if (hoaFeeId) {
+    const payment = await prisma.homeownerPayment.findFirst({
+      where: {
+        stripePaymentIntentId: paymentIntent.id,
+      },
+    });
+    
+    if (payment) {
+      // Optionally update payment record with failure status
+      // For now, we'll just log it
+      console.log('Homeowner payment failed:', payment.id);
+    }
+    return;
+  }
+
+  // Update payment record if it exists (tenant payments)
   const payment = await prisma.payment.findFirst({
     where: {
       stripePaymentIntentId: paymentIntent.id,

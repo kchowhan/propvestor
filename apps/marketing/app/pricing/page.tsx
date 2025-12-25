@@ -85,7 +85,8 @@ export default function PricingPage() {
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl font-bold mb-6">Simple, Transparent Pricing</h1>
             <p className="text-xl text-primary-100 mb-4">
-              Choose the plan that fits your portfolio size
+              Choose the plan that fits your portfolio size. All plans include our agentic AI-first platform 
+              with autonomous AI agents that work intelligently to manage your properties.
             </p>
             <p className="text-primary-200">
               All plans include a 14-day free trial • Cancel anytime

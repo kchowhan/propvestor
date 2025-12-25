@@ -319,3 +319,201 @@ This is an automated message. Please do not reply to this email.
   }
 };
 
+/**
+ * Send maintenance request notification to property manager
+ */
+export const sendMaintenanceRequestNotification = async (
+  homeownerEmail: string,
+  homeownerName: string,
+  propertyName: string,
+  unitName: string | null,
+  title: string,
+  description: string,
+  category: string,
+  priority: string,
+  workOrderId: string,
+  organizationName: string
+): Promise<boolean> => {
+  const propertyAddress = unitName ? `${propertyName} - ${unitName}` : propertyName;
+  const portalUrl = env.APP_URL || 'http://localhost:3000';
+  const workOrderUrl = `${portalUrl}/maintenance/${workOrderId}`;
+
+  const subject = `New Maintenance Request: ${title}`;
+  const text = `
+New Maintenance Request Submitted
+
+A homeowner has submitted a new maintenance request:
+
+Homeowner: ${homeownerName} (${homeownerEmail})
+Property: ${propertyAddress}
+Title: ${title}
+Description: ${description}
+Category: ${category}
+Priority: ${priority}
+
+View and manage this request at: ${workOrderUrl}
+
+This is an automated notification from ${organizationName}.
+  `;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; line-height: 1.6;">
+      <h2 style="color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+        New Maintenance Request
+      </h2>
+      
+      <p>A homeowner has submitted a new maintenance request:</p>
+      
+      <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 16px; margin: 20px 0; border-radius: 8px;">
+        <p style="margin: 8px 0;"><strong>Homeowner:</strong> ${homeownerName} (${homeownerEmail})</p>
+        <p style="margin: 8px 0;"><strong>Property:</strong> ${propertyAddress}</p>
+        <p style="margin: 8px 0;"><strong>Title:</strong> ${title}</p>
+        <p style="margin: 8px 0;"><strong>Description:</strong> ${description}</p>
+        <p style="margin: 8px 0;"><strong>Category:</strong> ${category}</p>
+        <p style="margin: 8px 0;"><strong>Priority:</strong> <span style="color: ${priority === 'EMERGENCY' ? '#dc2626' : priority === 'HIGH' ? '#ea580c' : '#2563eb'};">${priority}</span></p>
+      </div>
+      
+      <div style="margin: 24px 0;">
+        <a href="${workOrderUrl}" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+          View Maintenance Request
+        </a>
+      </div>
+      
+      <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">
+        This is an automated notification from ${organizationName}. Please do not reply to this email.
+      </p>
+    </div>
+  `;
+
+  // Get organization users (property managers) to notify
+  try {
+    const { prisma } = await import('./prisma.js');
+    const organization = await prisma.organization.findFirst({
+      where: { name: organizationName },
+      include: {
+        memberships: {
+          include: {
+            user: {
+              select: {
+                email: true,
+                name: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!organization) {
+      console.warn(`Organization not found: ${organizationName}`);
+      return false;
+    }
+
+    // Send to all organization members (property managers)
+    const recipients = organization.memberships
+      .map((m) => m.user.email)
+      .filter((email): email is string => Boolean(email));
+
+    if (recipients.length === 0) {
+      console.warn(`No recipients found for organization: ${organizationName}`);
+      return false;
+    }
+
+    // Send email to all property managers
+    for (const recipient of recipients) {
+      await sendEmail(recipient, subject, text, html);
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Failed to send maintenance request notification:', error);
+    return false;
+  }
+};
+
+/**
+ * Send maintenance request status update to homeowner
+ */
+export const sendMaintenanceRequestStatusUpdate = async (
+  homeownerEmail: string,
+  homeownerName: string,
+  workOrderTitle: string,
+  oldStatus: string,
+  newStatus: string,
+  propertyName: string,
+  unitName: string | null,
+  notes?: string,
+  organizationName?: string
+): Promise<boolean> => {
+  const propertyAddress = unitName ? `${propertyName} - ${unitName}` : propertyName;
+  const portalUrl = env.APP_URL || 'http://localhost:3000';
+  const statusMessages: Record<string, { subject: string; message: string; color: string }> = {
+    OPEN: { subject: 'Maintenance Request Received', message: 'Your maintenance request has been received and is being reviewed.', color: '#f59e0b' },
+    IN_PROGRESS: { subject: 'Maintenance Request In Progress', message: 'Your maintenance request is now being worked on.', color: '#3b82f6' },
+    COMPLETED: { subject: 'Maintenance Request Completed', message: 'Your maintenance request has been completed.', color: '#10b981' },
+    CANCELLED: { subject: 'Maintenance Request Cancelled', message: 'Your maintenance request has been cancelled.', color: '#6b7280' },
+  };
+
+  const statusInfo = statusMessages[newStatus] || {
+    subject: 'Maintenance Request Status Updated',
+    message: `Your maintenance request status has been updated to ${newStatus}.`,
+    color: '#6b7280',
+  };
+
+  const subject = `${statusInfo.subject}: ${workOrderTitle}`;
+  const text = `
+${statusInfo.subject}
+
+Dear ${homeownerName},
+
+${statusInfo.message}
+
+Request Details:
+- Title: ${workOrderTitle}
+- Property: ${propertyAddress}
+- Previous Status: ${oldStatus}
+- New Status: ${newStatus}
+${notes ? `- Notes: ${notes}` : ''}
+
+You can view your maintenance requests at: ${portalUrl}/homeowner/maintenance
+
+${organizationName ? `\nIf you have any questions, please contact ${organizationName}.` : ''}
+
+This is an automated notification. Please do not reply to this email.
+  `;
+
+  const html = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; line-height: 1.6;">
+      <h2 style="color: #111827; border-bottom: 2px solid #e5e7eb; padding-bottom: 10px;">
+        ${statusInfo.subject}
+      </h2>
+      
+      <p>Dear ${homeownerName},</p>
+      
+      <p>${statusInfo.message}</p>
+      
+      <div style="background-color: #f9fafb; border: 1px solid #e5e7eb; padding: 16px; margin: 20px 0; border-radius: 8px;">
+        <p style="margin: 8px 0;"><strong>Request:</strong> ${workOrderTitle}</p>
+        <p style="margin: 8px 0;"><strong>Property:</strong> ${propertyAddress}</p>
+        <p style="margin: 8px 0;"><strong>Previous Status:</strong> ${oldStatus}</p>
+        <p style="margin: 8px 0;"><strong>New Status:</strong> <span style="color: ${statusInfo.color}; font-weight: 600;">${newStatus}</span></p>
+        ${notes ? `<p style="margin: 8px 0;"><strong>Notes:</strong> ${notes}</p>` : ''}
+      </div>
+      
+      <div style="margin: 24px 0;">
+        <a href="${portalUrl}/homeowner/maintenance" style="display: inline-block; background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+          View My Maintenance Requests
+        </a>
+      </div>
+      
+      ${organizationName ? `<p>If you have any questions, please contact <strong>${organizationName}</strong>.</p>` : ''}
+      
+      <p style="color: #6b7280; font-size: 14px; margin-top: 24px;">
+        This is an automated notification. Please do not reply to this email.
+      </p>
+    </div>
+  `;
+
+  return sendEmail(homeownerEmail, subject, text, html);
+};
+

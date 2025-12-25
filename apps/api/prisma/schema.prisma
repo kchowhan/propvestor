@@ -129,6 +129,23 @@ enum HomeownerStatus {
   SUSPENDED
 }
 
+enum HOAFeeType {
+  MONTHLY_DUES
+  SPECIAL_ASSESSMENT
+  LATE_FEE
+  VIOLATION_FEE
+  TRANSFER_FEE
+  OTHER
+}
+
+enum HOAFeeStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
 model User {
   id                           String                   @id @default(uuid()) @db.Uuid
   email                        String                   @unique
@@ -228,9 +245,12 @@ model Association {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  organization Organization  @relation(fields: [organizationId], references: [id])
-  homeowners   Homeowner[]
-  boardMembers BoardMember[]
+  organization   Organization             @relation(fields: [organizationId], references: [id])
+  homeowners     Homeowner[]
+  boardMembers   BoardMember[]
+  hoaFees        HOAFee[] // HOA fees for all homeowners
+  payments       HomeownerPayment[] // Payments from homeowners
+  paymentMethods HomeownerPaymentMethod[] // Payment methods for homeowners
   // Future: violations, architectural reviews, funds, events, etc.
 
   @@index([organizationId])
@@ -264,11 +284,14 @@ model Homeowner {
   createdAt                    DateTime        @default(now())
   updatedAt                    DateTime        @updatedAt
 
-  association      Association   @relation(fields: [associationId], references: [id])
-  unit             Unit?         @relation(fields: [unitId], references: [id])
-  property         Property?     @relation(fields: [propertyId], references: [id])
-  boardMemberships BoardMember[] @relation("BoardMemberHomeowner") // Board memberships (can have multiple over time)
-  // Future: hoa fees, violations, architectural reviews, messages, etc.
+  association         Association              @relation(fields: [associationId], references: [id])
+  unit                Unit?                    @relation(fields: [unitId], references: [id])
+  property            Property?                @relation(fields: [propertyId], references: [id])
+  boardMemberships    BoardMember[]            @relation("BoardMemberHomeowner") // Board memberships (can have multiple over time)
+  hoaFees             HOAFee[] // HOA fees and dues
+  payments            HomeownerPayment[] // Payments made by homeowner
+  paymentMethods      HomeownerPaymentMethod[] // Payment methods (Stripe)
+  maintenanceRequests WorkOrder[]              @relation("RequestedByHomeowner") // Maintenance requests submitted by homeowner
 
   @@unique([associationId, email])
   @@index([associationId])
@@ -629,6 +652,97 @@ model Reconciliation {
   @@index([startDate, endDate])
 }
 
+// HOA Fee/Due - Recurring or one-time charges for homeowners
+model HOAFee {
+  id                String       @id @default(uuid()) @db.Uuid
+  associationId     String       @db.Uuid
+  homeownerId       String       @db.Uuid
+  type              HOAFeeType
+  description       String
+  amount            Decimal      @db.Decimal(12, 2)
+  dueDate           DateTime
+  status            HOAFeeStatus @default(PENDING)
+  // Recurring fee settings
+  isRecurring       Boolean      @default(false)
+  recurringInterval String? // 'monthly', 'quarterly', 'annually'
+  nextDueDate       DateTime? // For recurring fees
+  // Late fee calculation
+  lateFeeAmount     Decimal?     @db.Decimal(12, 2)
+  lateFeeApplied    Boolean      @default(false)
+  lateFeeAppliedAt  DateTime?
+  // Metadata
+  notes             String?
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  association Association        @relation(fields: [associationId], references: [id])
+  homeowner   Homeowner          @relation(fields: [homeownerId], references: [id])
+  payments    HomeownerPayment[]
+
+  @@index([associationId])
+  @@index([homeownerId])
+  @@index([dueDate])
+  @@index([status])
+}
+
+// Homeowner Payment - Payments made by homeowners for HOA fees
+model HomeownerPayment {
+  id                    String        @id @default(uuid()) @db.Uuid
+  associationId         String        @db.Uuid
+  homeownerId           String        @db.Uuid
+  hoaFeeId              String?       @db.Uuid
+  amount                Decimal       @db.Decimal(12, 2)
+  receivedDate          DateTime
+  method                PaymentMethod
+  reference             String?
+  // Stripe integration
+  stripePaymentIntentId String?       @unique
+  stripeChargeId        String?       @unique
+  stripeCustomerId      String?
+  stripePaymentMethodId String?
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  association   Association             @relation(fields: [associationId], references: [id])
+  homeowner     Homeowner               @relation(fields: [homeownerId], references: [id])
+  hoaFee        HOAFee?                 @relation(fields: [hoaFeeId], references: [id])
+  paymentMethod HomeownerPaymentMethod? @relation(fields: [stripePaymentMethodId], references: [stripePaymentMethodId])
+
+  @@index([associationId])
+  @@index([homeownerId])
+  @@index([hoaFeeId])
+  @@index([stripePaymentIntentId])
+}
+
+// Payment methods stored for homeowners (bank accounts, cards via Stripe)
+model HomeownerPaymentMethod {
+  id                    String   @id @default(uuid()) @db.Uuid
+  homeownerId           String   @db.Uuid
+  associationId         String   @db.Uuid
+  stripePaymentMethodId String   @unique // Stripe payment method ID
+  type                  String // 'ach_debit', 'card', 'us_bank_account'
+  isDefault             Boolean  @default(false)
+  // Bank account details (last 4 digits, bank name)
+  last4                 String?
+  bankName              String?
+  // Card details (last 4 digits, brand, expiry)
+  cardBrand             String?
+  cardExpMonth          Int?
+  cardExpYear           Int?
+  // Status
+  isActive              Boolean  @default(true)
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  homeowner   Homeowner          @relation(fields: [homeownerId], references: [id])
+  association Association        @relation(fields: [associationId], references: [id])
+  payments    HomeownerPayment[]
+
+  @@index([homeownerId])
+  @@index([associationId])
+  @@index([stripePaymentMethodId])
+}
+
 // Matches between payments and bank transactions
 model ReconciliationMatch {
   id                String   @id @default(uuid()) @db.Uuid
@@ -652,33 +766,36 @@ model ReconciliationMatch {
 }
 
 model WorkOrder {
-  id                  String            @id @default(uuid()) @db.Uuid
-  organizationId      String            @db.Uuid
-  propertyId          String            @db.Uuid
-  unitId              String?           @db.Uuid
-  title               String
-  description         String
-  category            WorkOrderCategory @default(GENERAL)
-  priority            WorkOrderPriority @default(NORMAL)
-  status              WorkOrderStatus   @default(OPEN)
-  requestedByTenantId String?           @db.Uuid
-  assignedVendorId    String?           @db.Uuid
-  estimatedCost       Decimal?          @db.Decimal(12, 2)
-  actualCost          Decimal?          @db.Decimal(12, 2)
-  openedAt            DateTime          @default(now())
-  completedAt         DateTime?
-  createdAt           DateTime          @default(now())
-  updatedAt           DateTime          @updatedAt
+  id                     String            @id @default(uuid()) @db.Uuid
+  organizationId         String            @db.Uuid
+  propertyId             String            @db.Uuid
+  unitId                 String?           @db.Uuid
+  title                  String
+  description            String
+  category               WorkOrderCategory @default(GENERAL)
+  priority               WorkOrderPriority @default(NORMAL)
+  status                 WorkOrderStatus   @default(OPEN)
+  requestedByTenantId    String?           @db.Uuid
+  requestedByHomeownerId String?           @db.Uuid // New: for homeowner-submitted requests
+  assignedVendorId       String?           @db.Uuid
+  estimatedCost          Decimal?          @db.Decimal(12, 2)
+  actualCost             Decimal?          @db.Decimal(12, 2)
+  openedAt               DateTime          @default(now())
+  completedAt            DateTime?
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
 
-  organization   Organization @relation(fields: [organizationId], references: [id])
-  property       Property     @relation(fields: [propertyId], references: [id])
-  unit           Unit?        @relation(fields: [unitId], references: [id])
-  requestedBy    Tenant?      @relation("RequestedBy", fields: [requestedByTenantId], references: [id])
-  assignedVendor Vendor?      @relation(fields: [assignedVendorId], references: [id])
+  organization         Organization @relation(fields: [organizationId], references: [id])
+  property             Property     @relation(fields: [propertyId], references: [id])
+  unit                 Unit?        @relation(fields: [unitId], references: [id])
+  requestedBy          Tenant?      @relation("RequestedBy", fields: [requestedByTenantId], references: [id])
+  requestedByHomeowner Homeowner?   @relation("RequestedByHomeowner", fields: [requestedByHomeownerId], references: [id])
+  assignedVendor       Vendor?      @relation(fields: [assignedVendorId], references: [id])
 
   @@index([organizationId])
   @@index([propertyId])
   @@index([category])
+  @@index([requestedByHomeownerId])
 }
 
 model Vendor {

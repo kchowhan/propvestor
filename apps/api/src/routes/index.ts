@@ -30,6 +30,10 @@ import { homeownerRouter } from './homeowners.js';
 import { boardMemberRouter } from './board-members.js';
 import { homeownerAuthRouter } from './homeowner-auth.js';
 import { homeownerPortalRouter } from './homeowner-portal.js';
+import { hoaFeeRouter } from './hoa-fees.js';
+import { homeownerPaymentMethodRouter } from './homeowner-payment-methods.js';
+import { homeownerPaymentRouter } from './homeowner-payments.js';
+import { cronRouter } from './cron.js';
 
 export const router = Router();
 
@@ -41,6 +45,8 @@ router.get('/health', (req, res) => {
 router.use('/auth', authRouter);
 // Homeowner authentication (public - no auth required)
 router.use('/homeowner-auth', homeownerAuthRouter);
+// Homeowner payment methods (publishable key is public, others require homeowner auth)
+router.use('/homeowner-payment-methods', homeownerPaymentMethodRouter);
 // Webhooks (no auth required - external services will call these)
 router.use('/docusign', docusignWebhookRouter);
 router.use('/stripe', stripeWebhookRouter);
@@ -77,3 +83,7 @@ router.use('/associations', associationRouter);
 router.use('/homeowners', homeownerRouter);
 router.use('/board-members', boardMemberRouter);
 router.use('/homeowner-portal', homeownerPortalRouter);
+router.use('/hoa-fees', hoaFeeRouter);
+router.use('/homeowner-payments', homeownerPaymentRouter);
+// Cron jobs (protected by secret token)
+router.use('/cron', cronRouter);

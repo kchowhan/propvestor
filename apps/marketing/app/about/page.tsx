@@ -9,7 +9,8 @@ export default function AboutPage() {
           <div className="max-w-4xl mx-auto text-center">
             <h1 className="text-5xl font-bold mb-6">About PropVestor</h1>
             <p className="text-xl text-primary-100">
-              We're on a mission to simplify property and investment management with AI-powered tools for landlords and investors everywhere
+              We're on a mission to revolutionize property and investment management with agentic AI-first technology. 
+              Built from the ground up with autonomous AI agents that proactively manage properties for landlords and investors everywhere.
             </p>
           </div>
         </div>
@@ -27,12 +28,15 @@ export default function AboutPage() {
                 paper trails, and disconnected software tools to manage their growing portfolios.
               </p>
               <p>
-                We knew there had to be a better way. That's why we built PropVestor—a comprehensive,
-                user-friendly platform that brings everything a property manager needs into one place.
+                We knew there had to be a better way. That's why we built PropVestor—an AI-first platform
+                with agentic AI at its core. Unlike traditional property management software, PropVestor uses
+                autonomous AI agents that proactively manage properties, automate workflows, and provide
+                intelligent insights without constant manual intervention.
               </p>
               <p>
                 Today, PropVestor serves thousands of landlords, property managers, and real estate
-                investors, helping them save time, reduce stress, and grow their businesses with confidence.
+                investors, helping them save time, reduce stress, and grow their businesses with confidence
+                through the power of agentic AI.
               </p>
             </div>
           </div>
@@ -72,10 +76,10 @@ export default function AboutPage() {
                 <div className="w-12 h-12 bg-primary-100 text-primary-600 rounded-lg flex items-center justify-center text-2xl mb-4">
                   💡
                 </div>
-                <h3 className="text-2xl font-semibold text-ink mb-3">Innovation</h3>
+                <h3 className="text-2xl font-semibold text-ink mb-3">AI-First Innovation</h3>
                 <p className="text-ink/70">
-                  We're constantly improving and adding new features based on your
-                  feedback and the latest technology trends.
+                  We're pioneers in agentic AI for property management, constantly advancing our
+                  autonomous AI agents and adding intelligent features that proactively work for you.
                 </p>
               </div>
             </div>

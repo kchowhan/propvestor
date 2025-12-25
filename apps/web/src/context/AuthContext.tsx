@@ -83,11 +83,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const login = useCallback(async (email: string, password: string) => {
     try {
+      console.log('Attempting login for:', email);
       const data = await apiFetch('/auth/login', {
         method: 'POST',
         body: { email, password },
       });
-      console.log('Login successful:', data);
+      console.log('Login API response:', data);
       if (data.token) {
         setToken(data.token);
         localStorage.setItem(TOKEN_KEY, data.token);
@@ -98,10 +99,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const meData = await apiFetch('/auth/me', { token: data.token }) as AuthMeResponse;
         setCurrentRole(meData.currentRole || null);
       } else {
-        throw new Error('Invalid response from server');
+        console.error('Login response missing token:', data);
+        throw new Error('Invalid response from server: missing token');
       }
     } catch (error) {
       console.error('Login failed:', error);
+      // Re-throw with more context if it's a generic error
+      if (error instanceof Error && error.message === 'Request failed') {
+        throw new Error('Invalid email or password.');
+      }
       throw error;
     }
   }, []);

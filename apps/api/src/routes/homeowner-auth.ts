@@ -6,6 +6,7 @@ import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
 import { env } from '../config/env.js';
 import { parseBody } from '../validators/common.js';
+import { requireAuth } from '../middleware/auth.js';
 import {
   generateVerificationToken,
   getVerificationTokenExpiry,
@@ -29,6 +30,10 @@ const homeownerLoginSchema = z.object({
   email: z.string().email(),
   password: z.string().min(1),
   associationId: z.string().uuid().optional(), // Optional - will find by email if not provided
+});
+
+const superadminImpersonateHomeownerSchema = z.object({
+  homeownerId: z.string().uuid(),
 });
 
 const signHomeownerToken = (payload: { homeownerId: string; associationId: string }) =>
@@ -363,6 +368,149 @@ homeownerAuthRouter.post('/resend-verification', async (req, res, next) => {
     res.json({
       success: true,
       message: 'Verification email sent successfully.',
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Superadmin impersonate homeowner - allows superadmin to access homeowner portal
+homeownerAuthRouter.post('/superadmin-impersonate', requireAuth, async (req, res, next) => {
+  try {
+    if (!req.auth) {
+      throw new AppError(401, 'UNAUTHORIZED', 'Missing auth context.');
+    }
+
+    const data = parseBody(superadminImpersonateHomeownerSchema, req.body);
+
+    // Verify user is superadmin
+    const user = await prisma.user.findUnique({
+      where: { id: req.auth.userId },
+      select: { isSuperAdmin: true },
+    });
+
+    if (!user || !user.isSuperAdmin) {
+      throw new AppError(403, 'FORBIDDEN', 'Superadmin privileges required.');
+    }
+
+    // Get homeowner and verify they exist
+    const homeowner = await prisma.homeowner.findUnique({
+      where: { id: data.homeownerId },
+      include: {
+        association: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+    });
+
+    if (!homeowner) {
+      throw new AppError(404, 'NOT_FOUND', 'Homeowner not found.');
+    }
+
+    if (homeowner.archivedAt) {
+      throw new AppError(403, 'FORBIDDEN', 'Homeowner account has been archived.');
+    }
+
+    // Generate homeowner token
+    const token = signHomeownerToken({
+      homeownerId: homeowner.id,
+      associationId: homeowner.associationId,
+    });
+
+    res.json({
+      token,
+      homeowner: {
+        id: homeowner.id,
+        firstName: homeowner.firstName,
+        lastName: homeowner.lastName,
+        email: homeowner.email,
+        emailVerified: homeowner.emailVerified,
+        status: homeowner.status,
+        accountBalance: homeowner.accountBalance,
+      },
+      association: homeowner.association,
+      impersonated: true, // Flag to indicate this is an impersonation
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// List homeowners for superadmin selection (requires superadmin auth)
+homeownerAuthRouter.get('/superadmin/homeowners', requireAuth, async (req, res, next) => {
+  try {
+    if (!req.auth) {
+      throw new AppError(401, 'UNAUTHORIZED', 'Missing auth context.');
+    }
+
+    // Verify user is superadmin
+    const user = await prisma.user.findUnique({
+      where: { id: req.auth.userId },
+      select: { isSuperAdmin: true },
+    });
+
+    if (!user || !user.isSuperAdmin) {
+      throw new AppError(403, 'FORBIDDEN', 'Superadmin privileges required.');
+    }
+
+    // Get all homeowners with their associations
+    const homeowners = await prisma.homeowner.findMany({
+      where: {
+        archivedAt: null,
+      },
+      include: {
+        association: {
+          select: {
+            id: true,
+            name: true,
+            organization: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        unit: {
+          select: {
+            id: true,
+            name: true,
+            property: {
+              select: {
+                id: true,
+                name: true,
+              },
+            },
+          },
+        },
+        property: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
+      orderBy: [
+        { association: { name: 'asc' } },
+        { lastName: 'asc' },
+        { firstName: 'asc' },
+      ],
+    });
+
+    res.json({
+      data: homeowners.map((ho) => ({
+        id: ho.id,
+        firstName: ho.firstName,
+        lastName: ho.lastName,
+        email: ho.email,
+        status: ho.status,
+        association: ho.association,
+        unit: ho.unit,
+        property: ho.property,
+      })),
     });
   } catch (err) {
     next(err);

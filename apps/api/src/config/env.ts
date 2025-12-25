@@ -36,6 +36,7 @@ const envSchema = z.object({
   GCS_SCHEDULER_LOCATION: z.string().optional().default('us-central1'),
   GCS_SCHEDULER_SERVICE_ACCOUNT: z.string().optional(),
   SCHEDULER_SECRET: z.string().optional(), // Secret token for scheduler to authenticate
+  CRON_SECRET: z.string().optional(), // Secret token for cron endpoints
   // RentSpree configuration
   RENTSPREE_API_KEY: z.string().optional(),
   RENTSPREE_WEBHOOK_SECRET: z.string().optional(),
@@ -73,4 +74,5 @@ export const env = envSchema.parse({
   RENTSPREE_WEBHOOK_SECRET: process.env.RENTSPREE_WEBHOOK_SECRET,
   RENTSPREE_BASE_URL: process.env.RENTSPREE_BASE_URL,
   SCHEDULER_SECRET: process.env.SCHEDULER_SECRET,
+  CRON_SECRET: process.env.CRON_SECRET,
 });

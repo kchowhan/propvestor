@@ -43,6 +43,7 @@ type HomeownerAuthContextValue = {
   }) => Promise<void>;
   logout: () => void;
   refreshData: () => Promise<void>;
+  impersonateAsHomeowner: (homeownerId: string, userToken: string) => Promise<void>;
 };
 
 const HomeownerAuthContext = createContext<HomeownerAuthContextValue | undefined>(undefined);
@@ -80,7 +81,13 @@ export const HomeownerAuthProvider = ({ children }: { children: ReactNode }) => 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const storedToken = localStorage.getItem(HOMEOWNER_TOKEN_KEY);
-      setToken(storedToken);
+      if (storedToken) {
+        setToken(storedToken);
+      } else {
+        setLoading(false); // No token, so we're done loading
+      }
+    } else {
+      setLoading(false); // Server-side, no token
     }
   }, []);
 
@@ -94,9 +101,41 @@ export const HomeownerAuthProvider = ({ children }: { children: ReactNode }) => 
 
   const login = useCallback(async (email: string, password: string, associationId?: string) => {
     try {
+      console.log('Attempting homeowner login for:', email, associationId ? `(association: ${associationId})` : '');
       const data = await apiFetch('/homeowner-auth/login', {
         method: 'POST',
         body: { email, password, ...(associationId && { associationId }) },
+      });
+      console.log('Homeowner login API response:', data);
+
+      if (data.token) {
+        setToken(data.token);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(HOMEOWNER_TOKEN_KEY, data.token);
+        }
+        setHomeowner(data.homeowner);
+        setAssociation(data.association);
+      } else {
+        console.error('Homeowner login response missing token:', data);
+        throw new Error('Invalid response from server: missing token');
+      }
+    } catch (error) {
+      console.error('Homeowner login failed:', error);
+      // Re-throw with more context if it's a generic error
+      if (error instanceof Error && error.message === 'Request failed') {
+        throw new Error('Invalid email or password.');
+      }
+      throw error;
+    }
+  }, []);
+
+  const impersonateAsHomeowner = useCallback(async (homeownerId: string, userToken: string) => {
+    try {
+      console.log('Superadmin impersonating homeowner:', homeownerId);
+      const data = await apiFetch('/homeowner-auth/superadmin-impersonate', {
+        method: 'POST',
+        body: { homeownerId },
+        token: userToken, // Use the regular user token (superadmin)
       });
 
       if (data.token) {
@@ -110,7 +149,7 @@ export const HomeownerAuthProvider = ({ children }: { children: ReactNode }) => 
         throw new Error('Invalid response from server');
       }
     } catch (error) {
-      console.error('Homeowner login failed:', error);
+      console.error('Superadmin impersonation failed:', error);
       throw error;
     }
   }, []);
@@ -149,8 +188,8 @@ export const HomeownerAuthProvider = ({ children }: { children: ReactNode }) => 
   }, [token, loadSession]);
 
   const value = useMemo(
-    () => ({ token, homeowner, association, loading, login, register, logout, refreshData }),
-    [token, homeowner, association, loading, login, register, logout, refreshData],
+    () => ({ token, homeowner, association, loading, login, register, logout, refreshData, impersonateAsHomeowner }),
+    [token, homeowner, association, loading, login, register, logout, refreshData, impersonateAsHomeowner],
   );
 
   return <HomeownerAuthContext.Provider value={value}>{children}</HomeownerAuthContext.Provider>;

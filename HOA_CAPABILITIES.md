@@ -34,22 +34,23 @@ This document tracks HOA (Homeowners Association) management capabilities for Pr
 ### 1. Community Management & Efficiency
 
 #### 1.1 Online Maintenance Requests and Work Orders
-**Status:** 🟡 Partially Complete  
+**Status:** ✅ Complete  
 **Priority:** HIGH  
 **Dependencies:** None (work orders exist, need homeowner portal)
 
 **Current State:**
 - ✅ Work orders exist for property managers
-- ❌ Homeowners cannot submit requests
-- ❌ No homeowner portal
+- ✅ Homeowners can submit requests via homeowner portal
+- ✅ Homeowner portal with authentication
+- ✅ Email notifications for property managers when requests are submitted
+- ✅ Email notifications for homeowners when status changes
+- ✅ Status tracking visible to homeowners
+- ✅ Property/unit auto-detection from homeowner account
 
 **What's Needed:**
-- Homeowner portal access
-- Public-facing work order submission
-- Email notifications for homeowners
-- Status tracking visible to homeowners
+- ⏳ Photo attachments to maintenance requests (Document model supports this, UI pending)
 
-**Estimated Effort:** Medium (2-3 weeks)
+**Estimated Effort:** Complete (Photo attachments: 1 week)
 
 ---
 
@@ -108,6 +109,10 @@ This document tracks HOA (Homeowners Association) management capabilities for Pr
 **Priority:** MEDIUM  
 **Dependencies:** Association model, Event model
 
+**Current State:**
+- ❌ No calendar system
+- ❌ No event model
+
 **What's Needed:**
 - Calendar/Event model
 - Association-level events
@@ -138,19 +143,23 @@ This document tracks HOA (Homeowners Association) management capabilities for Pr
 ---
 
 #### 1.7 Board Member Roles & Tenure Tracking
-**Status:** 🔴 Not Started  
+**Status:** ✅ Complete  
 **Priority:** HIGH  
 **Dependencies:** Association model, User roles extension
 
-**What's Needed:**
-- Board member model (extends user)
-- Role definitions (President, Vice President, Secretary, Treasurer, Member-at-Large)
-- Tenure tracking (start date, end date)
-- Board member permissions
-- Board member portal access
-- Historical board member tracking
+**Current State:**
+- ✅ Board member model created with roles (President, Vice President, Secretary, Treasurer, Member-at-Large)
+- ✅ Tenure tracking (start date, end date)
+- ✅ Board member can be linked to User (property manager) or Homeowner
+- ✅ Historical board member tracking (via endDate)
+- ✅ Board member CRUD operations
+- ✅ Filtering by association, role, active status
 
-**Estimated Effort:** Medium (2 weeks)
+**What's Needed:**
+- ⏳ Board member portal access (separate from homeowner portal)
+- ⏳ Board member-specific permissions
+
+**Estimated Effort:** Complete (Portal access: 2 weeks)
 
 ---
 
@@ -190,25 +199,27 @@ This document tracks HOA (Homeowners Association) management capabilities for Pr
 ---
 
 #### 2.2 Online Payments
-**Status:** 🟡 Partially Complete  
+**Status:** ✅ Complete  
 **Priority:** HIGH  
 **Dependencies:** Homeowner portal, Payment system (exists)
 
 **Current State:**
-- ✅ Stripe payment processing exists
-- ✅ Payment methods management
-- ❌ No homeowner portal for HOA fee payments
-- ❌ No recurring payment setup for HOA dues
+- ✅ Stripe payment processing for homeowner payments
+- ✅ Payment methods management (add/delete payment methods)
+- ✅ Homeowner portal payment interface
+- ✅ HOA fee/due payment flow with Stripe
+- ✅ Payment history for homeowners
+- ✅ Late fee calculation and automation
+- ✅ Automatic fee status updates based on payments
+- ✅ Account balance tracking
+- ✅ Recurring fee support (monthly, quarterly, annually)
+- ✅ Payment method setup with Stripe SetupIntents
 
 **What's Needed:**
-- Homeowner portal payment interface
-- HOA fee/due payment flow
-- Recurring payment setup
-- Payment history for homeowners
-- Late fee calculation
-- Payment reminders
+- ⏳ Payment reminders (email notifications)
+- ⏳ Recurring payment setup (auto-pay for recurring fees)
 
-**Estimated Effort:** Medium (3-4 weeks)
+**Estimated Effort:** Complete (Reminders & auto-pay: 1-2 weeks)
 
 ---
 
@@ -313,29 +324,33 @@ This document tracks HOA (Homeowners Association) management capabilities for Pr
 ### 3. Customer Service & Community Communication
 
 #### 3.1 Online Portals for Homeowners & Board Members
-**Status:** 🔴 Not Started  
+**Status:** ✅ Complete (Homeowners) / 🟡 Partially Complete (Board Members)  
 **Priority:** HIGH  
 **Dependencies:** Authentication, Role-based access, Association model
 
-**What's Needed:**
-- Separate portal routes/views
-- Homeowner portal:
-  - View account balance
-  - Make payments
-  - Submit maintenance requests
-  - Submit architectural reviews
-  - View violations
-  - View documents (rules, meeting minutes)
-  - View calendar
-- Board member portal:
-  - All homeowner features +
-  - Approve architectural reviews
-  - Manage violations
-  - Board approvals
-  - Financial reports
-  - Committee management
+**Current State:**
+- ✅ Homeowner portal with authentication
+- ✅ Homeowner dashboard with account balance, fees, payments
+- ✅ Homeowner can view and pay HOA fees
+- ✅ Homeowner can submit maintenance requests
+- ✅ Homeowner can view payment history
+- ✅ Homeowner can manage payment methods
+- ✅ Homeowner can view documents
+- ✅ Superadmin can impersonate homeowners
+- ✅ Email verification for homeowners
+- ⏳ Board member portal (pending - board members can use property manager portal for now)
+- ⏳ Architectural reviews (pending)
+- ⏳ Violations viewing (pending)
+- ⏳ Calendar viewing (pending)
 
-**Estimated Effort:** High (6-8 weeks)
+**What's Needed:**
+- ⏳ Dedicated board member portal with board-specific features
+- ⏳ Board member dashboard with approval workflows
+- ⏳ Architectural review submission and approval
+- ⏳ Violation viewing and management
+- ⏳ Association calendar integration
+
+**Estimated Effort:** Homeowner Portal Complete (Board Portal & Additional Features: 4-6 weeks)
 
 ---
 

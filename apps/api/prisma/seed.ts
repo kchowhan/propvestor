@@ -6,6 +6,30 @@ const prisma = new PrismaClient();
 const run = async () => {
   console.log('🌱 Starting seed...\n');
   
+  // Clear existing data (optional - comment out if you want to preserve data)
+  console.log('🗑️  Clearing existing data...');
+  try {
+    await prisma.boardMember.deleteMany();
+    await prisma.homeowner.deleteMany();
+    await prisma.association.deleteMany();
+    await prisma.workOrder.deleteMany();
+    await prisma.payment.deleteMany();
+    await prisma.charge.deleteMany();
+    await prisma.leaseTenant.deleteMany();
+    await prisma.lease.deleteMany();
+    await prisma.tenant.deleteMany();
+    await prisma.unit.deleteMany();
+    await prisma.property.deleteMany();
+    await prisma.vendor.deleteMany();
+    await prisma.organizationMembership.deleteMany();
+    await prisma.organization.deleteMany();
+    // Delete all users except super admin
+    await prisma.user.deleteMany({ where: { email: { not: 'admin@propvestor.dev' } } });
+    console.log('  ✓ Existing data cleared\n');
+  } catch (err) {
+    console.log('  ⚠ Could not clear all data (some may not exist):', (err as Error).message);
+  }
+  
   const passwordHash = await bcrypt.hash('password123', 10);
   
   // Check if subscription plans exist, if not create them
@@ -118,8 +142,15 @@ const run = async () => {
     },
   });
 
-  const adminUser = await prisma.user.create({
-    data: {
+  // Create or update super admin user
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'admin@propvestor.dev' },
+    update: {
+      name: 'Super Admin',
+      passwordHash,
+      isSuperAdmin: true,
+    },
+    create: {
       name: 'Super Admin',
       email: 'admin@propvestor.dev',
       passwordHash,
@@ -132,6 +163,24 @@ const run = async () => {
       },
     },
   });
+  
+  // Ensure super admin has membership in org1
+  const existingMembership = await prisma.organizationMembership.findFirst({
+    where: {
+      userId: adminUser.id,
+      organizationId: org1.id,
+    },
+  });
+  
+  if (!existingMembership) {
+    await prisma.organizationMembership.create({
+      data: {
+        userId: adminUser.id,
+        organizationId: org1.id,
+        role: 'OWNER',
+      },
+    });
+  }
 
   const org1Manager = await prisma.user.create({
     data: {
@@ -733,6 +782,357 @@ const run = async () => {
   });
   console.log('  ✓ 2 work orders created');
 
+  // ============================================================================
+  // HOA MANAGEMENT DATA - Associations, Homeowners, Board Members
+  // ============================================================================
+  console.log('\n🏘️  Creating HOA Management Data...');
+
+  // ===== ORGANIZATION 1 ASSOCIATIONS =====
+  console.log('\n  Organization 1: PropVestor Demo Org');
+
+  // Association 1: Sunset View HOA
+  const association1 = await prisma.association.create({
+    data: {
+      organizationId: org1.id,
+      name: 'Sunset View HOA',
+      addressLine1: '123 Main St',
+      addressLine2: 'Suite 100',
+      city: 'Austin',
+      state: 'TX',
+      postalCode: '78701',
+      country: 'USA',
+      email: 'board@sunsetviewhoa.com',
+      phone: '512-555-1000',
+      website: 'https://sunsetviewhoa.com',
+      fiscalYearStart: 1, // January
+      notes: 'Established 2015. Managed by PropVestor Demo Org.',
+      isActive: true,
+    },
+  });
+  console.log('  ✓ Association created: Sunset View HOA');
+
+  // Homeowners for Sunset View HOA
+  const homeowner1 = await prisma.homeowner.create({
+    data: {
+      associationId: association1.id,
+      unitId: unit1A.id,
+      firstName: 'John',
+      lastName: 'Smith',
+      email: 'john.smith@example.com',
+      phone: '512-555-1001',
+      passwordHash: await bcrypt.hash('password123', 10),
+      emailVerified: true,
+      accountBalance: 0,
+      status: 'ACTIVE',
+    },
+  });
+
+  const homeowner2 = await prisma.homeowner.create({
+    data: {
+      associationId: association1.id,
+      unitId: unit1B.id,
+      firstName: 'Jane',
+      lastName: 'Doe',
+      email: 'jane.doe@example.com',
+      phone: '512-555-1002',
+      passwordHash: await bcrypt.hash('password123', 10),
+      emailVerified: true,
+      accountBalance: 150.50,
+      status: 'ACTIVE',
+    },
+  });
+
+  const homeowner3 = await prisma.homeowner.create({
+    data: {
+      associationId: association1.id,
+      unitId: unit2A.id,
+      firstName: 'Bob',
+      lastName: 'Johnson',
+      email: 'bob.johnson@example.com',
+      phone: '512-555-1003',
+      passwordHash: await bcrypt.hash('password123', 10),
+      emailVerified: true,
+      accountBalance: 0,
+      status: 'ACTIVE',
+    },
+  });
+
+  const homeowner6 = await prisma.homeowner.create({
+    data: {
+      associationId: association1.id,
+      propertyId: property1.id, // Property-level homeowner (no specific unit)
+      firstName: 'Mary',
+      lastName: 'Williams',
+      email: 'mary.williams@example.com',
+      phone: '512-555-1004',
+      passwordHash: await bcrypt.hash('password123', 10),
+      emailVerified: true,
+      accountBalance: 225.75,
+      status: 'ACTIVE',
+    },
+  });
+
+  const homeowner7 = await prisma.homeowner.create({
+    data: {
+      associationId: association1.id,
+      unitId: unit2B.id,
+      firstName: 'David',
+      lastName: 'Brown',
+      email: 'david.brown@example.com',
+      phone: '512-555-1005',
+      passwordHash: await bcrypt.hash('password123', 10),
+      emailVerified: true,
+      accountBalance: 0,
+      status: 'DELINQUENT',
+    },
+  });
+  console.log('  ✓ 5 homeowners created for Sunset View HOA');
+
+  // Board Members for Sunset View HOA
+  await prisma.boardMember.create({
+    data: {
+      associationId: association1.id,
+      homeownerId: homeowner1.id,
+      role: 'PRESIDENT',
+      startDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000), // 1 year ago
+      isActive: true,
+    },
+  });
+
+  await prisma.boardMember.create({
+    data: {
+      associationId: association1.id,
+      userId: org1Manager.id,
+      role: 'SECRETARY',
+      startDate: new Date(Date.now() - 180 * 24 * 60 * 60 * 1000), // 6 months ago
+      isActive: true,
+    },
+  });
+
+  await prisma.boardMember.create({
+    data: {
+      associationId: association1.id,
+      homeownerId: homeowner2.id,
+      role: 'TREASURER',
+      startDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // 3 months ago
+      isActive: true,
+    },
+  });
+
+  await prisma.boardMember.create({
+    data: {
+      associationId: association1.id,
+      homeownerId: homeowner3.id,
+      role: 'VICE_PRESIDENT',
+      startDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), // 2 months ago
+      isActive: true,
+    },
+  });
+  console.log('  ✓ 4 board members created for Sunset View HOA');
+
+  // Association 2 for org1: Riverside Condominiums
+  const association3 = await prisma.association.create({
+    data: {
+      organizationId: org1.id,
+      name: 'Riverside Condominiums',
+      addressLine1: '789 Riverside Drive',
+      city: 'Austin',
+      state: 'TX',
+      postalCode: '78703',
+      country: 'USA',
+      email: 'board@riversidecondos.com',
+      phone: '512-555-2000',
+      fiscalYearStart: 7, // July
+      notes: 'Luxury condominium complex. Managed by PropVestor Demo Org.',
+      isActive: true,
+    },
+  });
+  console.log('  ✓ Association created: Riverside Condominiums');
+
+  // Homeowners for Riverside Condominiums
+  const homeowner8 = await prisma.homeowner.create({
+    data: {
+      associationId: association3.id,
+      propertyId: property2.id,
+      firstName: 'Robert',
+      lastName: 'Taylor',
+      email: 'robert.taylor@example.com',
+      phone: '512-555-2001',
+      passwordHash: await bcrypt.hash('password123', 10),
+      emailVerified: true,
+      accountBalance: 0,
+      status: 'ACTIVE',
+    },
+  });
+
+  const homeowner9 = await prisma.homeowner.create({
+    data: {
+      associationId: association3.id,
+      propertyId: property2.id,
+      firstName: 'Susan',
+      lastName: 'Anderson',
+      email: 'susan.anderson@example.com',
+      phone: '512-555-2002',
+      passwordHash: await bcrypt.hash('password123', 10),
+      emailVerified: true,
+      accountBalance: 50.00,
+      status: 'ACTIVE',
+    },
+  });
+  console.log('  ✓ 2 homeowners created for Riverside Condominiums');
+
+  // Board Member for Riverside Condominiums
+  await prisma.boardMember.create({
+    data: {
+      associationId: association3.id,
+      homeownerId: homeowner8.id,
+      role: 'PRESIDENT',
+      startDate: new Date(Date.now() - 120 * 24 * 60 * 60 * 1000), // 4 months ago
+      isActive: true,
+    },
+  });
+  console.log('  ✓ 1 board member created for Riverside Condominiums');
+
+  // ===== ORGANIZATION 2 ASSOCIATIONS =====
+  console.log('\n  Organization 2: Acme Properties');
+
+  // Association 2: Oak Street Community
+  const association2 = await prisma.association.create({
+    data: {
+      organizationId: org2.id,
+      name: 'Oak Street Community',
+      addressLine1: '456 Oak Street',
+      city: 'Dallas',
+      state: 'TX',
+      postalCode: '75202',
+      country: 'USA',
+      email: 'info@oakstreetcommunity.com',
+      phone: '214-555-2000',
+      website: 'https://oakstreetcommunity.com',
+      fiscalYearStart: 7, // July
+      notes: 'Established 2018. Managed by Acme Properties.',
+      isActive: true,
+    },
+  });
+  console.log('  ✓ Association created: Oak Street Community');
+
+  // Homeowners for Oak Street Community
+  const homeowner4 = await prisma.homeowner.create({
+    data: {
+      associationId: association2.id,
+      unitId: unit3A.id,
+      firstName: 'Alice',
+      lastName: 'Williams',
+      email: 'alice.williams@example.com',
+      phone: '214-555-2001',
+      passwordHash: await bcrypt.hash('password123', 10),
+      emailVerified: true,
+      accountBalance: 0,
+      status: 'ACTIVE',
+    },
+  });
+
+  const homeowner5 = await prisma.homeowner.create({
+    data: {
+      associationId: association2.id,
+      unitId: unit3B.id,
+      firstName: 'Charlie',
+      lastName: 'Brown',
+      email: 'charlie.brown@example.com',
+      phone: '214-555-2002',
+      passwordHash: await bcrypt.hash('password123', 10),
+      emailVerified: true,
+      accountBalance: 75.25,
+      status: 'ACTIVE',
+    },
+  });
+
+  const homeowner10 = await prisma.homeowner.create({
+    data: {
+      associationId: association2.id,
+      unitId: unit3C.id,
+      firstName: 'Michael',
+      lastName: 'Davis',
+      email: 'michael.davis@example.com',
+      phone: '214-555-2003',
+      passwordHash: await bcrypt.hash('password123', 10),
+      emailVerified: true,
+      accountBalance: 0,
+      status: 'ACTIVE',
+    },
+  });
+  console.log('  ✓ 3 homeowners created for Oak Street Community');
+
+  // Board Members for Oak Street Community
+  await prisma.boardMember.create({
+    data: {
+      associationId: association2.id,
+      homeownerId: homeowner4.id,
+      role: 'TREASURER',
+      startDate: new Date(Date.now() - 90 * 24 * 60 * 60 * 1000), // 3 months ago
+      isActive: true,
+    },
+  });
+
+  await prisma.boardMember.create({
+    data: {
+      associationId: association2.id,
+      userId: org2Admin.id, // Use org2Admin as the manager
+      role: 'SECRETARY',
+      startDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000), // 2 months ago
+      isActive: true,
+    },
+  });
+  console.log('  ✓ 2 board members created for Oak Street Community');
+
+  // Association 3 for org2: Parkview Estates
+  const association4 = await prisma.association.create({
+    data: {
+      organizationId: org2.id,
+      name: 'Parkview Estates',
+      addressLine1: '321 Parkview Lane',
+      city: 'Dallas',
+      state: 'TX',
+      postalCode: '75203',
+      country: 'USA',
+      email: 'board@parkviewestates.com',
+      phone: '214-555-3000',
+      fiscalYearStart: 1, // January
+      notes: 'New development. Managed by Acme Properties.',
+      isActive: true,
+    },
+  });
+  console.log('  ✓ Association created: Parkview Estates');
+
+  // Homeowner for Parkview Estates
+  const homeowner11 = await prisma.homeowner.create({
+    data: {
+      associationId: association4.id,
+      propertyId: property3.id,
+      firstName: 'Emily',
+      lastName: 'Martinez',
+      email: 'emily.martinez@example.com',
+      phone: '214-555-3001',
+      passwordHash: await bcrypt.hash('password123', 10),
+      emailVerified: true,
+      accountBalance: 0,
+      status: 'ACTIVE',
+    },
+  });
+  console.log('  ✓ 1 homeowner created for Parkview Estates');
+
+  // Board Member for Parkview Estates
+  await prisma.boardMember.create({
+    data: {
+      associationId: association4.id,
+      homeownerId: homeowner11.id,
+      role: 'PRESIDENT',
+      startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000), // 1 month ago
+      isActive: true,
+    },
+  });
+  console.log('  ✓ 1 board member created for Parkview Estates');
+
   console.log('\n✅ Seed completed successfully!\n');
   console.log('=' .repeat(60));
   console.log('📝 LOGIN CREDENTIALS');
@@ -750,6 +1150,22 @@ const run = async () => {
   console.log('   Password: password123');
   console.log('   Email:    lisa@acmeproperties.com');
   console.log('   Password: password123');
+  console.log('\n🏘️  Homeowner Portal Credentials:');
+  console.log('\n   Organization 1 - Sunset View HOA:');
+  console.log('     Email:    john.smith@example.com / password123');
+  console.log('     Email:    jane.doe@example.com / password123');
+  console.log('     Email:    bob.johnson@example.com / password123');
+  console.log('     Email:    mary.williams@example.com / password123');
+  console.log('     Email:    david.brown@example.com / password123');
+  console.log('\n   Organization 1 - Riverside Condominiums:');
+  console.log('     Email:    robert.taylor@example.com / password123');
+  console.log('     Email:    susan.anderson@example.com / password123');
+  console.log('\n   Organization 2 - Oak Street Community:');
+  console.log('     Email:    alice.williams@example.com / password123');
+  console.log('     Email:    charlie.brown@example.com / password123');
+  console.log('     Email:    michael.davis@example.com / password123');
+  console.log('\n   Organization 2 - Parkview Estates:');
+  console.log('     Email:    emily.martinez@example.com / password123');
   console.log('\n' + '=' .repeat(60));
   console.log('📊 SUMMARY');
   console.log('=' .repeat(60));
@@ -771,6 +1187,14 @@ const run = async () => {
   console.log('   - 2 charges, 1 payment');
   console.log('   - 1 vendor');
   console.log('   - 2 work orders');
+  console.log('\n🏘️  HOA Management:');
+  console.log('   Organization 1 (PropVestor Demo Org):');
+  console.log('     - Sunset View HOA: 5 homeowners, 4 board members');
+  console.log('     - Riverside Condominiums: 2 homeowners, 1 board member');
+  console.log('   Organization 2 (Acme Properties):');
+  console.log('     - Oak Street Community: 3 homeowners, 2 board members');
+  console.log('     - Parkview Estates: 1 homeowner, 1 board member');
+  console.log('   Total: 4 associations, 11 homeowners, 8 board members');
   console.log('\n' + '=' .repeat(60));
 };
 

@@ -15,6 +15,7 @@ const workOrderSchema = z.object({
   priority: z.enum(['LOW', 'NORMAL', 'HIGH', 'EMERGENCY']).optional(),
   status: z.enum(['OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
   requestedByTenantId: z.string().uuid().optional().nullable(),
+  requestedByHomeownerId: z.string().uuid().optional().nullable(),
   assignedVendorId: z.string().uuid().optional().nullable(),
   estimatedCost: z.coerce.number().optional().nullable(),
   actualCost: z.coerce.number().optional().nullable(),
@@ -32,7 +33,7 @@ workOrderRouter.get('/', async (req, res, next) => {
         ...(propertyId ? { propertyId: String(propertyId) } : {}),
         ...(priority ? { priority: String(priority) as any } : {}),
       },
-      include: { property: true, unit: true, assignedVendor: true },
+      include: { property: true, unit: true, assignedVendor: true, requestedByHomeowner: true },
       orderBy: { openedAt: 'desc' },
     });
 
@@ -68,13 +69,14 @@ workOrderRouter.post('/', async (req, res, next) => {
         priority: data.priority ?? 'NORMAL',
         status: data.status ?? 'OPEN',
         requestedByTenantId: data.requestedByTenantId ?? undefined,
+        requestedByHomeownerId: data.requestedByHomeownerId ?? undefined,
         assignedVendorId: data.assignedVendorId ?? undefined,
         estimatedCost: data.estimatedCost ?? undefined,
         actualCost: data.actualCost ?? undefined,
         openedAt: data.openedAt ?? new Date(),
         completedAt: data.completedAt ?? undefined,
       },
-      include: { property: true, unit: true, assignedVendor: true },
+      include: { property: true, unit: true, assignedVendor: true, requestedByHomeowner: true },
     });
 
     res.status(201).json({ data: workOrder });
@@ -111,6 +113,9 @@ workOrderRouter.put('/:id', async (req, res, next) => {
       throw new AppError(404, 'NOT_FOUND', 'Work order not found.');
     }
 
+    const oldStatus = workOrder.status;
+    const newStatus = data.status ?? workOrder.status;
+
     const updated = await prisma.workOrder.update({
       where: { id: workOrder.id },
       data: {
@@ -118,14 +123,51 @@ workOrderRouter.put('/:id', async (req, res, next) => {
         description: data.description ?? undefined,
         category: data.category ?? undefined,
         priority: data.priority ?? undefined,
-        status: data.status ?? undefined,
+        status: newStatus,
         assignedVendorId: data.assignedVendorId ?? undefined,
         estimatedCost: data.estimatedCost ?? undefined,
         actualCost: data.actualCost ?? undefined,
         completedAt: data.completedAt ?? undefined,
       },
-      include: { property: true, unit: true, assignedVendor: true },
+      include: { 
+        property: true, 
+        unit: true, 
+        assignedVendor: true, 
+        requestedByHomeowner: {
+          include: {
+            association: {
+              include: {
+                organization: {
+                  select: { name: true },
+                },
+              },
+            },
+          },
+        },
+      },
     });
+
+    // Send email notification to homeowner if status changed and request was from homeowner
+    if (oldStatus !== newStatus && updated.requestedByHomeowner) {
+      try {
+        const { sendMaintenanceRequestStatusUpdate } = await import('../lib/email.js');
+        const homeowner = updated.requestedByHomeowner;
+        await sendMaintenanceRequestStatusUpdate(
+          homeowner.email,
+          `${homeowner.firstName} ${homeowner.lastName}`,
+          updated.title,
+          oldStatus,
+          newStatus,
+          updated.property.name,
+          updated.unit?.name || null,
+          undefined, // notes
+          homeowner.association.organization.name
+        );
+      } catch (emailError) {
+        console.error('Failed to send maintenance request status update:', emailError);
+        // Don't fail the request if email fails
+      }
+    }
 
     res.json({ data: updated });
   } catch (err) {

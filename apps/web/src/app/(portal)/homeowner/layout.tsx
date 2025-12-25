@@ -1,19 +1,32 @@
 'use client';
 
 import { useEffect, type ReactNode } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { HomeownerAuthProvider, useHomeownerAuth } from '../../../context/HomeownerAuthContext';
+
+// Public routes that don't require authentication
+const PUBLIC_ROUTES = ['/homeowner/login', '/homeowner/register'];
 
 function PortalLayoutContent({ children }: { children: ReactNode }) {
   const { token, loading } = useHomeownerAuth();
   const router = useRouter();
+  const pathname = usePathname();
+
+  const isPublicRoute = PUBLIC_ROUTES.includes(pathname || '');
 
   useEffect(() => {
-    if (!loading && !token) {
+    // Only protect non-public routes
+    if (!isPublicRoute && !loading && !token) {
       router.push('/homeowner/login');
     }
-  }, [token, loading, router]);
+  }, [token, loading, router, isPublicRoute]);
 
+  // For public routes, always render children
+  if (isPublicRoute) {
+    return <>{children}</>;
+  }
+
+  // For protected routes, check auth
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -23,7 +36,7 @@ function PortalLayoutContent({ children }: { children: ReactNode }) {
   }
 
   if (!token) {
-    return null;
+    return null; // Will redirect
   }
 
   return <>{children}</>;
