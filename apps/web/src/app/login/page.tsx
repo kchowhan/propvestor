@@ -138,7 +138,7 @@ export default function UnifiedLogin() {
 
             <div>
               <label htmlFor="associationId" className="label">
-                Association ID <span className="text-slate-400 font-normal">(Optional - for homeowners only)</span>
+                Association ID <span className="text-slate-400 font-normal">(Optional)</span>
               </label>
               <input
                 id="associationId"
@@ -148,7 +148,7 @@ export default function UnifiedLogin() {
                 onChange={(e) => setForm((prev) => ({ ...prev, associationId: e.target.value }))}
                 placeholder="Leave empty if you're not sure"
               />
-              <p className="text-xs text-slate-500 mt-1">
+              <p className="text-xs text-slate-500 mt-1 ml-0">
                 Only needed if you're a homeowner and have multiple associations
               </p>
             </div>
