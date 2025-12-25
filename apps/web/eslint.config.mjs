@@ -35,6 +35,7 @@ export default [
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
         HTMLFormElement: 'readonly',
+        HTMLDivElement: 'readonly',
         // Node.js globals
         process: 'readonly',
         global: 'readonly',
