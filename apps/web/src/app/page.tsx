@@ -3,20 +3,24 @@
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useHomeownerAuth } from '@/context/HomeownerAuthContext';
 
 export default function Home() {
   const router = useRouter();
-  const { token, loading } = useAuth();
+  const { token: pmToken, loading: pmLoading } = useAuth();
+  const { token: hoToken, loading: hoLoading } = useHomeownerAuth();
 
   useEffect(() => {
-    if (!loading) {
-      if (token) {
+    if (!pmLoading && !hoLoading) {
+      if (pmToken) {
         router.replace('/dashboard');
+      } else if (hoToken) {
+        router.replace('/homeowner/dashboard');
       } else {
         router.replace('/login');
       }
     }
-  }, [token, loading, router]);
+  }, [pmToken, hoToken, pmLoading, hoLoading, router]);
 
   return (
     <div className="min-h-screen flex items-center justify-center">

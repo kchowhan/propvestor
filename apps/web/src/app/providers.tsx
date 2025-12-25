@@ -2,6 +2,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from '../context/AuthContext';
+import { HomeownerAuthProvider } from '../context/HomeownerAuthContext';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import type { ReactNode } from 'react';
 
@@ -25,7 +26,9 @@ export function Providers({ children }: { children: ReactNode }) {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
-        <AuthProvider>{children}</AuthProvider>
+        <AuthProvider>
+          <HomeownerAuthProvider>{children}</HomeownerAuthProvider>
+        </AuthProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   );
