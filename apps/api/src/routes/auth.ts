@@ -124,7 +124,21 @@ authRouter.post('/login', async (req, res, next) => {
       throw new AppError(401, 'UNAUTHORIZED', 'Invalid email or password.');
     }
 
+    // Super admins can login even without memberships (they can access admin panel)
+    // For regular users, require at least one membership
     if (user.memberships.length === 0) {
+      if (user.isSuperAdmin) {
+        // Super admin without memberships - create a temporary token with a placeholder organization
+        // They can access admin routes which don't require organizationId
+        const token = signToken({ userId: user.id, organizationId: '00000000-0000-0000-0000-000000000000' });
+        res.json({
+          token,
+          user: { id: user.id, name: user.name, email: user.email, isSuperAdmin: user.isSuperAdmin },
+          organization: null,
+          organizations: [],
+        });
+        return;
+      }
       throw new AppError(403, 'FORBIDDEN', 'User is not part of an organization.');
     }
 
