@@ -46,7 +46,7 @@ export const LoginPage = () => {
         });
         
         // Show verification notice if message indicates verification is needed
-        if (response?.message && response.message.includes('verification')) {
+        if (response && 'message' in response && typeof response.message === 'string' && response.message.includes('verification')) {
           setRegisteredEmail(form.email);
           setShowVerificationNotice(true);
           setLoading(false);

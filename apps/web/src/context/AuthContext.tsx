@@ -25,7 +25,7 @@ type AuthContextValue = {
     email: string;
     password: string;
     organizationName: string;
-  }) => Promise<unknown>;
+  }) => Promise<{ token?: string; user?: any; organization?: any; message?: string }>;
   switchOrganization: (organizationId: string) => Promise<string>;
   createOrganization: (name: string) => Promise<void>;
   logout: () => void;
