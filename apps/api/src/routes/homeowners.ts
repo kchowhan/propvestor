@@ -28,14 +28,8 @@ const querySchema = z.object({
   status: z.string().optional(),
   unitId: z.string().uuid().optional(),
   propertyId: z.string().uuid().optional(),
-  limit: z.preprocess(
-    (val) => (val ? Math.min(Number(val), 100) : 100),
-    z.number().int().min(1).max(100)
-  ),
-  offset: z.preprocess(
-    (val) => (val ? Number(val) : 0),
-    z.number().int().min(0)
-  ),
+  limit: z.coerce.number().int().min(1).max(100).default(100),
+  offset: z.coerce.number().int().min(0).default(0),
 });
 
 // List homeowners
@@ -79,6 +73,9 @@ homeownerRouter.get('/', requireAuth, async (req, res, next) => {
       where.propertyId = query.propertyId;
     }
 
+    const take = query.limit ?? 100;
+    const skip = query.offset ?? 0;
+
     const [homeowners, total] = await Promise.all([
       prisma.homeowner.findMany({
         where,
@@ -109,8 +106,8 @@ homeownerRouter.get('/', requireAuth, async (req, res, next) => {
           },
         },
         orderBy: { createdAt: 'desc' },
-        take: query.limit,
-        skip: query.offset,
+        take,
+        skip,
       }),
       prisma.homeowner.count({ where }),
     ]);
@@ -119,9 +116,9 @@ homeownerRouter.get('/', requireAuth, async (req, res, next) => {
       data: homeowners,
       pagination: {
         total,
-        limit: query.limit,
-        offset: query.offset,
-        hasMore: query.offset + query.limit < total,
+        limit: take,
+        offset: skip,
+        hasMore: skip + take < total,
       },
     });
   } catch (err) {
