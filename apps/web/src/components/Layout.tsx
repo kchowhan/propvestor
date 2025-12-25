@@ -4,6 +4,7 @@ import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Sidebar } from './Sidebar';
+import { ChatOverlay } from './ChatOverlay';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../api/client';
 
@@ -233,6 +234,7 @@ export const Layout = ({ children }: { children: ReactNode }) => {
         </div>
         {children}
       </main>
+      <ChatOverlay />
     </div>
   );
 };

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "buildCommand": "npm install && cd apps/marketing && npm run build",
+  "buildCommand": "npm install --workspace=apps/marketing && cd apps/marketing && npm run build",
   "outputDirectory": "apps/marketing/.next",
   "installCommand": "npm install",
   "framework": "nextjs"
