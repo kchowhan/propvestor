@@ -28,8 +28,14 @@ const querySchema = z.object({
   status: z.string().optional(),
   unitId: z.string().uuid().optional(),
   propertyId: z.string().uuid().optional(),
-  limit: z.string().optional().transform((val) => (val ? Math.min(Number(val), 100) : 100)),
-  offset: z.string().optional().transform((val) => (val ? Number(val) : 0)),
+  limit: z.preprocess(
+    (val) => (val ? Math.min(Number(val), 100) : 100),
+    z.number().int().min(1).max(100)
+  ),
+  offset: z.preprocess(
+    (val) => (val ? Number(val) : 0),
+    z.number().int().min(0)
+  ),
 });
 
 // List homeowners

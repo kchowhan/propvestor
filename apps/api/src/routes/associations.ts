@@ -25,7 +25,10 @@ const createAssociationSchema = z.object({
 const updateAssociationSchema = createAssociationSchema.partial();
 
 const querySchema = z.object({
-  isActive: z.string().optional().transform((val) => val !== undefined ? val === 'true' : undefined),
+  isActive: z.preprocess(
+    (val) => (val === undefined ? undefined : val === 'true' || val === true),
+    z.boolean().optional()
+  ),
 });
 
 // List all associations for the organization
