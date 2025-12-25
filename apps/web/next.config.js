@@ -15,11 +15,6 @@ const nextConfig = {
     // Allow build to continue even with type errors in CI (we check types separately)
     ignoreBuildErrors: false,
   },
-  // ESLint config
-  eslint: {
-    // Allow build to continue even with ESLint errors in CI (we check lint separately)
-    ignoreDuringBuilds: false,
-  },
 };
 
 module.exports = nextConfig;
