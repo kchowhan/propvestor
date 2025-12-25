@@ -1,6 +1,6 @@
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { HomeownerAuthProvider, useHomeownerAuth } from '../../../context/HomeownerAuthContext';
+import { HomeownerAuthProvider, useHomeownerAuth } from '../../context/HomeownerAuthContext';
 import { apiFetch } from '../../api/client';
 
 jest.mock('../../api/client', () => ({
@@ -29,15 +29,18 @@ describe('HomeownerAuthContext', () => {
     localStorage.clear();
   });
 
-  it('should initialize with no token', () => {
+  it('should initialize with no token', async () => {
     const { result } = renderHook(() => useHomeownerAuth(), {
       wrapper: createWrapper(),
+    });
+
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
     });
 
     expect(result.current.token).toBeNull();
     expect(result.current.homeowner).toBeNull();
     expect(result.current.association).toBeNull();
-    expect(result.current.loading).toBe(true);
   });
 
   it('should load token from localStorage', async () => {
