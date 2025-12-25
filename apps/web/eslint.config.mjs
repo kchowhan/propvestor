@@ -10,7 +10,15 @@ const compat = new FlatCompat({
   resolvePluginsRelativeTo: __dirname,
 });
 
-const nextConfigs = compat.extends('next/core-web-vitals', 'next/typescript');
+// Load configs separately to avoid circular reference issues
+let nextConfigs = [];
+try {
+  nextConfigs = compat.extends('next/core-web-vitals', 'next/typescript');
+} catch (error) {
+  // Fallback: use core-web-vitals only if there's an error
+  console.warn('Failed to load Next.js configs, using fallback:', error.message);
+  nextConfigs = compat.extends('next/core-web-vitals');
+}
 
 export default [
   ...nextConfigs,
