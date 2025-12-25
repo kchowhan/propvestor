@@ -1,5 +1,5 @@
 # Backend Dockerfile
-FROM node:20-alpine AS builder
+FROM node:20.18-alpine AS builder
 
 WORKDIR /app
 
@@ -22,7 +22,7 @@ RUN npm run prisma:generate
 RUN npm run build
 
 # Production image
-FROM node:20-alpine
+FROM node:20.18-alpine
 
 WORKDIR /app
 
