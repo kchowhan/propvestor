@@ -50,31 +50,12 @@ describe('Associations Routes', () => {
         },
       });
 
-      // Verify associations were created
-      const created1 = await prisma.association.findUnique({ where: { id: association1.id } });
-      const created2 = await prisma.association.findUnique({ where: { id: association2.id } });
-      expect(created1).toBeDefined();
-      expect(created2).toBeDefined();
-      expect(created1?.organizationId).toBe(testOrg.id);
-      expect(created2?.organizationId).toBe(testOrg.id);
-
-      // Verify token organizationId matches
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'test-secret-key-for-ci') as any;
-      expect(decoded.organizationId).toBe(testOrg.id);
-
       const response = await request(app)
         .get('/api/associations')
         .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body.data)).toBe(true);
-      
-      // Debug: Log response if test fails
-      if (response.body.data.length < 2) {
-        console.log('Response data:', response.body.data.map((a: any) => ({ id: a.id, name: a.name })));
-        console.log('Looking for:', { id1: association1.id, id2: association2.id });
-      }
-      
       expect(response.body.data.length).toBeGreaterThanOrEqual(2);
       // Find our specific associations in the response
       const association1Data = response.body.data.find((a: any) => a.id === association1.id);
