@@ -1,4 +1,5 @@
 import React from 'react';
+import { vi } from '@jest/globals';
 import { renderHook, act, waitFor } from '@testing-library/react';
 import { AuthProvider, useAuth } from '../../context/AuthContext';
 

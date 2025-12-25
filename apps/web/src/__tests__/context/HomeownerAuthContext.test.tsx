@@ -1,4 +1,5 @@
 import { renderHook, waitFor, act } from '@testing-library/react';
+import { vi } from '@jest/globals';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactNode } from 'react';
 import { HomeownerAuthProvider, useHomeownerAuth } from '../../context/HomeownerAuthContext';

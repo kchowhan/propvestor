@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { vi } from '@jest/globals';
 import { useRouter } from 'next/navigation';
 import ResendVerificationPage from '@/app/resend-verification/page';
 import { apiFetch } from '@/api/client';

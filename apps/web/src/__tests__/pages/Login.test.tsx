@@ -1,7 +1,8 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LoginPage } from '../../components/pages/Login';
+import { renderWithProviders } from '../../../jest.setup';
 
 // Mock next/navigation
 const mockPush = jest.fn();
@@ -30,7 +31,7 @@ describe('LoginPage', () => {
   });
 
   it('should render login form', () => {
-    render(<LoginPage />);
+    renderWithProviders(<LoginPage />);
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
@@ -38,7 +39,7 @@ describe('LoginPage', () => {
 
   it('should switch to register mode', async () => {
     const user = userEvent.setup();
-    render(<LoginPage />);
+    renderWithProviders(<LoginPage />);
 
     const switchButton = screen.getByText(/register/i);
     await user.click(switchButton);
@@ -49,8 +50,8 @@ describe('LoginPage', () => {
 
   it('should call login on form submit', async () => {
     const user = userEvent.setup();
-    mockLogin.mockResolvedValue(undefined);
-    render(<LoginPage />);
+    mockLogin.mockResolvedValue(undefined as any);
+    renderWithProviders(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email/i), 'test@example.com');
     await user.type(screen.getByLabelText(/password/i), 'password123');
@@ -63,8 +64,8 @@ describe('LoginPage', () => {
 
   it('should call register on form submit in register mode', async () => {
     const user = userEvent.setup();
-    mockRegister.mockResolvedValue(undefined);
-    render(<LoginPage />);
+    mockRegister.mockResolvedValue(undefined as any);
+    renderWithProviders(<LoginPage />);
 
     // Switch to register
     await user.click(screen.getByText(/register/i));
@@ -91,7 +92,7 @@ describe('LoginPage', () => {
   it('should display error message on login failure', async () => {
     const user = userEvent.setup();
     mockLogin.mockRejectedValue(new Error('Invalid credentials'));
-    render(<LoginPage />);
+    renderWithProviders(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email/i), 'test@example.com');
     await user.type(screen.getByLabelText(/password/i), 'wrongpassword');
@@ -107,8 +108,8 @@ describe('LoginPage', () => {
     mockRegister.mockResolvedValue({
       message: 'Registration successful. Please check your email for verification link.',
       user: { email: 'test@example.com' },
-    });
-    render(<LoginPage />);
+    } as any);
+    renderWithProviders(<LoginPage />);
 
     // Switch to register
     await user.click(screen.getByText(/register/i));
@@ -132,8 +133,8 @@ describe('LoginPage', () => {
     const user = userEvent.setup();
     mockRegister.mockResolvedValue({
       message: 'Registration successful. Please check your email for verification link.',
-    });
-    render(<LoginPage />);
+    } as any);
+    renderWithProviders(<LoginPage />);
 
     // Switch to register and submit
     await user.click(screen.getByText(/register/i));

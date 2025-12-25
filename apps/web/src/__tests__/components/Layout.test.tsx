@@ -1,5 +1,6 @@
 import { screen, fireEvent, waitFor } from '@testing-library/react';
 import { Layout } from '../../components/Layout';
+import { vi } from '@jest/globals';
 import { renderWithProviders } from '../../../jest.setup';
 
 const mockReplace = jest.fn();

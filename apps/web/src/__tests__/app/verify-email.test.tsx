@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import { vi } from '@jest/globals';
 import { useRouter, useSearchParams } from 'next/navigation';
 import VerifyEmailPage from '@/app/verify-email/page';
 import { apiFetch } from '@/api/client';
@@ -15,9 +16,9 @@ jest.mock('@/api/client', () => ({
 
 describe('VerifyEmailPage', () => {
   const mockPush = jest.fn();
-  const mockApiFetch = apiFetch as jest.MockedFunction<typeof apiFetch>;
-  const mockUseRouter = useRouter as jest.MockedFunction<typeof useRouter>;
-  const mockUseSearchParams = useSearchParams as jest.MockedFunction<typeof useSearchParams>;
+  const mockApiFetch = apiFetch as jest.MockedFunction;
+  const mockUseRouter = useRouter as jest.MockedFunction;
+  const mockUseSearchParams = useSearchParams as jest.MockedFunction;
 
   beforeEach(() => {
     jest.clearAllMocks();

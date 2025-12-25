@@ -1,4 +1,5 @@
 import { render, screen, waitFor } from '@testing-library/react';
+import { vi } from '@jest/globals';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import Home from '@/app/page';

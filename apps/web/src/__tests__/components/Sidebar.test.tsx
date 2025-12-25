@@ -28,7 +28,6 @@ const mockAuth = {
 };
 
 jest.mock('../../context/AuthContext', () => ({
-  ...jest.requireActual('../../context/AuthContext'),
   useAuth: () => mockAuth,
 }));
 
