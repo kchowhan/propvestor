@@ -135,67 +135,7 @@ homeownerAuthRouter.post('/register', async (req, res, next) => {
   }
 });
 
-// Login homeowner
-homeownerAuthRouter.post('/login', async (req, res, next) => {
-  try {
-    const data = parseBody(homeownerLoginSchema, req.body);
-
-    const where: any = { email: data.email };
-    if (data.associationId) {
-      where.associationId = data.associationId;
-    }
-
-    const homeowner = await prisma.homeowner.findFirst({
-      where,
-      include: {
-        association: {
-          select: {
-            id: true,
-            name: true,
-          },
-        },
-      },
-    });
-
-    if (!homeowner) {
-      throw new AppError(401, 'UNAUTHORIZED', 'Invalid email or password.');
-    }
-
-    if (!homeowner.passwordHash) {
-      throw new AppError(401, 'UNAUTHORIZED', 'Password not set. Please contact your association administrator.');
-    }
-
-    const matches = await bcrypt.compare(data.password, homeowner.passwordHash);
-    if (!matches) {
-      throw new AppError(401, 'UNAUTHORIZED', 'Invalid email or password.');
-    }
-
-    if (homeowner.archivedAt) {
-      throw new AppError(403, 'FORBIDDEN', 'Your account has been archived. Please contact your association administrator.');
-    }
-
-    const token = signHomeownerToken({
-      homeownerId: homeowner.id,
-      associationId: homeowner.associationId,
-    });
-
-    res.json({
-      token,
-      homeowner: {
-        id: homeowner.id,
-        firstName: homeowner.firstName,
-        lastName: homeowner.lastName,
-        email: homeowner.email,
-        emailVerified: homeowner.emailVerified,
-        status: homeowner.status,
-        accountBalance: homeowner.accountBalance,
-      },
-      association: homeowner.association,
-    });
-  } catch (err) {
-    next(err);
-  }
-});
+// Login homeowner endpoint removed - use unified /auth/login instead
 
 // Get current homeowner (me)
 homeownerAuthRouter.get('/me', async (req, res, next) => {

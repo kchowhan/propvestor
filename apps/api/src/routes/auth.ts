@@ -131,9 +131,18 @@ authRouter.post('/login', async (req, res, next) => {
       },
     });
 
-    if (homeowner && homeowner.passwordHash) {
+    // If homeowner exists, try homeowner login (don't fall through to property manager)
+    if (homeowner) {
+      if (!homeowner.passwordHash) {
+        throw new AppError(401, 'UNAUTHORIZED', 'Password not set. Please contact your association administrator.');
+      }
+
+      if (homeowner.archivedAt) {
+        throw new AppError(403, 'FORBIDDEN', 'Your account has been archived. Please contact your association administrator.');
+      }
+
       const matches = await bcrypt.compare(data.password, homeowner.passwordHash);
-      if (matches && !homeowner.archivedAt) {
+      if (matches) {
         // Homeowner login successful
         const signHomeownerToken = (payload: { homeownerId: string; associationId: string }) =>
           jwt.sign(payload, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN } as any);
@@ -156,6 +165,9 @@ authRouter.post('/login', async (req, res, next) => {
           },
           association: homeowner.association,
         });
+      } else {
+        // Homeowner exists but password is wrong - don't try property manager
+        throw new AppError(401, 'UNAUTHORIZED', 'Invalid email or password.');
       }
     }
 
