@@ -1,16 +1,8 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "apps/marketing/package.json",
-      "use": "@vercel/next"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/(.*)",
-      "dest": "apps/marketing/$1"
-    }
-  ]
+  "buildCommand": "npm install && cd apps/marketing && npm run build",
+  "outputDirectory": "apps/marketing/.next",
+  "installCommand": "npm install",
+  "framework": "nextjs"
 }
 
