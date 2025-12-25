@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Image from 'next/image';
 
 export const Logo = ({ className }: { className?: string }) => {
   const [imageError, setImageError] = useState(false);
@@ -19,17 +20,20 @@ export const Logo = ({ className }: { className?: string }) => {
   }
   
   return (
-    <img 
-      src={logoPath} 
-      alt="PropVestor" 
-      className={className || 'h-10 w-auto'}
-      loading="eager"
-      decoding="async"
-      onError={() => {
-        console.error('Logo image failed to load:', logoPath);
-        setImageError(true);
-      }}
-    />
+    <div className={className || 'h-10 w-auto relative'}>
+      <Image
+        src={logoPath}
+        alt="PropVestor"
+        width={120}
+        height={40}
+        className="h-full w-auto object-contain"
+        priority
+        onError={() => {
+          console.error('Logo image failed to load:', logoPath);
+          setImageError(true);
+        }}
+      />
+    </div>
   );
 };
 
