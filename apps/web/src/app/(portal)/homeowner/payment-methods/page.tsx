@@ -8,6 +8,7 @@ import { loadStripe, StripeElementsOptions } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import Link from 'next/link';
 import { useEffect } from 'react';
+import { HomeownerPortalHeader } from '@/components/HomeownerPortalHeader';
 
 // Initialize Stripe
 let stripePromise: Promise<any> | null = null;
@@ -241,31 +242,27 @@ export default function PaymentMethodsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Link href="/homeowner/dashboard" className="text-primary-600 hover:underline text-sm mb-2 inline-block">
-                ← Back to Dashboard
-              </Link>
-              <h1 className="text-2xl font-bold text-ink">Payment Methods</h1>
-            </div>
-            {!showAddForm && (
-              <button
-                onClick={() => {
-                  setShowAddForm(true);
-                  setClientSecret(null); // Reset to create new setup intent
-                }}
-                className="btn btn-primary"
-              >
-                Add Payment Method
-              </button>
-            )}
-          </div>
-        </div>
-      </header>
-
+      <HomeownerPortalHeader />
       <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-ink mb-2">Payment Methods</h2>
+            <Link href="/homeowner/dashboard" className="text-primary-600 hover:underline text-sm">
+              ← Back to Dashboard
+            </Link>
+          </div>
+          {!showAddForm && (
+            <button
+              onClick={() => {
+                setShowAddForm(true);
+                setClientSecret(null); // Reset to create new setup intent
+              }}
+              className="btn btn-primary"
+            >
+              Add Payment Method
+            </button>
+          )}
+        </div>
         {showAddForm ? (
           <div className="card">
             <div className="card-header">Add Payment Method</div>

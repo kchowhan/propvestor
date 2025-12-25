@@ -3,12 +3,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useHomeownerAuth } from '@/context/HomeownerAuthContext';
 import { apiFetch } from '@/api/client';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { HomeownerPortalHeader } from '@/components/HomeownerPortalHeader';
 
 export default function HomeownerDocumentsPage() {
-  const { token, logout } = useHomeownerAuth();
-  const router = useRouter();
+  const { token } = useHomeownerAuth();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['homeowner-documents'],
@@ -36,31 +35,16 @@ export default function HomeownerDocumentsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Link href="/homeowner/dashboard" className="text-primary-600 hover:underline text-sm mb-2 inline-block">
-                ← Back to Dashboard
-              </Link>
-              <h1 className="text-2xl font-bold text-ink">Documents</h1>
-            </div>
-            <button
-              onClick={() => {
-                logout();
-                router.push('/homeowner/login');
-              }}
-              className="btn btn-secondary text-sm"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </header>
+      <HomeownerPortalHeader />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-ink mb-2">Documents</h2>
+          <Link href="/homeowner/dashboard" className="text-primary-600 hover:underline text-sm">
+            ← Back to Dashboard
+          </Link>
+        </div>
         <div className="card">
           <div className="card-header">Association Documents</div>
           <div className="card-body">

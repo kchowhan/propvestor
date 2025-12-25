@@ -3,12 +3,11 @@
 import { useQuery } from '@tanstack/react-query';
 import { useHomeownerAuth } from '@/context/HomeownerAuthContext';
 import { apiFetch } from '@/api/client';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { HomeownerPortalHeader } from '@/components/HomeownerPortalHeader';
 
 export default function HomeownerDashboardPage() {
-  const { token, homeowner, association, logout } = useHomeownerAuth();
-  const router = useRouter();
+  const { token } = useHomeownerAuth();
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['homeowner-dashboard'],
@@ -36,31 +35,7 @@ export default function HomeownerDashboardPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-ink">Homeowner Portal</h1>
-              <p className="text-sm text-slate-600">{association?.name}</p>
-            </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm text-slate-600">
-                {homeowner?.firstName} {homeowner?.lastName}
-              </span>
-              <button
-                onClick={() => {
-                  logout();
-                  router.push('/homeowner/login');
-                }}
-                className="btn btn-secondary text-sm"
-              >
-                Logout
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
+      <HomeownerPortalHeader />
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

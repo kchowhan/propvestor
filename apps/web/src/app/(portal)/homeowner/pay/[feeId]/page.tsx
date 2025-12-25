@@ -9,6 +9,7 @@ import { loadStripe, StripeElementsOptions } from '@stripe/stripe-js';
 import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import Link from 'next/link';
 import { format } from 'date-fns';
+import { HomeownerPortalHeader } from '@/components/HomeownerPortalHeader';
 
 // Initialize Stripe
 let stripePromise: Promise<any> | null = null;
@@ -307,15 +308,14 @@ export default function PayFeePage() {
   if (remainingAmount <= 0) {
     return (
       <div className="min-h-screen bg-slate-50">
-        <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-            <Link href="/homeowner/fees" className="text-primary-600 hover:underline text-sm mb-2 inline-block">
+        <HomeownerPortalHeader />
+        <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold text-ink mb-2">Payment</h2>
+            <Link href="/homeowner/fees" className="text-primary-600 hover:underline text-sm">
               ← Back to Fees
             </Link>
-            <h1 className="text-2xl font-bold text-ink">Payment</h1>
           </div>
-        </header>
-        <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="card">
             <div className="card-body text-center py-12">
               <p className="text-green-600 font-semibold mb-2">This fee has been fully paid.</p>
@@ -338,16 +338,14 @@ export default function PayFeePage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-50 bg-white border-b border-slate-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <Link href="/homeowner/fees" className="text-primary-600 hover:underline text-sm mb-2 inline-block">
+      <HomeownerPortalHeader />
+      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="mb-6">
+          <h2 className="text-2xl font-bold text-ink mb-2">Pay HOA Fee</h2>
+          <Link href="/homeowner/fees" className="text-primary-600 hover:underline text-sm">
             ← Back to Fees
           </Link>
-          <h1 className="text-2xl font-bold text-ink">Pay HOA Fee</h1>
         </div>
-      </header>
-
-      <main className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {stripePromise && clientSecret ? (
           <Elements stripe={stripePromise} options={options}>
             <PaymentForm feeId={feeId} fee={fee} />

@@ -6,7 +6,7 @@ import { useHomeownerAuth } from '@/context/HomeownerAuthContext';
 import { apiFetch } from '@/api/client';
 import Link from 'next/link';
 import { format } from 'date-fns';
-import { useRouter } from 'next/navigation';
+import { HomeownerPortalHeader } from '@/components/HomeownerPortalHeader';
 
 const WORK_ORDER_CATEGORIES = [
   { value: 'GENERAL', label: 'General' },
@@ -30,8 +30,7 @@ const PRIORITIES = [
 ];
 
 export default function HomeownerMaintenancePage() {
-  const { token, homeowner, association, logout } = useHomeownerAuth();
-  const router = useRouter();
+  const { token } = useHomeownerAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'list' | 'create'>('list');
   const [form, setForm] = useState({
@@ -152,18 +151,7 @@ export default function HomeownerMaintenancePage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <header className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <Link href="/homeowner/dashboard" className="text-primary-600 hover:underline text-sm mb-2 inline-block">
-                ← Back to Dashboard
-              </Link>
-              <h1 className="text-2xl font-bold text-ink">Maintenance Requests</h1>
-            </div>
-          </div>
-        </div>
-      </header>
+      <HomeownerPortalHeader />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="mb-6">
