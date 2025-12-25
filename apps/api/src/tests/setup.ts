@@ -139,6 +139,11 @@ export const cleanupTestData = async () => {
   // Organization fees (reference charges, payments, screening requests)
   try { await prisma.organizationFee.deleteMany(); } catch {}
   
+  // HOA Management - delete in dependency order
+  try { await prisma.boardMember.deleteMany(); } catch {}
+  try { await prisma.homeowner.deleteMany(); } catch {}
+  try { await prisma.association.deleteMany(); } catch {}
+  
   // Delete memberships before users and organizations (memberships reference both)
   try { await prisma.organizationMembership.deleteMany(); } catch {}
   // Delete users before organizations (users may have documents/reconciliations)

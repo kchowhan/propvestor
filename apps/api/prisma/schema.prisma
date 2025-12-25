@@ -113,56 +113,75 @@ enum InvestmentEntityType {
   OTHER
 }
 
+// HOA Management Enums
+enum BoardMemberRole {
+  PRESIDENT
+  VICE_PRESIDENT
+  SECRETARY
+  TREASURER
+  MEMBER_AT_LARGE
+}
+
+enum HomeownerStatus {
+  ACTIVE
+  INACTIVE
+  DELINQUENT
+  SUSPENDED
+}
+
 model User {
-  id                            String                   @id @default(uuid()) @db.Uuid
-  email                         String                   @unique
-  passwordHash                  String
-  name                          String
-  isSuperAdmin                  Boolean                  @default(false)
-  emailVerified                 Boolean                  @default(false)
-  emailVerificationToken        String?                  @unique
-  emailVerificationTokenExpiry  DateTime?
-  createdAt                     DateTime                 @default(now())
-  updatedAt                     DateTime                 @updatedAt
-  memberships                   OrganizationMembership[]
-  documents                     Document[]               @relation("UploadedBy")
-  reconciliationsReviewed       Reconciliation[]         @relation("ReviewedBy")
+  id                           String                   @id @default(uuid()) @db.Uuid
+  email                        String                   @unique
+  passwordHash                 String
+  name                         String
+  isSuperAdmin                 Boolean                  @default(false)
+  emailVerified                Boolean                  @default(false)
+  emailVerificationToken       String?                  @unique
+  emailVerificationTokenExpiry DateTime?
+  createdAt                    DateTime                 @default(now())
+  updatedAt                    DateTime                 @updatedAt
+  memberships                  OrganizationMembership[]
+  documents                    Document[]               @relation("UploadedBy")
+  reconciliationsReviewed      Reconciliation[]         @relation("ReviewedBy")
+  boardMemberships             BoardMember[]            @relation("BoardMemberUser") // HOA board memberships
 }
 
 // Organization is the central entity that contains BOTH property management and investment management data.
 // The same user with the same role can access all features within an organization.
 // There is no separation between property management and investment management - they are unified.
 model Organization {
-  id                       String                   @id @default(uuid()) @db.Uuid
-  name                     String
-  slug                     String                   @unique
-  stripeCustomerId         String?                  @unique // Stripe customer for organization fees and subscriptions
-  defaultPaymentMethodId   String? // Stripe payment method ID for default payment
-  paymentMethodSetupComplete Boolean               @default(false) // Track if org has completed payment setup
-  createdAt                DateTime                 @default(now())
-  updatedAt                DateTime                 @updatedAt
-  memberships              OrganizationMembership[]
+  id                         String                   @id @default(uuid()) @db.Uuid
+  name                       String
+  slug                       String                   @unique
+  stripeCustomerId           String?                  @unique // Stripe customer for organization fees and subscriptions
+  defaultPaymentMethodId     String? // Stripe payment method ID for default payment
+  paymentMethodSetupComplete Boolean                  @default(false) // Track if org has completed payment setup
+  createdAt                  DateTime                 @default(now())
+  updatedAt                  DateTime                 @updatedAt
+  memberships                OrganizationMembership[]
   // Property Management (Phase 1)
-  properties               Property[]
-  tenants                  Tenant[]
-  leases                   Lease[]
-  charges                  Charge[]
-  payments                 Payment[]
-  workOrders               WorkOrder[]
-  vendors                  Vendor[]
-  documents                Document[]
-  screeningRequests        ScreeningRequest[]
+  properties                 Property[]
+  tenants                    Tenant[]
+  leases                     Lease[]
+  charges                    Charge[]
+  payments                   Payment[]
+  workOrders                 WorkOrder[]
+  vendors                    Vendor[]
+  documents                  Document[]
+  screeningRequests          ScreeningRequest[]
   // Investment Management (Phase 2)
-  investors                Investor[]
-  entities                 InvestmentEntity[]
+  investors                  Investor[]
+  entities                   InvestmentEntity[]
   // Payment processing
-  tenantPaymentMethods     TenantPaymentMethod[]
-  bankTransactions         BankTransaction[]
-  reconciliations          Reconciliation[]
+  tenantPaymentMethods       TenantPaymentMethod[]
+  bankTransactions           BankTransaction[]
+  reconciliations            Reconciliation[]
   // SaaS - Subscriptions
-  subscription             Subscription?
+  subscription               Subscription?
   // Organization fees (RentSpree, Stripe processing, etc.)
-  organizationFees         OrganizationFee[]
+  organizationFees           OrganizationFee[]
+  // HOA Management (Phase 3)
+  associations               Association[]
 }
 
 // OrganizationMembership links a User to an Organization with a single role.
@@ -182,6 +201,109 @@ model OrganizationMembership {
   organization Organization @relation(fields: [organizationId], references: [id])
 
   @@unique([userId, organizationId])
+}
+
+// HOA Management Models
+
+// Association represents an HOA/Community managed by an Organization
+// One Organization (property management company) can manage multiple Associations
+model Association {
+  id              String   @id @default(uuid()) @db.Uuid
+  organizationId  String   @db.Uuid
+  name            String
+  addressLine1    String?
+  addressLine2    String?
+  city            String?
+  state           String?
+  postalCode      String?
+  country         String?  @default("USA")
+  phone           String?
+  email           String?
+  website         String?
+  // Settings
+  fiscalYearStart Int?     @default(1) // Month (1-12) when fiscal year starts
+  // Metadata
+  notes           String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  organization Organization  @relation(fields: [organizationId], references: [id])
+  homeowners   Homeowner[]
+  boardMembers BoardMember[]
+  // Future: violations, architectural reviews, funds, events, etc.
+
+  @@index([organizationId])
+  @@index([isActive])
+}
+
+// Homeowner represents an owner of a unit in an Association
+// Different from Tenant (who rents) - Homeowners own their units
+model Homeowner {
+  id                           String          @id @default(uuid()) @db.Uuid
+  associationId                String          @db.Uuid
+  unitId                       String?         @db.Uuid // Which unit they own (optional for now)
+  propertyId                   String?         @db.Uuid // Which property (if unit not specified)
+  // Personal info
+  firstName                    String
+  lastName                     String
+  email                        String
+  phone                        String?
+  // Account info
+  accountBalance               Decimal         @default(0) @db.Decimal(12, 2) // Current balance owed
+  // Status
+  status                       HomeownerStatus @default(ACTIVE)
+  // Authentication (for portal access)
+  passwordHash                 String? // Optional - for portal login
+  emailVerified                Boolean         @default(false)
+  emailVerificationToken       String?         @unique
+  emailVerificationTokenExpiry DateTime?
+  // Metadata
+  notes                        String?
+  archivedAt                   DateTime?
+  createdAt                    DateTime        @default(now())
+  updatedAt                    DateTime        @updatedAt
+
+  association      Association   @relation(fields: [associationId], references: [id])
+  unit             Unit?         @relation(fields: [unitId], references: [id])
+  property         Property?     @relation(fields: [propertyId], references: [id])
+  boardMemberships BoardMember[] @relation("BoardMemberHomeowner") // Board memberships (can have multiple over time)
+  // Future: hoa fees, violations, architectural reviews, messages, etc.
+
+  @@unique([associationId, email])
+  @@index([associationId])
+  @@index([unitId])
+  @@index([propertyId])
+  @@index([status])
+  @@index([email])
+}
+
+// BoardMember represents a board member of an Association
+// Links a User (property manager or homeowner) to an Association with a board role
+model BoardMember {
+  id            String          @id @default(uuid()) @db.Uuid
+  associationId String          @db.Uuid
+  userId        String?         @db.Uuid // If board member is a User (property manager)
+  homeownerId   String?         @db.Uuid // If board member is a Homeowner
+  role          BoardMemberRole
+  // Tenure
+  startDate     DateTime
+  endDate       DateTime? // null if currently active
+  isActive      Boolean         @default(true)
+  // Metadata
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  association Association @relation(fields: [associationId], references: [id])
+  user        User?       @relation("BoardMemberUser", fields: [userId], references: [id])
+  homeowner   Homeowner?  @relation("BoardMemberHomeowner", fields: [homeownerId], references: [id])
+  // Future: approvals, votes, etc.
+
+  @@index([associationId])
+  @@index([userId])
+  @@index([homeownerId])
+  @@index([isActive])
 }
 
 model Property {
@@ -211,6 +333,7 @@ model Property {
   ownerships   Ownership[]
   valuations   ValuationSnapshot[]
   tenants      Tenant[]
+  homeowners   Homeowner[] // HOA homeowners (if unit not specified)
 
   @@index([organizationId])
 }
@@ -234,6 +357,7 @@ model Unit {
   workOrders WorkOrder[]
   documents  Document[]
   tenants    Tenant[]
+  homeowners Homeowner[] // HOA homeowners who own this unit
 
   @@index([propertyId])
 }
