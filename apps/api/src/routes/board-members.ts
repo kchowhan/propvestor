@@ -35,25 +35,30 @@ boardMemberRouter.get('/', requireAuth, async (req, res, next) => {
     }
 
     const query = parseQuery(querySchema, req.query);
-    const where: any = {};
+    
+    // First, get all associations for this organization
+    const associations = await prisma.association.findMany({
+      where: { organizationId: req.auth.organizationId },
+      select: { id: true },
+    });
+    const associationIds = associations.map((a) => a.id);
+    
+    if (associationIds.length === 0) {
+      // No associations, return empty array
+      return res.json({ data: [] });
+    }
+    
+    const where: any = {
+      associationId: { in: associationIds },
+    };
 
     if (query.associationId) {
       // Verify association belongs to organization
-      const association = await prisma.association.findFirst({
-        where: {
-          id: query.associationId,
-          organizationId: req.auth.organizationId,
-        },
-      });
-      if (!association) {
+      if (!associationIds.includes(query.associationId)) {
         throw new AppError(404, 'NOT_FOUND', 'Association not found.');
       }
+      // Filter by specific association
       where.associationId = query.associationId;
-    } else {
-      // If no specific association, filter by organization
-      where.association = {
-        organizationId: req.auth.organizationId,
-      };
     }
 
     if (query.isActive !== undefined) {

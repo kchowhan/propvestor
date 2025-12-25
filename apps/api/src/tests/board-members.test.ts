@@ -68,6 +68,12 @@ describe('Board Members Routes', () => {
       expect(created).toBeDefined();
       expect(created?.association.organizationId).toBe(testOrg.id);
 
+      // Verify association exists and belongs to org
+      const associationCheck = await prisma.association.findUnique({
+        where: { id: testAssociation.id },
+      });
+      expect(associationCheck?.organizationId).toBe(testOrg.id);
+
       const response = await request(app)
         .get('/api/board-members')
         .set('Authorization', `Bearer ${token}`);

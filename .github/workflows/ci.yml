@@ -76,7 +76,8 @@ jobs:
       - name: Run API tests with coverage
         working-directory: apps/api
         run: npm run test:coverage
-        # Vitest will automatically fail if coverage is below 85% (configured in vitest.config.ts)
+        # Vitest will automatically fail if coverage is below thresholds (configured in vitest.config.ts):
+        # lines: 80%, functions: 90%, branches: 65%, statements: 80%
 
       - name: Upload API coverage reports
         uses: codecov/codecov-action@v4
@@ -113,7 +114,8 @@ jobs:
       - name: Run Web tests with coverage
         working-directory: apps/web
         run: npm run test:coverage
-        # Jest will fail if coverage is below thresholds: branches 67%, functions 68%, lines 76%, statements 76% (configured in jest.config.js)
+        # Jest will fail if coverage is below thresholds (configured in jest.config.js):
+        # branches: 64%, functions: 67%, lines: 75%, statements: 75%
 
       - name: Upload Web coverage reports
         uses: codecov/codecov-action@v4
