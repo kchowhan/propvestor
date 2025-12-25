@@ -206,7 +206,6 @@ describe('LeasesPage', () => {
     }
 
     // Set start date
-    const dateInputs = screen.queryAllByRole('textbox');
     const allInputs = screen.container ? document.querySelectorAll('input[type="date"]') : [];
     if (allInputs.length > 0) {
       fireEvent.change(allInputs[0], { target: { value: '2024-01-01' } });

@@ -939,10 +939,6 @@ describe('BillingPage', () => {
       expect(screen.getByText('Received Date *')).toBeInTheDocument();
     });
 
-    const dateInputs = screen.getAllByRole('textbox', { hidden: true });
-    // Find date input by testing its type
-    const allInputs = screen.container ? screen.container.querySelectorAll('input[type="date"]') : [];
-    
     // Use a more reliable way to find the date input
     const receivedDateLabel = screen.getByText('Received Date *');
     const receivedDateInput = receivedDateLabel.parentElement?.querySelector('input');

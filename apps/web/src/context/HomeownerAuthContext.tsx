@@ -30,8 +30,8 @@ type HomeownerAuthContextValue = {
   homeowner: Homeowner | null;
   association: Association | null;
   loading: boolean;
-  login: (email: string, password: string, associationId?: string) => Promise<void>;
-  register: (payload: {
+  login: (_email: string, _password: string, _associationId?: string) => Promise<void>;
+  register: (_payload: {
     associationId: string;
     firstName: string;
     lastName: string;

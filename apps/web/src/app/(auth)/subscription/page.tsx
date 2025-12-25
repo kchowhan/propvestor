@@ -20,7 +20,7 @@ export default function SubscriptionPage() {
 
 
   // Fetch invoices
-  const { data: invoices, isLoading: invoicesLoading } = useQuery({
+  const { data: invoices } = useQuery({
     queryKey: ['subscription', 'invoices'],
     queryFn: () => apiFetch('/subscriptions/invoices', { token }),
     enabled: !!subscription,

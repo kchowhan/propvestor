@@ -64,7 +64,7 @@ export default function PricingPage() {
       </div>
 
       <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4 max-w-7xl mx-auto">
-        {plansList.map((plan: any, index: number) => {
+        {plansList.map((plan: any) => {
           const isCurrentPlan = plan.id === currentPlanId;
           const isPopular = plan.slug === 'pro'; // Mark Pro as popular
           

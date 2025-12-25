@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../api/client';
 
 export const Layout = ({ children }: { children: ReactNode }) => {
-  const { user, organization, organizations, switchOrganization, logout, createOrganization, currentRole, token } = useAuth();
+  const { user, organization, organizations, switchOrganization, logout, createOrganization, token } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
   const [isOrgMenuOpen, setIsOrgMenuOpen] = useState(false);

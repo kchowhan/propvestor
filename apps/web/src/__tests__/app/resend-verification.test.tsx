@@ -19,6 +19,7 @@ describe('ResendVerificationPage', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     mockUseRouter.mockReturnValue({ push: mockPush } as any);
   });
 
@@ -86,7 +87,8 @@ describe('ResendVerificationPage', () => {
   });
 
   it('should disable button while loading', async () => {
-    let resolvePromise: (value: any) => void;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let resolvePromise: (value: unknown) => void;
     const promise = new Promise((resolve) => {
       resolvePromise = resolve;
     });

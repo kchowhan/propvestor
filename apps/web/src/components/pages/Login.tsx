@@ -32,7 +32,7 @@ export const LoginPage = () => {
     setForm((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
     setLoading(true);

@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useHomeownerAuth } from '@/context/HomeownerAuthContext';
 import { Logo } from '@/components/Logo';
 import Link from 'next/link';
@@ -9,7 +8,6 @@ import { CheckCircleIcon } from '@heroicons/react/24/solid';
 
 export default function HomeownerRegisterPage() {
   const { register } = useHomeownerAuth();
-  const router = useRouter();
   const [form, setForm] = useState({
     associationId: '',
     firstName: '',
@@ -25,7 +23,7 @@ export default function HomeownerRegisterPage() {
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const handleSubmit = async (event: React.FormEvent) => {
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
 

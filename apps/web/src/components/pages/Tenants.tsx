@@ -56,7 +56,7 @@ export const TenantsPage = () => {
     },
   });
 
-  const requestScreening = useMutation({
+  const _requestScreening = useMutation({
     mutationFn: (tenantId: string) =>
       apiFetch('/screening/request', {
         token,

@@ -7,6 +7,8 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  // Error is available but not displayed in this simple error boundary
+  void error;
   return (
     <html>
       <body>
