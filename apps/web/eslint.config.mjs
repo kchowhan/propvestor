@@ -1,29 +1,47 @@
-import { FlatCompat } from '@eslint/eslintrc';
-import path from 'path';
-import { fileURLToPath } from 'url';
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-  resolvePluginsRelativeTo: __dirname,
-});
-
-// Use only core-web-vitals which includes TypeScript support
-// Using both 'next/core-web-vitals' and 'next/typescript' can cause circular reference issues
-const nextConfigs = compat.extends('next/core-web-vitals');
+import js from '@eslint/js';
+import tseslint from '@typescript-eslint/eslint-plugin';
+import tsparser from '@typescript-eslint/parser';
+import react from 'eslint-plugin-react';
+import reactHooks from 'eslint-plugin-react-hooks';
 
 export default [
-  ...nextConfigs,
+  js.configs.recommended,
   {
-    ignores: ['.next/**', 'node_modules/**', 'dist/**', 'build/**'],
-  },
-  {
+    files: ['**/*.{js,jsx,ts,tsx}'],
+    languageOptions: {
+      parser: tsparser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        ecmaFeatures: {
+          jsx: true,
+        },
+      },
+    },
+    plugins: {
+      '@typescript-eslint': tseslint,
+      react,
+      'react-hooks': reactHooks,
+    },
+    settings: {
+      react: {
+        version: 'detect',
+      },
+    },
     rules: {
+      // TypeScript rules
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      '@typescript-eslint/no-var-requires': 'off', // Allow require() for dynamic imports
+      // React rules
+      'react/react-in-jsx-scope': 'off', // Not needed in Next.js
+      'react/prop-types': 'off', // TypeScript handles this
+      'react-hooks/rules-of-hooks': 'error',
+      'react-hooks/exhaustive-deps': 'warn',
     },
+  },
+  {
+    ignores: ['.next/**', 'node_modules/**', 'dist/**', 'build/**', 'out/**'],
   },
 ];
 
