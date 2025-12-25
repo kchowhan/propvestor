@@ -48,38 +48,24 @@ export default function UnifiedLogin() {
       });
 
       if (data.userType === 'homeowner') {
-        // Homeowner login - set token in localStorage, context will pick it up
+        // Homeowner login - set token in localStorage and reload
         if (data.token && data.homeowner && data.association) {
           if (typeof window !== 'undefined') {
             localStorage.setItem('propvestor_homeowner_token', data.token);
-            // Trigger context update by dispatching storage event
-            window.dispatchEvent(new StorageEvent('storage', {
-              key: 'propvestor_homeowner_token',
-              newValue: data.token,
-            }));
+            // Reload to trigger context initialization from localStorage
+            window.location.href = '/homeowner/dashboard';
           }
-          // Small delay to let context update, then redirect
-          setTimeout(() => {
-            router.push('/homeowner/dashboard');
-          }, 100);
         } else {
           throw new Error('Invalid response from server: missing homeowner data');
         }
       } else if (data.userType === 'property-manager') {
-        // Property manager login - set token in localStorage, context will pick it up
+        // Property manager login - set token in localStorage and reload
         if (data.token && data.user) {
           if (typeof window !== 'undefined') {
             localStorage.setItem('propvestor_token', data.token);
-            // Trigger context update by dispatching storage event
-            window.dispatchEvent(new StorageEvent('storage', {
-              key: 'propvestor_token',
-              newValue: data.token,
-            }));
+            // Reload to trigger context initialization from localStorage
+            window.location.href = '/dashboard';
           }
-          // Small delay to let context update, then redirect
-          setTimeout(() => {
-            router.push('/dashboard');
-          }, 100);
         } else {
           throw new Error('Invalid response from server: missing user data');
         }
