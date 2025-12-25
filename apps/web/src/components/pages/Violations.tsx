@@ -606,7 +606,7 @@ export const ViolationsPage = () => {
                           }
 
                           queryClient.invalidateQueries({ queryKey: ['violation', selectedViolation] });
-                        } catch (err) {
+                        } catch (_err) {
                           alert('Failed to upload file. Please try again.');
                         }
                       }}

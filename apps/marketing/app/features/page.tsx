@@ -3,8 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-export default function FeaturesPage() {
-  const features = [
+const features = [
     {
       category: 'Property Management',
       icon: '🏠',
@@ -197,8 +196,9 @@ export default function FeaturesPage() {
         },
       ],
     },
-  ];
+];
 
+export default function FeaturesPage() {
   const [activeTab, setActiveTab] = useState(0);
 
   // Set initial tab from URL hash if present
