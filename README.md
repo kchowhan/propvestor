@@ -12,6 +12,13 @@ PropVestor is a property management platform with a Phase 1 operational suite an
 - `apps/api` – Express API + Prisma schema
 - `apps/web` – React frontend
 
+## Requirements
+
+- Node.js >= 20.9.0 (recommended: 20.18.0)
+- npm >= 10.0.0
+
+If using nvm, run `nvm use` to switch to the correct Node.js version (see `.nvmrc`).
+
 ## Setup
 
 1. Install dependencies:
