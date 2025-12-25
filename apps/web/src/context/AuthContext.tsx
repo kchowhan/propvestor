@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { apiFetch } from '../api/client';
 
 export type User = { id: string; name: string; email: string; isSuperAdmin?: boolean };
@@ -35,7 +35,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
 const TOKEN_KEY = 'propvestor_token';
 
-export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+export const AuthProvider = ({ children }: { children: ReactNode }) => {
   // In Next.js, we need to check if we're in the browser before accessing localStorage
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);

@@ -1,5 +1,6 @@
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
 import { HomeownerAuthProvider, useHomeownerAuth } from '../../context/HomeownerAuthContext';
 import { apiFetch } from '../../api/client';
 
@@ -16,7 +17,7 @@ const createWrapper = () => {
       mutations: { retry: false },
     },
   });
-  return ({ children }: { children: React.ReactNode }) => (
+  return ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>
       <HomeownerAuthProvider>{children}</HomeownerAuthProvider>
     </QueryClientProvider>

@@ -1,13 +1,13 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Sidebar } from './Sidebar';
 import { useAuth } from '../context/AuthContext';
 import { apiFetch } from '../api/client';
 
-export const Layout = ({ children }: { children: React.ReactNode }) => {
+export const Layout = ({ children }: { children: ReactNode }) => {
   const { user, organization, organizations, switchOrganization, logout, createOrganization, currentRole, token } = useAuth();
   const router = useRouter();
   const queryClient = useQueryClient();
