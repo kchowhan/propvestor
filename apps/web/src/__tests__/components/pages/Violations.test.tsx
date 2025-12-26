@@ -139,6 +139,11 @@ describe('ViolationsPage', () => {
       expect(screen.queryByText('Loading violations...')).not.toBeInTheDocument();
     });
 
+    // Wait for associations to load (needed for the filter dropdown and form)
+    await waitFor(() => {
+      expect(screen.getByText('All Associations')).toBeInTheDocument();
+    });
+
     const createTab = screen.getByRole('button', { name: 'Create Violation' });
     fireEvent.click(createTab);
 
@@ -161,14 +166,22 @@ describe('ViolationsPage', () => {
       }
     });
 
-    const typeLabel = screen.getByText('Type *');
+    // Wait for Violation Type field to appear after homeowner is selected
+    await waitFor(() => {
+      expect(screen.getByText('Violation Type *')).toBeInTheDocument();
+    });
+
+    const typeLabel = screen.getByText('Violation Type *');
     const typeInput = typeLabel.parentElement?.querySelector('input');
     if (typeInput) {
       fireEvent.change(typeInput, { target: { value: 'Noise' } });
     }
 
-    const submitButton = screen.getByRole('button', { name: 'Create Violation' });
-    fireEvent.click(submitButton);
+    // Get the submit button specifically (not the tab button) - it has type="submit"
+    const buttons = screen.getAllByRole('button', { name: 'Create Violation' });
+    const submitButton = buttons.find(btn => btn.getAttribute('type') === 'submit');
+    expect(submitButton).toBeDefined();
+    fireEvent.click(submitButton!);
 
     await waitFor(() => {
       expect(mockApiFetch).toHaveBeenCalledWith(
@@ -219,6 +232,11 @@ describe('ViolationsPage', () => {
     // Wait for initial data to load
     await waitFor(() => {
       expect(screen.queryByText('Loading violations...')).not.toBeInTheDocument();
+    });
+
+    // Wait for associations to load (needed for the filter dropdown)
+    await waitFor(() => {
+      expect(screen.getByText('All Associations')).toBeInTheDocument();
     });
 
     // Ensure we're on the list tab (default)
@@ -282,6 +300,11 @@ describe('ViolationsPage', () => {
 
     await waitFor(() => {
       expect(screen.queryByText('Loading violations...')).not.toBeInTheDocument();
+    });
+
+    // Wait for associations to load (needed for the filter dropdown)
+    await waitFor(() => {
+      expect(screen.getByText('All Associations')).toBeInTheDocument();
     });
 
     const selects = screen.getAllByRole('combobox');

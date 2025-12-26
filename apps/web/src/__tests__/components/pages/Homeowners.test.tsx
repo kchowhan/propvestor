@@ -260,8 +260,11 @@ describe('HomeownersPage', () => {
       fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
     }
 
-    const submitButton = screen.getByRole('button', { name: 'Create Homeowner' });
-    fireEvent.click(submitButton);
+    // Get the submit button specifically (not the tab button) - it has type="submit"
+    const buttons = screen.getAllByRole('button', { name: 'Create Homeowner' });
+    const submitButton = buttons.find(btn => btn.getAttribute('type') === 'submit');
+    expect(submitButton).toBeDefined();
+    fireEvent.click(submitButton!);
 
     await waitFor(() => {
       expect(mockApiFetch).toHaveBeenCalledWith(

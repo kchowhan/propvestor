@@ -209,9 +209,21 @@ describe('BoardMembersPage', () => {
       fireEvent.change(roleSelect, { target: { value: 'PRESIDENT' } });
     }
 
+    // Select a user (required for form submission)
+    await waitFor(() => {
+      const userLabel = screen.getByText('User (Property Manager) - Optional');
+      const userSelect = userLabel.parentElement?.querySelector('select');
+      if (userSelect) {
+        fireEvent.change(userSelect, { target: { value: '1' } });
+      }
+    });
+
     // Get the submit button specifically (not the tab button) - it has type="submit"
-    const submitButton = screen.getByRole('button', { type: 'submit' });
-    fireEvent.click(submitButton);
+    const buttons = screen.getAllByRole('button');
+    const submitButton = buttons.find(btn => btn.getAttribute('type') === 'submit');
+    expect(submitButton).toBeDefined();
+    expect(submitButton).not.toBeDisabled();
+    fireEvent.click(submitButton!);
 
     await waitFor(() => {
       expect(mockApiFetch).toHaveBeenCalledWith(
@@ -234,6 +246,8 @@ describe('BoardMembersPage', () => {
         data: Array.from({ length: 20 }, (_, i) => ({
           id: `${i + 1}`,
           role: 'MEMBER_AT_LARGE',
+          startDate: '2024-01-01',
+          endDate: null,
           user: { id: `${i + 1}`, name: `User ${i + 1}`, email: `user${i + 1}@example.com` },
           association: { id: '1', name: 'Test Association' },
         })),
@@ -243,6 +257,8 @@ describe('BoardMembersPage', () => {
         data: Array.from({ length: 5 }, (_, i) => ({
           id: `${i + 21}`,
           role: 'MEMBER_AT_LARGE',
+          startDate: '2024-01-01',
+          endDate: null,
           user: { id: `${i + 21}`, name: `User ${i + 21}`, email: `user${i + 21}@example.com` },
           association: { id: '1', name: 'Test Association' },
         })),
@@ -315,6 +331,8 @@ describe('BoardMembersPage', () => {
         data: Array.from({ length: 20 }, (_, i) => ({
           id: `${i + 1}`,
           role: 'MEMBER_AT_LARGE',
+          startDate: '2024-01-01',
+          endDate: null,
           user: { id: `${i + 1}`, name: `User ${i + 1}`, email: `user${i + 1}@example.com` },
           association: { id: '1', name: 'Test Association' },
         })),

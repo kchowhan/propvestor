@@ -194,8 +194,11 @@ describe('AssociationsPage', () => {
       fireEvent.change(nameInput, { target: { value: 'New Association' } });
     }
 
-    const submitButton = screen.getByRole('button', { name: 'Create Association' });
-    fireEvent.click(submitButton);
+    // Get the submit button specifically (not the tab button) - it has type="submit"
+    const buttons = screen.getAllByRole('button', { name: 'Create Association' });
+    const submitButton = buttons.find(btn => btn.getAttribute('type') === 'submit');
+    expect(submitButton).toBeDefined();
+    fireEvent.click(submitButton!);
 
     await waitFor(() => {
       expect(mockApiFetch).toHaveBeenCalledWith(
@@ -237,8 +240,11 @@ describe('AssociationsPage', () => {
       fireEvent.change(nameInput, { target: { value: 'New Association' } });
     }
 
-    const submitButton = screen.getByRole('button', { name: 'Create Association' });
-    fireEvent.click(submitButton);
+    // Get the submit button specifically (not the tab button) - it has type="submit"
+    const buttons = screen.getAllByRole('button', { name: 'Create Association' });
+    const submitButton = buttons.find(btn => btn.getAttribute('type') === 'submit');
+    expect(submitButton).toBeDefined();
+    fireEvent.click(submitButton!);
 
     await waitFor(() => {
       expect(mockApiFetch).toHaveBeenCalledWith(
@@ -282,8 +288,11 @@ describe('AssociationsPage', () => {
       fireEvent.change(nameInput, { target: { value: 'New Association' } });
     }
 
-    const submitButton = screen.getByRole('button', { name: 'Create Association' });
-    fireEvent.click(submitButton);
+    // Get the submit button specifically (not the tab button) - it has type="submit"
+    const buttons = screen.getAllByRole('button', { name: 'Create Association' });
+    const submitButton = buttons.find(btn => btn.getAttribute('type') === 'submit');
+    expect(submitButton).toBeDefined();
+    fireEvent.click(submitButton!);
 
     await waitFor(() => {
       expect(screen.getByRole('button', { name: 'Creating...' })).toBeInTheDocument();

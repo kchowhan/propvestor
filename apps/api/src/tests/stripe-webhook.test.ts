@@ -16,6 +16,7 @@ describe('Stripe Webhook Routes', () => {
 
   beforeEach(async () => {
     await cleanupTestData();
+    mockStripeWebhooks.constructEvent.mockReset();
     process.env.STRIPE_SECRET_KEY = 'sk_test_123';
     process.env.STRIPE_WEBHOOK_SECRET = 'whsec_test_123';
 
@@ -90,6 +91,26 @@ describe('Stripe Webhook Routes', () => {
         where: { id: testCharge.id },
       });
       expect(charge?.status).toBe('PAID');
+    });
+
+    it('should pass raw body to Stripe constructEvent', async () => {
+      const payload = JSON.stringify({ test: 'value' });
+
+      mockStripeWebhooks.constructEvent.mockReturnValue({
+        type: 'customer.created',
+        data: { object: {} },
+      } as Stripe.Event);
+
+      const response = await request(app)
+        .post('/api/stripe/webhook')
+        .set('stripe-signature', 'test-signature')
+        .set('Content-Type', 'application/json')
+        .send(payload);
+
+      expect(response.status).toBe(200);
+      const bodyArg = mockStripeWebhooks.constructEvent.mock.calls[0]?.[0];
+      expect(Buffer.isBuffer(bodyArg)).toBe(true);
+      expect(bodyArg.toString('utf8')).toBe(payload);
     });
 
     it('should handle payment_intent.payment_failed event', async () => {
@@ -183,4 +204,3 @@ describe('Stripe Webhook Routes', () => {
     });
   });
 });
-
