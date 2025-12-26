@@ -7,6 +7,7 @@ import { AppError } from '../lib/errors.js';
 import { env } from '../config/env.js';
 import { parseBody } from '../validators/common.js';
 import { requireAuth } from '../middleware/auth.js';
+import { getSessionCookieOptions, HOMEOWNER_SESSION_COOKIE_NAME } from '../lib/auth-cookies.js';
 import {
   generateVerificationToken,
   getVerificationTokenExpiry,
@@ -141,11 +142,12 @@ homeownerAuthRouter.post('/register', async (req, res, next) => {
 homeownerAuthRouter.get('/me', async (req, res, next) => {
   try {
     const header = req.headers.authorization;
-    if (!header || !header.startsWith('Bearer ')) {
+    const bearerToken = header && header.startsWith('Bearer ') ? header.replace('Bearer ', '') : null;
+    const cookieToken = req.cookies?.[HOMEOWNER_SESSION_COOKIE_NAME] as string | undefined;
+    const token = bearerToken || cookieToken;
+    if (!token) {
       throw new AppError(401, 'UNAUTHORIZED', 'Missing authorization header.');
     }
-
-    const token = header.replace('Bearer ', '');
     let payload: { homeownerId: string; associationId: string };
 
     try {
@@ -217,6 +219,11 @@ homeownerAuthRouter.get('/me', async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+homeownerAuthRouter.post('/logout', (_req, res) => {
+  res.clearCookie(HOMEOWNER_SESSION_COOKIE_NAME, { path: '/' });
+  res.json({ message: 'Logged out.' });
 });
 
 // Verify email (reuse existing verification logic)
@@ -360,6 +367,7 @@ homeownerAuthRouter.post('/superadmin-impersonate', requireAuth, async (req, res
       associationId: homeowner.associationId,
     });
 
+    res.cookie(HOMEOWNER_SESSION_COOKIE_NAME, token, getSessionCookieOptions());
     res.json({
       token,
       homeowner: {
@@ -456,4 +464,3 @@ homeownerAuthRouter.get('/superadmin/homeowners', requireAuth, async (req, res, 
     next(err);
   }
 });
-

@@ -41,6 +41,8 @@ const envSchema = z.object({
   RENTSPREE_API_KEY: z.string().optional(),
   RENTSPREE_WEBHOOK_SECRET: z.string().optional(),
   RENTSPREE_BASE_URL: z.string().optional().default('https://api.rentspree.com/v1'),
+  // Redis configuration (optional - for distributed rate limiting and caching)
+  REDIS_URL: z.string().optional(),
 });
 
 export const env = envSchema.parse({
@@ -75,4 +77,5 @@ export const env = envSchema.parse({
   RENTSPREE_BASE_URL: process.env.RENTSPREE_BASE_URL,
   SCHEDULER_SECRET: process.env.SCHEDULER_SECRET,
   CRON_SECRET: process.env.CRON_SECRET,
+  REDIS_URL: process.env.REDIS_URL,
 });

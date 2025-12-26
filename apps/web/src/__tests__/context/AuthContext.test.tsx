@@ -19,10 +19,10 @@ jest.mock('next/navigation', () => ({
 describe('AuthContext', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    localStorage.clear();
   });
 
   it('should provide auth context', () => {
+    mockApiFetch.mockRejectedValueOnce(new Error('Unauthorized'));
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <AuthProvider>{children}</AuthProvider>
     );
@@ -34,8 +34,7 @@ describe('AuthContext', () => {
     expect(result.current.user).toBeNull();
   });
 
-  it('should load token from localStorage', async () => {
-    localStorage.setItem('propvestor_token', 'test-token');
+  it('should load session from cookies', async () => {
     mockApiFetch.mockResolvedValue({
       user: { id: '1', name: 'Test', email: 'test@example.com' },
       organization: { id: '1', name: 'Test Org', slug: 'test' },
@@ -50,14 +49,14 @@ describe('AuthContext', () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     await waitFor(() => {
-      expect(result.current.token).toBe('test-token');
+      expect(result.current.token).toBe('cookie');
     });
   });
 
   it('should login successfully', async () => {
     mockApiFetch
+      .mockRejectedValueOnce(new Error('Unauthorized'))
       .mockResolvedValueOnce({
-        token: 'new-token',
         user: { id: '1', name: 'Test', email: 'test@example.com' },
         organization: { id: '1', name: 'Test Org', slug: 'test' },
         organizations: [],
@@ -80,14 +79,13 @@ describe('AuthContext', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.token).toBe('new-token');
+      expect(result.current.token).toBe('cookie');
       expect(result.current.user).toBeDefined();
     });
   });
 
   it('should logout and clear token', async () => {
-    localStorage.setItem('propvestor_token', 'test-token');
-
+    mockApiFetch.mockRejectedValueOnce(new Error('Unauthorized'));
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <AuthProvider>{children}</AuthProvider>
     );
@@ -99,15 +97,15 @@ describe('AuthContext', () => {
     });
 
     expect(result.current.token).toBeNull();
-    expect(localStorage.getItem('propvestor_token')).toBeNull();
   });
 
   it('should register successfully', async () => {
-    mockApiFetch.mockResolvedValueOnce({
-      token: 'new-token',
-      user: { id: '1', name: 'Test', email: 'test@example.com' },
-      organization: { id: '1', name: 'Test Org', slug: 'test' },
-    });
+    mockApiFetch
+      .mockRejectedValueOnce(new Error('Unauthorized'))
+      .mockResolvedValueOnce({
+        user: { id: '1', name: 'Test', email: 'test@example.com' },
+        organization: { id: '1', name: 'Test Org', slug: 'test' },
+      });
 
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <AuthProvider>{children}</AuthProvider>
@@ -125,14 +123,13 @@ describe('AuthContext', () => {
     });
 
     await waitFor(() => {
-      expect(result.current.token).toBe('new-token');
+      expect(result.current.token).toBe('cookie');
       expect(result.current.user).toBeDefined();
       expect(result.current.organization).toBeDefined();
     });
   });
 
   it('should switch organization successfully', async () => {
-    localStorage.setItem('propvestor_token', 'test-token');
     mockApiFetch
       .mockResolvedValueOnce({
         user: { id: '1', name: 'Test', email: 'test@example.com' },
@@ -144,7 +141,6 @@ describe('AuthContext', () => {
         ],
       })
       .mockResolvedValueOnce({
-        token: 'new-token',
         organization: { id: '2', name: 'Other Org', slug: 'other' },
       })
       .mockResolvedValueOnce({
@@ -164,22 +160,21 @@ describe('AuthContext', () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     await waitFor(() => {
-      expect(result.current.token).toBe('test-token');
+      expect(result.current.token).toBe('cookie');
     });
 
     await act(async () => {
       const newToken = await result.current.switchOrganization('2');
-      expect(newToken).toBe('new-token');
+      expect(newToken).toBe('cookie');
     });
 
     // Verify token was updated
     await waitFor(() => {
-      expect(result.current.token).toBe('new-token');
+      expect(result.current.token).toBe('cookie');
     });
   });
 
   it('should create organization successfully', async () => {
-    localStorage.setItem('propvestor_token', 'test-token');
     mockApiFetch
       .mockResolvedValueOnce({
         user: { id: '1', name: 'Test', email: 'test@example.com' },
@@ -209,7 +204,7 @@ describe('AuthContext', () => {
     const { result } = renderHook(() => useAuth(), { wrapper });
 
     await waitFor(() => {
-      expect(result.current.token).toBe('test-token');
+      expect(result.current.token).toBe('cookie');
     });
 
     await act(async () => {
@@ -221,4 +216,3 @@ describe('AuthContext', () => {
     });
   });
 });
-

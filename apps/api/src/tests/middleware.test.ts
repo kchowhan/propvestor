@@ -23,6 +23,19 @@ describe('Middleware', () => {
       expect(response.status).not.toBe(401);
     });
 
+    it('should allow request with valid cookie token', async () => {
+      const token = jwt.sign(
+        { userId: 'test-user-id', organizationId: 'test-org-id' },
+        env.JWT_SECRET
+      );
+
+      const response = await request(app)
+        .get('/api/auth/me')
+        .set('Cookie', `pv_session=${token}`);
+
+      expect(response.status).not.toBe(401);
+    });
+
     it('should reject request without token', async () => {
       const response = await request(app).get('/api/auth/me');
 
@@ -99,4 +112,3 @@ describe('Middleware', () => {
     });
   });
 });
-

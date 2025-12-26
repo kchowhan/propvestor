@@ -82,10 +82,9 @@ export default function DebugLoginPage() {
         <div className="card-header">API Configuration</div>
         <div className="card-body">
           <p><strong>API URL:</strong> {process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api'}</p>
-          <p><strong>Local Storage Token:</strong> {typeof window !== 'undefined' ? (localStorage.getItem('propvestor_token') ? 'Present' : 'Not found') : 'N/A'}</p>
+          <p><strong>Session:</strong> Uses httpOnly cookies for auth.</p>
         </div>
       </div>
     </div>
   );
 }
-

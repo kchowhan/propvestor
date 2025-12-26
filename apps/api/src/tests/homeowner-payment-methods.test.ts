@@ -35,6 +35,7 @@ describe('Homeowner Payment Methods Routes', () => {
   beforeEach(async () => {
     await cleanupTestData();
     vi.clearAllMocks();
+    process.env.STRIPE_PUBLISHABLE_KEY = 'pk_test_1234567890';
 
     testOrg = await createTestOrganization();
 
@@ -64,6 +65,7 @@ describe('Homeowner Payment Methods Routes', () => {
 
   afterEach(async () => {
     await cleanupTestData();
+    delete process.env.STRIPE_PUBLISHABLE_KEY;
   });
 
   describe('GET /api/homeowner-payment-methods/publishable-key', () => {
@@ -72,7 +74,7 @@ describe('Homeowner Payment Methods Routes', () => {
         .get('/api/homeowner-payment-methods/publishable-key');
 
       expect(response.status).toBe(200);
-      expect(response.body.data.publishableKey).toBeDefined();
+      expect(response.body.data.publishableKey).toBe('pk_test_1234567890');
     });
   });
 

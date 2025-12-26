@@ -1,18 +1,29 @@
 import { Router } from 'express';
 import multer from 'multer';
+import os from 'os';
+import path from 'path';
+import { promises as fs } from 'fs';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
 import { parseBody } from '../validators/common.js';
-import { uploadFile, getSignedUrl, deleteFile } from '../lib/storage.js';
+import { uploadFileStream, getSignedUrl, deleteFile } from '../lib/storage.js';
 import { requireAuth } from '../middleware/auth.js';
 import { v4 as uuidv4 } from 'uuid';
 
 export const documentRouter = Router();
 
-// Configure multer for file uploads (store in memory)
+// Configure multer for file uploads (store on disk to avoid memory spikes)
 const upload = multer({
-  storage: multer.memoryStorage(),
+  storage: multer.diskStorage({
+    destination: (_req, _file, cb) => {
+      cb(null, os.tmpdir());
+    },
+    filename: (_req, file, cb) => {
+      const extension = path.extname(file.originalname);
+      cb(null, `${uuidv4()}${extension}`);
+    },
+  }),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB limit
   },
@@ -94,13 +105,20 @@ documentRouter.post('/upload', requireAuth, upload.single('file'), async (req, r
       folder = 'tenants';
     }
 
-    // Upload to Google Cloud Storage
-    const storageKey = await uploadFile(
-      req.file.buffer,
-      uniqueFileName,
-      req.file.mimetype,
-      folder,
-    );
+    const tempPath = req.file.path;
+    let storageKey = '';
+
+    try {
+      // Upload to Google Cloud Storage
+      storageKey = await uploadFileStream(
+        tempPath,
+        uniqueFileName,
+        req.file.mimetype,
+        folder,
+      );
+    } finally {
+      await fs.unlink(tempPath).catch(() => null);
+    }
 
     // Create document record in database
     const doc = await prisma.document.create({

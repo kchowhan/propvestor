@@ -48,24 +48,14 @@ export default function UnifiedLogin() {
       });
 
       if (data.userType === 'homeowner') {
-        // Homeowner login - set token in localStorage and reload
-        if (data.token && data.homeowner && data.association) {
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('propvestor_homeowner_token', data.token);
-            // Reload to trigger context initialization from localStorage
-            window.location.href = '/homeowner/dashboard';
-          }
+        if (data.homeowner && data.association) {
+          router.replace('/homeowner/dashboard');
         } else {
           throw new Error('Invalid response from server: missing homeowner data');
         }
       } else if (data.userType === 'property-manager') {
-        // Property manager login - set token in localStorage and reload
-        if (data.token && data.user) {
-          if (typeof window !== 'undefined') {
-            localStorage.setItem('propvestor_token', data.token);
-            // Reload to trigger context initialization from localStorage
-            window.location.href = '/dashboard';
-          }
+        if (data.user) {
+          router.replace('/dashboard');
         } else {
           throw new Error('Invalid response from server: missing user data');
         }

@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { AppError } from '../lib/errors.js';
 import { getSubscriptionLimits } from '../lib/subscriptions.js';
+import { getRedisClient, isRedisEnabled } from '../lib/redis.js';
 
 // In-memory store for rate limiting (use Redis in production for distributed systems)
 interface RateLimitEntry {
@@ -26,12 +27,18 @@ const PLAN_RATE_LIMITS: Record<string, number> = {
  * Clean up expired entries from the rate limit store
  * Should be called periodically to prevent memory leaks
  */
-export function cleanupRateLimitStore(): void {
+function cleanupStore(store: Map<string, RateLimitEntry>, windowMs: number): void {
   const now = Date.now();
-  for (const [key, entry] of rateLimitStore.entries()) {
-    if (now - entry.windowStart > WINDOW_SIZE_MS) {
-      rateLimitStore.delete(key);
+  for (const [key, entry] of store.entries()) {
+    if (now - entry.windowStart > windowMs) {
+      store.delete(key);
     }
+  }
+}
+
+export function cleanupRateLimitStore(): void {
+  if (!isRedisEnabled()) {
+    cleanupStore(rateLimitStore, WINDOW_SIZE_MS);
   }
 }
 
@@ -73,6 +80,7 @@ export const rateLimit = async (
 ) => {
   const key = getRateLimitKey(req);
   const now = Date.now();
+  const redisKey = `ratelimit:global:${key}`;
 
   // Get the appropriate rate limit
   let limit = DEFAULT_RATE_LIMIT;
@@ -80,29 +88,21 @@ export const rateLimit = async (
     limit = await getRateLimitForOrganization(req.auth.organizationId);
   }
 
-  // Get or create rate limit entry
-  let entry = rateLimitStore.get(key);
-  
-  if (!entry || now - entry.windowStart > WINDOW_SIZE_MS) {
-    // Start a new window
-    entry = { count: 1, windowStart: now };
-    rateLimitStore.set(key, entry);
-  } else {
-    entry.count++;
-  }
+  const result =
+    (await incrementInRedis(redisKey, WINDOW_SIZE_MS)) ||
+    incrementInMemory(rateLimitStore, key, WINDOW_SIZE_MS);
 
   // Calculate remaining requests and reset time
-  const remaining = Math.max(0, limit - entry.count);
-  const resetTime = entry.windowStart + WINDOW_SIZE_MS;
-  const resetSeconds = Math.ceil((resetTime - now) / 1000);
+  const remaining = Math.max(0, limit - result.count);
+  const resetSeconds = Math.ceil((result.resetTimeMs - now) / 1000);
 
   // Set rate limit headers
   res.setHeader('X-RateLimit-Limit', limit.toString());
   res.setHeader('X-RateLimit-Remaining', remaining.toString());
-  res.setHeader('X-RateLimit-Reset', Math.ceil(resetTime / 1000).toString());
+  res.setHeader('X-RateLimit-Reset', Math.ceil(result.resetTimeMs / 1000).toString());
 
   // Check if limit exceeded
-  if (entry.count > limit) {
+  if (result.count > limit) {
     res.setHeader('Retry-After', resetSeconds.toString());
     return next(
       new AppError(
@@ -120,41 +120,101 @@ export const rateLimit = async (
  * Create a rate limiter with custom settings
  * Useful for specific routes that need different limits
  */
+export type RateLimiter = ((
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => Promise<void>) & {
+  cleanup: () => void;
+  store: Map<string, RateLimitEntry>;
+  windowMs: number;
+};
+
+type IncrementResult = {
+  count: number;
+  resetTimeMs: number;
+};
+
+function incrementInMemory(
+  store: Map<string, RateLimitEntry>,
+  key: string,
+  windowMs: number
+): IncrementResult {
+  const now = Date.now();
+  let entry = store.get(key);
+
+  if (!entry || now - entry.windowStart > windowMs) {
+    entry = { count: 1, windowStart: now };
+    store.set(key, entry);
+  } else {
+    entry.count++;
+  }
+
+  return { count: entry.count, resetTimeMs: entry.windowStart + windowMs };
+}
+
+async function incrementInRedis(
+  key: string,
+  windowMs: number
+): Promise<IncrementResult | null> {
+  try {
+    const client = await getRedisClient();
+    if (!client) {
+      return null;
+    }
+
+    const windowSeconds = Math.ceil(windowMs / 1000);
+    const count = await client.incr(key);
+    let ttl = await client.ttl(key);
+
+    if (ttl < 0) {
+      await client.expire(key, windowSeconds);
+      ttl = windowSeconds;
+    }
+
+    return { count, resetTimeMs: Date.now() + ttl * 1000 };
+  } catch (error) {
+    console.error('Redis rate limit error:', error);
+    return null;
+  }
+}
+
 export function createRateLimiter(options: {
   windowMs?: number;
   max?: number;
   keyGenerator?: (req: Request) => string;
-}) {
+  prefix?: string;
+}): RateLimiter {
   const {
     windowMs = WINDOW_SIZE_MS,
     max = DEFAULT_RATE_LIMIT,
     keyGenerator = getRateLimitKey,
+    prefix = 'custom',
   } = options;
 
   const store = new Map<string, RateLimitEntry>();
-
-  return async (req: Request, res: Response, next: NextFunction) => {
-    const key = keyGenerator(req);
-    const now = Date.now();
-
-    let entry = store.get(key);
-
-    if (!entry || now - entry.windowStart > windowMs) {
-      entry = { count: 1, windowStart: now };
-      store.set(key, entry);
-    } else {
-      entry.count++;
+  if (!isRedisEnabled()) {
+    const cleanupIntervalMs = Math.min(5 * 60 * 1000, windowMs);
+    const cleanupTimer = setInterval(() => cleanupStore(store, windowMs), cleanupIntervalMs);
+    if (typeof cleanupTimer.unref === 'function') {
+      cleanupTimer.unref();
     }
+  }
 
-    const remaining = Math.max(0, max - entry.count);
-    const resetTime = entry.windowStart + windowMs;
-    const resetSeconds = Math.ceil((resetTime - now) / 1000);
+  const middleware = async (req: Request, res: Response, next: NextFunction) => {
+    const key = `${prefix}:${keyGenerator(req)}`;
+    const now = Date.now();
+    const redisKey = `ratelimit:${key}`;
+    const result =
+      (await incrementInRedis(redisKey, windowMs)) || incrementInMemory(store, key, windowMs);
+    const remaining = Math.max(0, max - result.count);
+    const resetSeconds = Math.ceil((result.resetTimeMs - now) / 1000);
 
     res.setHeader('X-RateLimit-Limit', max.toString());
     res.setHeader('X-RateLimit-Remaining', remaining.toString());
-    res.setHeader('X-RateLimit-Reset', Math.ceil(resetTime / 1000).toString());
+    res.setHeader('X-RateLimit-Reset', Math.ceil(result.resetTimeMs / 1000).toString());
 
-    if (entry.count > max) {
+    if (result.count > max) {
       res.setHeader('Retry-After', resetSeconds.toString());
       return next(
         new AppError(
@@ -167,6 +227,16 @@ export function createRateLimiter(options: {
 
     return next();
   };
+
+  return Object.assign(middleware, {
+    cleanup: () => {
+      if (!isRedisEnabled()) {
+        cleanupStore(store, windowMs);
+      }
+    },
+    store,
+    windowMs,
+  });
 }
 
 /**
@@ -176,6 +246,7 @@ export function createRateLimiter(options: {
 export const strictRateLimit = createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 10, // 10 attempts per 15 minutes
+  prefix: 'strict',
   keyGenerator: (req: Request) => {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
     return `strict:${ip}`;
@@ -190,6 +261,7 @@ export const strictRateLimit = createRateLimiter({
 export const adminRateLimit = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
   max: 60, // 60 requests per minute (reasonable for admin operations)
+  prefix: 'admin',
   keyGenerator: (req: Request) => {
     // Use user ID if authenticated, otherwise IP
     const userId = req.auth?.userId || 'anonymous';
@@ -210,6 +282,7 @@ export const adminRateLimit = createRateLimiter({
 export const webhookRateLimit = createRateLimiter({
   windowMs: 60 * 1000, // 1 minute
   max: 100, // 100 requests per minute per IP (generous for legitimate webhooks)
+  prefix: 'webhook',
   keyGenerator: (req: Request) => {
     const ip = req.ip || req.socket.remoteAddress || 'unknown';
     // Use the webhook path in the key to track per-webhook-endpoint
@@ -229,6 +302,10 @@ export function getRateLimitStatus(req: Request): {
   remaining: number;
   resetAt: Date;
 } | null {
+  if (isRedisEnabled()) {
+    return null;
+  }
+
   const key = getRateLimitKey(req);
   const entry = rateLimitStore.get(key);
 
@@ -250,6 +327,9 @@ export function getRateLimitStatus(req: Request): {
  * Reset rate limit for a specific key (useful for testing or admin actions)
  */
 export function resetRateLimit(key: string): boolean {
+  if (isRedisEnabled()) {
+    return false;
+  }
   return rateLimitStore.delete(key);
 }
 
@@ -257,9 +337,10 @@ export function resetRateLimit(key: string): boolean {
  * Clear all rate limits (useful for testing)
  */
 export function clearAllRateLimits(): void {
-  rateLimitStore.clear();
+  if (!isRedisEnabled()) {
+    rateLimitStore.clear();
+  }
 }
 
 // Export the store for testing purposes
 export { rateLimitStore, PLAN_RATE_LIMITS, DEFAULT_RATE_LIMIT, WINDOW_SIZE_MS };
-

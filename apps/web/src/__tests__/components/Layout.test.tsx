@@ -53,8 +53,6 @@ describe('Layout Component', () => {
     mockSwitchOrganization.mockResolvedValue('new-token');
     delete (window as any).location;
     (window as any).location = { reload: jest.fn() };
-    Storage.prototype.getItem = jest.fn(() => 'test-token');
-    Storage.prototype.setItem = jest.fn();
   });
 
   it('should render children', () => {
@@ -353,4 +351,3 @@ describe('Layout Component', () => {
     expect(mockLogout).toHaveBeenCalled();
   });
 });
-

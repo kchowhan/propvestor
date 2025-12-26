@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { uploadFile, getSignedUrl, deleteFile, fileExists } from '../../lib/storage.js';
+import { PassThrough } from 'stream';
+import { uploadFile, uploadFileStream, getSignedUrl, deleteFile, fileExists } from '../../lib/storage.js';
+import * as fs from 'fs';
 
 // Mock env config
 vi.mock('../../config/env.js', () => ({
@@ -12,6 +14,7 @@ vi.mock('../../config/env.js', () => ({
 // Create shared mock instances
 const mockFile = {
   save: vi.fn(() => Promise.resolve()),
+  createWriteStream: vi.fn(() => new PassThrough()),
   getSignedUrl: vi.fn(() => Promise.resolve(['https://signed-url.com'])),
   delete: vi.fn(() => Promise.resolve()),
   exists: vi.fn(() => Promise.resolve([true])),
@@ -28,10 +31,15 @@ vi.mock('@google-cloud/storage', () => ({
   })),
 }));
 
+vi.mock('fs', () => ({
+  createReadStream: vi.fn(),
+}));
+
 describe('Storage Library', () => {
   beforeEach(() => {
     // Reset mocks before each test
     mockFile.save.mockClear();
+    mockFile.createWriteStream.mockClear();
     mockFile.getSignedUrl.mockClear();
     mockFile.delete.mockClear();
     mockFile.exists.mockClear();
@@ -39,6 +47,7 @@ describe('Storage Library', () => {
     
     // Set default return values
     mockFile.save.mockResolvedValue(undefined);
+    mockFile.createWriteStream.mockReturnValue(new PassThrough());
     mockFile.getSignedUrl.mockResolvedValue(['https://signed-url.com']);
     mockFile.delete.mockResolvedValue(undefined);
     mockFile.exists.mockResolvedValue([true]);
@@ -60,6 +69,46 @@ describe('Storage Library', () => {
       
       await expect(
         uploadFile(Buffer.from('test'), 'test.txt', 'text/plain')
+      ).rejects.toThrow('Failed to upload file');
+    });
+  });
+
+  describe('uploadFileStream', () => {
+    it('should upload file successfully', async () => {
+      // Create a proper mock stream that will finish
+      const mockWriteStream = new PassThrough();
+      mockFile.createWriteStream.mockReturnValue(mockWriteStream);
+      
+      // Mock createReadStream to return a readable stream
+      const mockReadStream = new PassThrough();
+      vi.mocked(fs.createReadStream).mockReturnValue(mockReadStream as any);
+      
+      // Start the upload (it will wait for streams to finish)
+      const uploadPromise = uploadFileStream('/tmp/test.txt', 'test.txt', 'text/plain', 'documents');
+      
+      // Simulate file read and write completion
+      process.nextTick(() => {
+        mockReadStream.push('test content');
+        mockReadStream.end();
+        mockWriteStream.end();
+      });
+
+      const result = await uploadPromise;
+
+      expect(result).toBeDefined();
+      expect(result).toContain('documents');
+      expect(mockFile.createWriteStream).toHaveBeenCalled();
+    }, 10000);
+
+    it('should handle errors', async () => {
+      mockFile.createWriteStream.mockImplementationOnce(() => {
+        const stream = new PassThrough();
+        process.nextTick(() => stream.emit('error', new Error('Stream error')));
+        return stream;
+      });
+
+      await expect(
+        uploadFileStream('/tmp/test.txt', 'test.txt', 'text/plain')
       ).rejects.toThrow('Failed to upload file');
     });
   });

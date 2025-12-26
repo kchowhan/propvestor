@@ -7,6 +7,7 @@ import { AppError } from '../lib/errors.js';
 import { env } from '../config/env.js';
 import { parseBody } from '../validators/common.js';
 import { requireAuth } from '../middleware/auth.js';
+import { getSessionCookieOptions, HOMEOWNER_SESSION_COOKIE_NAME, SESSION_COOKIE_NAME } from '../lib/auth-cookies.js';
 import {
   generateVerificationToken,
   getVerificationTokenExpiry,
@@ -78,6 +79,7 @@ authRouter.post('/register', async (req, res, next) => {
     });
 
     const token = signToken({ userId: user.id, organizationId: organization.id });
+    res.cookie(SESSION_COOKIE_NAME, token, getSessionCookieOptions());
 
     res.json({
       token,
@@ -151,6 +153,7 @@ authRouter.post('/login', async (req, res, next) => {
           associationId: homeowner.associationId,
         });
 
+        res.cookie(HOMEOWNER_SESSION_COOKIE_NAME, token, getSessionCookieOptions());
         return res.json({
           token,
           userType: 'homeowner',
@@ -213,6 +216,7 @@ authRouter.post('/login', async (req, res, next) => {
     // Use first membership as default, but return all organizations
     const defaultMembership = user.memberships[0];
     const token = signToken({ userId: user.id, organizationId: defaultMembership.organizationId });
+    res.cookie(SESSION_COOKIE_NAME, token, getSessionCookieOptions());
 
     return res.json({
       token,
@@ -339,6 +343,7 @@ authRouter.post('/switch-organization', requireAuth, async (req, res, next) => {
 
     const membership = user.memberships[0];
     const token = signToken({ userId: user.id, organizationId: membership.organizationId });
+    res.cookie(SESSION_COOKIE_NAME, token, getSessionCookieOptions());
 
     res.json({
       token,
@@ -347,6 +352,12 @@ authRouter.post('/switch-organization', requireAuth, async (req, res, next) => {
   } catch (err) {
     next(err);
   }
+});
+
+authRouter.post('/logout', (_req, res) => {
+  res.clearCookie(SESSION_COOKIE_NAME, { path: '/' });
+  res.clearCookie(HOMEOWNER_SESSION_COOKIE_NAME, { path: '/' });
+  res.json({ message: 'Logged out.' });
 });
 
 // Email verification endpoint

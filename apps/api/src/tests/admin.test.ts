@@ -436,6 +436,10 @@ describe('Admin Routes', () => {
           slug: expect.any(String),
         },
       });
+
+      expect(response.headers['set-cookie']).toEqual(
+        expect.arrayContaining([expect.stringContaining('pv_session=')])
+      );
       
       // Verify the token is valid JWT
       expect(response.body.token).toMatch(/^eyJ/);
@@ -533,4 +537,3 @@ describe('getAdminStats', () => {
     expect(response.body.data.revenue.mrr).toBeGreaterThan(0);
   });
 });
-

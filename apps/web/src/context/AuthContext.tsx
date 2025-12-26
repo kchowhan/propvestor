@@ -33,10 +33,9 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const TOKEN_KEY = 'propvestor_token';
+const SESSION_TOKEN = 'cookie';
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  // In Next.js, we need to check if we're in the browser before accessing localStorage
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [organization, setOrganization] = useState<Organization | null>(null);
@@ -45,41 +44,24 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState<boolean>(true);
 
   const loadSession = useCallback(async () => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
     try {
-      const data = await apiFetch('/auth/me', { token }) as AuthMeResponse;
+      const data = await apiFetch('/auth/me') as AuthMeResponse;
       setUser(data.user);
       setOrganization(data.organization);
       setOrganizations(data.organizations || []);
       setCurrentRole(data.currentRole || null);
+      setToken(SESSION_TOKEN);
     } catch (err) {
       console.error('Failed to load session:', err);
       setToken(null);
-      localStorage.removeItem(TOKEN_KEY);
     } finally {
       setLoading(false);
-    }
-  }, [token]);
-
-  // Initialize token from localStorage on mount (client-side only)
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedToken = localStorage.getItem(TOKEN_KEY);
-      setToken(storedToken);
     }
   }, []);
 
   useEffect(() => {
-    if (token !== null) {
-      loadSession();
-    } else {
-      setLoading(false);
-    }
-  }, [token, loadSession]);
+    loadSession();
+  }, [loadSession]);
 
   const login = useCallback(async (email: string, password: string) => {
     try {
@@ -89,18 +71,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: { email, password },
       });
       console.log('Login API response:', data);
-      if (data.token) {
-        setToken(data.token);
-        localStorage.setItem(TOKEN_KEY, data.token);
+      if (data.user) {
+        setToken(SESSION_TOKEN);
         setUser(data.user);
         setOrganization(data.organization);
         setOrganizations(data.organizations || []);
         // Get current role from /auth/me after login
-        const meData = await apiFetch('/auth/me', { token: data.token }) as AuthMeResponse;
+        const meData = await apiFetch('/auth/me') as AuthMeResponse;
         setCurrentRole(meData.currentRole || null);
       } else {
         console.error('Login response missing token:', data);
-        throw new Error('Invalid response from server: missing token');
+        throw new Error('Invalid response from server: missing user');
       }
     } catch (error) {
       console.error('Login failed:', error);
@@ -117,8 +98,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       method: 'POST',
       body: payload,
     });
-    setToken(data.token);
-    localStorage.setItem(TOKEN_KEY, data.token);
+    setToken(SESSION_TOKEN);
     setUser(data.user);
     setOrganization(data.organization);
     setOrganizations([{ id: data.organization.id, name: data.organization.name, slug: data.organization.slug, role: 'OWNER' }]);
@@ -133,21 +113,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       const data = await apiFetch('/auth/switch-organization', {
         method: 'POST',
-        token,
         body: { organizationId },
       });
-      if (data.token) {
-        // Save token to localStorage first
-        localStorage.setItem(TOKEN_KEY, data.token);
-        // Update state
-        setToken(data.token);
+      if (data.organization) {
+        setToken(SESSION_TOKEN);
         setOrganization(data.organization);
-        // Reload organizations list with new token
-        const meData = await apiFetch('/auth/me', { token: data.token }) as AuthMeResponse;
+        // Reload organizations list with new session
+        const meData = await apiFetch('/auth/me') as AuthMeResponse;
         setOrganizations(meData.organizations || []);
         setCurrentRole(meData.currentRole || null);
-        // Return the new token for verification
-        return data.token;
+        return SESSION_TOKEN;
       } else {
         throw new Error('No token received from server');
       }
@@ -164,12 +139,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
       const data = await apiFetch('/organizations', {
         method: 'POST',
-        token,
         body: { name },
       });
       
       // Reload organizations list
-      const meData = await apiFetch('/auth/me', { token }) as AuthMeResponse;
+      const meData = await apiFetch('/auth/me') as AuthMeResponse;
       setOrganizations(meData.organizations || []);
       
       // Switch to the newly created organization
@@ -183,12 +157,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, [token, switchOrganization]);
 
   const logout = useCallback(() => {
+    apiFetch('/auth/logout', { method: 'POST' }).catch((err) => {
+      console.error('Failed to clear session cookie:', err);
+    });
     setToken(null);
     setUser(null);
     setOrganization(null);
     setOrganizations([]);
     setCurrentRole(null);
-    localStorage.removeItem(TOKEN_KEY);
   }, []);
 
   const value = useMemo(

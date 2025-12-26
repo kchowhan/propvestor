@@ -43,12 +43,12 @@ type HomeownerAuthContextValue = {
   }) => Promise<void>;
   logout: () => void;
   refreshData: () => Promise<void>;
-  impersonateAsHomeowner: (homeownerId: string, userToken: string) => Promise<void>;
+  impersonateAsHomeowner: (homeownerId: string) => Promise<void>;
 };
 
 const HomeownerAuthContext = createContext<HomeownerAuthContextValue | undefined>(undefined);
 
-const HOMEOWNER_TOKEN_KEY = 'propvestor_homeowner_token';
+const SESSION_TOKEN = 'cookie';
 
 export const HomeownerAuthProvider = ({ children }: { children: ReactNode }) => {
   const [token, setToken] = useState<string | null>(null);
@@ -57,67 +57,39 @@ export const HomeownerAuthProvider = ({ children }: { children: ReactNode }) => 
   const [loading, setLoading] = useState<boolean>(true);
 
   const loadSession = useCallback(async () => {
-    if (!token) {
-      setLoading(false);
-      return;
-    }
-
     try {
-      const data = await apiFetch('/homeowner-auth/me', { token });
+      const data = await apiFetch('/homeowner-auth/me');
       setHomeowner(data.homeowner);
       setAssociation(data.association);
+      setToken(SESSION_TOKEN);
     } catch (err) {
       console.error('Failed to load homeowner session:', err);
       setToken(null);
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem(HOMEOWNER_TOKEN_KEY);
-      }
     } finally {
       setLoading(false);
-    }
-  }, [token]);
-
-  // Initialize token from localStorage on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedToken = localStorage.getItem(HOMEOWNER_TOKEN_KEY);
-      if (storedToken) {
-        setToken(storedToken);
-      } else {
-        setLoading(false); // No token, so we're done loading
-      }
-    } else {
-      setLoading(false); // Server-side, no token
     }
   }, []);
 
   useEffect(() => {
-    if (token !== null) {
-      loadSession();
-    } else {
-      setLoading(false);
-    }
-  }, [token, loadSession]);
+    loadSession();
+  }, [loadSession]);
 
   const login = useCallback(async (email: string, password: string, associationId?: string) => {
     try {
       console.log('Attempting homeowner login for:', email, associationId ? `(association: ${associationId})` : '');
-      const data = await apiFetch('/homeowner-auth/login', {
+      const data = await apiFetch('/auth/login', {
         method: 'POST',
         body: { email, password, ...(associationId && { associationId }) },
       });
       console.log('Homeowner login API response:', data);
 
-      if (data.token) {
-        setToken(data.token);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(HOMEOWNER_TOKEN_KEY, data.token);
-        }
+      if (data.homeowner) {
+        setToken(SESSION_TOKEN);
         setHomeowner(data.homeowner);
         setAssociation(data.association);
       } else {
         console.error('Homeowner login response missing token:', data);
-        throw new Error('Invalid response from server: missing token');
+        throw new Error('Invalid response from server: missing homeowner');
       }
     } catch (error) {
       console.error('Homeowner login failed:', error);
@@ -129,20 +101,16 @@ export const HomeownerAuthProvider = ({ children }: { children: ReactNode }) => 
     }
   }, []);
 
-  const impersonateAsHomeowner = useCallback(async (homeownerId: string, userToken: string) => {
+  const impersonateAsHomeowner = useCallback(async (homeownerId: string) => {
     try {
       console.log('Superadmin impersonating homeowner:', homeownerId);
       const data = await apiFetch('/homeowner-auth/superadmin-impersonate', {
         method: 'POST',
         body: { homeownerId },
-        token: userToken, // Use the regular user token (superadmin)
       });
 
-      if (data.token) {
-        setToken(data.token);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(HOMEOWNER_TOKEN_KEY, data.token);
-        }
+      if (data.homeowner) {
+        setToken(SESSION_TOKEN);
         setHomeowner(data.homeowner);
         setAssociation(data.association);
       } else {
@@ -173,19 +141,17 @@ export const HomeownerAuthProvider = ({ children }: { children: ReactNode }) => 
   }, []);
 
   const logout = useCallback(() => {
+    apiFetch('/homeowner-auth/logout', { method: 'POST' }).catch((err) => {
+      console.error('Failed to clear homeowner session cookie:', err);
+    });
     setToken(null);
     setHomeowner(null);
     setAssociation(null);
-    if (typeof window !== 'undefined') {
-      localStorage.removeItem(HOMEOWNER_TOKEN_KEY);
-    }
   }, []);
 
   const refreshData = useCallback(async () => {
-    if (token) {
-      await loadSession();
-    }
-  }, [token, loadSession]);
+    await loadSession();
+  }, [loadSession]);
 
   const value = useMemo(
     () => ({ token, homeowner, association, loading, login, register, logout, refreshData, impersonateAsHomeowner }),
@@ -202,4 +168,3 @@ export const useHomeownerAuth = () => {
   }
   return ctx;
 };
-

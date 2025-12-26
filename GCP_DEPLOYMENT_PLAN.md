@@ -172,6 +172,99 @@ gcloud sql instances patch propvestor-db \
   --no-assign-ip
 ```
 
+## Phase 2.5: Google Cloud Memorystore for Redis Setup
+
+### 2.5.1 Enable Required APIs
+
+```bash
+# Enable Redis API
+gcloud services enable redis.googleapis.com
+gcloud services enable vpcaccess.googleapis.com
+```
+
+### 2.5.2 Create VPC Connector (Required for Memorystore)
+
+```bash
+# Create VPC connector for Cloud Run to access Memorystore
+gcloud compute networks vpc-access connectors create propvestor-connector \
+  --region=$REGION \
+  --subnet-project=$PROJECT_ID \
+  --subnet=default \
+  --min-instances=2 \
+  --max-instances=3 \
+  --machine-type=e2-micro
+```
+
+### 2.5.3 Create Memorystore Redis Instance
+
+```bash
+# Create Redis instance (Basic tier for development/testing)
+gcloud redis instances create propvestor-redis \
+  --size=1 \
+  --region=$REGION \
+  --network=default \
+  --redis-version=redis_7_0 \
+  --tier=basic \
+  --display-name="PropVestor Redis Cache"
+
+# For production, use Standard tier with replication:
+# gcloud redis instances create propvestor-redis \
+#   --size=5 \
+#   --region=$REGION \
+#   --network=default \
+#   --redis-version=redis_7_0 \
+#   --tier=standard \
+#   --replica-count=1 \
+#   --display-name="PropVestor Redis Cache"
+```
+
+**Note**: 
+- **Basic tier**: Single node, no replication, suitable for development/testing (~$30-50/month for 1GB)
+- **Standard tier**: High availability with replication, recommended for production (~$100-200/month for 5GB)
+- Start with Basic tier (1GB) for development, scale to Standard tier (5GB+) for production
+
+### 2.5.4 Get Redis Connection Details
+
+```bash
+# Get Redis instance details
+gcloud redis instances describe propvestor-redis \
+  --region=$REGION \
+  --format="value(host,port)"
+
+# The connection string format will be:
+# redis://<host>:<port>
+# For example: redis://10.0.0.3:6379
+```
+
+### 2.5.5 Store Redis URL in Secret Manager
+
+```bash
+# Get the Redis host and port
+REDIS_HOST=$(gcloud redis instances describe propvestor-redis \
+  --region=$REGION \
+  --format="value(host)")
+REDIS_PORT=$(gcloud redis instances describe propvestor-redis \
+  --region=$REGION \
+  --format="value(port)")
+
+# Store Redis URL as secret
+echo -n "redis://${REDIS_HOST}:${REDIS_PORT}" | gcloud secrets create redis-url \
+  --data-file=- \
+  --replication-policy="automatic"
+
+# Grant backend service account access
+gcloud secrets add-iam-policy-binding redis-url \
+  --member="serviceAccount:propvestor-backend@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+```
+
+**Important Notes:**
+- Memorystore Redis instances use private IP addresses within your VPC
+- Cloud Run services must use a VPC connector to access Memorystore
+- The Redis URL format is: `redis://<private-ip>:<port>`
+- No authentication is required for Memorystore (it's protected by VPC)
+- For production, consider enabling Redis AUTH (if using external Redis) or use IAM-based access control
+
 ## Phase 3: Secret Manager Setup
 
 ### 3.1 Store Secrets
@@ -213,9 +306,9 @@ gcloud secrets add-iam-policy-binding jwt-secret \
   --member="serviceAccount:propvestor-backend@${PROJECT_ID}.iam.gserviceaccount.com" \
   --role="roles/secretmanager.secretAccessor"
 
-# Repeat for all secrets
+# Repeat for all secrets (including redis-url)
 for secret in jwt-secret db-password stripe-secret-key stripe-publishable-key \
-              docusign-integrator-key; do
+              docusign-integrator-key redis-url; do
   gcloud secrets add-iam-policy-binding $secret \
     --member="serviceAccount:propvestor-backend@${PROJECT_ID}.iam.gserviceaccount.com" \
     --role="roles/secretmanager.secretAccessor"
@@ -656,10 +749,12 @@ gcloud monitoring uptime-checks create propvestor-web-health \
 
 ## Phase 10: Security Hardening
 
-### 10.1 Enable VPC Connector (for Private Cloud SQL)
+### 10.1 Enable VPC Connector (for Private Cloud SQL and Redis)
+
+**Note**: The VPC connector should already be created in Phase 2.5. If not, create it now:
 
 ```bash
-# Create VPC connector
+# Create VPC connector (if not already created)
 gcloud compute networks vpc-access connectors create propvestor-connector \
   --region=us-central1 \
   --subnet-project=$PROJECT_ID \
@@ -669,11 +764,16 @@ gcloud compute networks vpc-access connectors create propvestor-connector \
   --machine-type=e2-micro
 
 # Update Cloud Run services to use VPC connector
+# Use 'all-traffic' to access both Cloud SQL and Memorystore Redis
 gcloud run services update propvestor-api \
   --region=us-central1 \
   --vpc-connector=propvestor-connector \
-  --vpc-egress=private-ranges-only
+  --vpc-egress=all-traffic
 ```
+
+**Important**: 
+- Use `--vpc-egress=all-traffic` to allow access to both Cloud SQL (private IP) and Memorystore Redis
+- Alternatively, use `--vpc-egress=private-ranges-only` if you only need private IP access (Cloud SQL) and can access Redis via public IP (not recommended for Memorystore)
 
 ### 10.2 Set Up IAM Policies
 
@@ -891,20 +991,24 @@ ab -n 1000 -c 10 https://api.yourdomain.com/api/health
 
 **Development/Testing Environment:**
 - Cloud SQL (db-f1-micro): ~$7-10/month
+- Memorystore Redis (Basic, 1GB): ~$30-50/month
+- VPC Connector: ~$10-15/month
 - Cloud Run (backend): ~$5-15/month (with min-instances=0)
 - Cloud Run (frontend): ~$5-15/month (with min-instances=0)
 - Cloud Storage: ~$1-5/month (5GB storage)
 - Cloud Build: ~$0-10/month (depending on builds)
-- **Total: ~$20-55/month**
+- **Total: ~$58-120/month**
 
 **Production Environment:**
 - Cloud SQL (db-n1-standard-1): ~$50-100/month
+- Memorystore Redis (Standard, 5GB): ~$100-200/month
+- VPC Connector: ~$10-15/month
 - Cloud Run (backend): ~$30-100/month
 - Cloud Run (frontend): ~$20-50/month
 - Cloud Storage: ~$10-50/month (depending on usage)
 - Cloud Build: ~$10-30/month
 - Networking: ~$10-30/month
-- **Total: ~$130-360/month**
+- **Total: ~$240-575/month**
 
 *Note: Costs vary based on traffic, storage, and compute usage. Use GCP Pricing Calculator for accurate estimates.*
 

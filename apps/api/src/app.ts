@@ -1,5 +1,6 @@
 import express from 'express';
 import cors from 'cors';
+import cookieParser from 'cookie-parser';
 import { env } from './config/env.js';
 import { errorHandler } from './middleware/error-handler.js';
 import { router } from './routes/index.js';
@@ -29,6 +30,7 @@ export const createApp = () => {
       };
   
   app.use(cors(corsOptions));
+  app.use(cookieParser());
   app.use(express.json());
 
   // Apply strict rate limiting to auth endpoints (before general rate limiting)

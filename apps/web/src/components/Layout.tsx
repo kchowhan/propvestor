@@ -49,8 +49,6 @@ export const Layout = ({ children }: { children: ReactNode }) => {
       return;
     }
     try {
-      let newToken: string;
-
       // Check if user is a member of the target organization
       const isMember = organizations.some((org) => org.id === orgId);
 
@@ -64,26 +62,12 @@ export const Layout = ({ children }: { children: ReactNode }) => {
         if (!data.token) {
           throw new Error('No token received from impersonate');
         }
-
-        newToken = data.token;
-        
-        // Update localStorage and auth context
-        localStorage.setItem('propvestor_token', newToken);
-        // Note: Auth context will reload via useEffect when localStorage changes
       } else {
         // Regular organization switch (user is a member)
-        newToken = await switchOrganization(orgId);
+        await switchOrganization(orgId);
       }
 
       setIsOrgMenuOpen(false);
-      
-      // Verify token is in localStorage
-      const savedToken = localStorage.getItem('propvestor_token');
-      if (savedToken !== newToken) {
-        console.error('Token mismatch after switch');
-        alert('Failed to switch organization. Please try again.');
-        return;
-      }
       
       // Invalidate all queries to refetch with new organization context
       await queryClient.invalidateQueries();

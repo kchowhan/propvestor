@@ -1,4 +1,5 @@
 import { Storage } from '@google-cloud/storage';
+import { createReadStream } from 'fs';
 import { env } from '../config/env.js';
 
 // Initialize Google Cloud Storage client
@@ -71,6 +72,47 @@ export const uploadFile = async (
 };
 
 /**
+ * Upload a file to Google Cloud Storage using a stream
+ * @param filePath - Local path to the file
+ * @param fileName - The desired file name in storage
+ * @param contentType - MIME type of the file
+ * @param folder - Optional folder path (e.g., 'leases', 'documents')
+ * @returns The storage key (path) of the uploaded file
+ */
+export const uploadFileStream = async (
+  filePath: string,
+  fileName: string,
+  contentType: string,
+  folder?: string,
+): Promise<string> => {
+  try {
+    const bucket = getBucket();
+    const storagePath = folder ? `${folder}/${fileName}` : fileName;
+    const file = bucket.file(storagePath);
+
+    await new Promise<void>((resolve, reject) => {
+      const readStream = createReadStream(filePath);
+      const writeStream = file.createWriteStream({
+        metadata: {
+          contentType,
+        },
+        resumable: false,
+      });
+
+      readStream.on('error', reject);
+      writeStream.on('error', reject);
+      writeStream.on('finish', () => resolve());
+      readStream.pipe(writeStream);
+    });
+
+    return storagePath;
+  } catch (error) {
+    console.error('Error uploading file stream to GCS:', error);
+    throw new Error(`Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+};
+
+/**
  * Get a signed URL for downloading a file
  * @param storageKey - The storage key (path) of the file
  * @param expiresInMinutes - URL expiration time in minutes (default: 60)
@@ -128,4 +170,3 @@ export const fileExists = async (storageKey: string): Promise<boolean> => {
     return false;
   }
 };
-

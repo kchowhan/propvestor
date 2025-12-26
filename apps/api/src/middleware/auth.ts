@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
 import { env } from '../config/env.js';
 import { AppError } from '../lib/errors.js';
+import { SESSION_COOKIE_NAME } from '../lib/auth-cookies.js';
 
 export interface AuthPayload {
   userId: string;
@@ -16,11 +17,14 @@ declare module 'express-serve-static-core' {
 
 export const requireAuth = (req: Request, _res: Response, next: NextFunction) => {
   const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
+  const bearerToken = header && header.startsWith('Bearer ') ? header.replace('Bearer ', '') : null;
+  const cookieToken = req.cookies?.[SESSION_COOKIE_NAME] as string | undefined;
+  const token = bearerToken || cookieToken;
+
+  if (!token) {
     return next(new AppError(401, 'UNAUTHORIZED', 'Missing authorization header.'));
   }
 
-  const token = header.replace('Bearer ', '');
   try {
     const payload = jwt.verify(token, env.JWT_SECRET) as AuthPayload;
     req.auth = payload;
@@ -33,8 +37,10 @@ export const requireAuth = (req: Request, _res: Response, next: NextFunction) =>
 // Optional auth - sets req.auth if token is provided, but doesn't throw error if missing
 export const optionalAuth = (req: Request, _res: Response, next: NextFunction) => {
   const header = req.headers.authorization;
-  if (header && header.startsWith('Bearer ')) {
-    const token = header.replace('Bearer ', '');
+  const bearerToken = header && header.startsWith('Bearer ') ? header.replace('Bearer ', '') : null;
+  const cookieToken = req.cookies?.[SESSION_COOKIE_NAME] as string | undefined;
+  const token = bearerToken || cookieToken;
+  if (token) {
     try {
       const payload = jwt.verify(token, env.JWT_SECRET) as AuthPayload;
       req.auth = payload;

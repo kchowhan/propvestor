@@ -28,10 +28,10 @@ const createWrapper = () => {
 describe('HomeownerAuthContext', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    localStorage.clear();
   });
 
-  it('should initialize with no token', async () => {
+  it('should initialize with no session', async () => {
+    mockApiFetch.mockRejectedValueOnce(new Error('Unauthorized'));
     const { result } = renderHook(() => useHomeownerAuth(), {
       wrapper: createWrapper(),
     });
@@ -45,10 +45,7 @@ describe('HomeownerAuthContext', () => {
     expect(result.current.association).toBeNull();
   });
 
-  it('should load token from localStorage', async () => {
-    const token = 'test-token';
-    localStorage.setItem('propvestor_homeowner_token', token);
-
+  it('should load session from cookies', async () => {
     mockApiFetch.mockResolvedValue({
       homeowner: {
         id: '1',
@@ -73,12 +70,11 @@ describe('HomeownerAuthContext', () => {
       expect(result.current.loading).toBe(false);
     });
 
-    expect(result.current.token).toBe(token);
+    expect(result.current.token).toBe('cookie');
   });
 
   it('should login successfully', async () => {
     const mockResponse = {
-      token: 'new-token',
       homeowner: {
         id: '1',
         firstName: 'John',
@@ -94,7 +90,9 @@ describe('HomeownerAuthContext', () => {
       },
     };
 
-    mockApiFetch.mockResolvedValue(mockResponse);
+    mockApiFetch
+      .mockRejectedValueOnce(new Error('Unauthorized'))
+      .mockResolvedValue(mockResponse);
 
     const { result } = renderHook(() => useHomeownerAuth(), {
       wrapper: createWrapper(),
@@ -108,13 +106,14 @@ describe('HomeownerAuthContext', () => {
       await result.current.login('john@example.com', 'password123');
     });
 
-    expect(result.current.token).toBe('new-token');
+    expect(result.current.token).toBe('cookie');
     expect(result.current.homeowner?.email).toBe('john@example.com');
-    expect(localStorage.getItem('propvestor_homeowner_token')).toBe('new-token');
   });
 
   it('should handle login error', async () => {
-    mockApiFetch.mockRejectedValue(new Error('Invalid credentials'));
+    mockApiFetch
+      .mockRejectedValueOnce(new Error('Unauthorized'))
+      .mockRejectedValue(new Error('Invalid credentials'));
 
     const { result } = renderHook(() => useHomeownerAuth(), {
       wrapper: createWrapper(),
@@ -143,7 +142,9 @@ describe('HomeownerAuthContext', () => {
       },
     };
 
-    mockApiFetch.mockResolvedValue(mockResponse);
+    mockApiFetch
+      .mockRejectedValueOnce(new Error('Unauthorized'))
+      .mockResolvedValue(mockResponse);
 
     const { result } = renderHook(() => useHomeownerAuth(), {
       wrapper: createWrapper(),
@@ -176,10 +177,7 @@ describe('HomeownerAuthContext', () => {
   });
 
   it('should logout and clear token', async () => {
-    const token = 'test-token';
-    localStorage.setItem('propvestor_homeowner_token', token);
-
-    mockApiFetch.mockResolvedValue({
+    mockApiFetch.mockResolvedValueOnce({
       homeowner: {
         id: '1',
         firstName: 'John',
@@ -206,13 +204,9 @@ describe('HomeownerAuthContext', () => {
 
     expect(result.current.token).toBeNull();
     expect(result.current.homeowner).toBeNull();
-    expect(localStorage.getItem('propvestor_homeowner_token')).toBeNull();
   });
 
   it('should refresh data', async () => {
-    const token = 'test-token';
-    localStorage.setItem('propvestor_homeowner_token', token);
-
     mockApiFetch.mockResolvedValue({
       homeowner: {
         id: '1',
@@ -238,9 +232,6 @@ describe('HomeownerAuthContext', () => {
       await result.current.refreshData();
     });
 
-    expect(mockApiFetch).toHaveBeenCalledWith('/homeowner-auth/me', {
-      token: 'test-token',
-    });
+    expect(mockApiFetch).toHaveBeenCalledWith('/homeowner-auth/me');
   });
 });
-

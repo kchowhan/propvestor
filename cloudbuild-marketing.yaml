@@ -4,25 +4,25 @@ steps:
     args:
       - 'build'
       - '-f'
-      - 'apps/web/Dockerfile'
+      - 'apps/marketing/Dockerfile'
       - '--build-arg'
-      - 'NEXT_PUBLIC_API_URL=${_API_URL}'
+      - 'NEXT_PUBLIC_APP_URL=${_APP_URL}'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/propvestor-web:$SHORT_SHA'
+      - 'gcr.io/$PROJECT_ID/propvestor-marketing:$SHORT_SHA'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/propvestor-web:latest'
+      - 'gcr.io/$PROJECT_ID/propvestor-marketing:latest'
       - '.'
 
   # Push the container image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/propvestor-web:$SHORT_SHA'
+      - 'gcr.io/$PROJECT_ID/propvestor-marketing:$SHORT_SHA'
 
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/propvestor-web:latest'
+      - 'gcr.io/$PROJECT_ID/propvestor-marketing:latest'
 
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -30,9 +30,9 @@ steps:
     args:
       - 'run'
       - 'deploy'
-      - 'propvestor-web'
+      - 'propvestor-marketing'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/propvestor-web:$SHORT_SHA'
+      - 'gcr.io/$PROJECT_ID/propvestor-marketing:$SHORT_SHA'
       - '--region'
       - '${_REGION}'
       - '--platform'
@@ -51,18 +51,18 @@ steps:
       - '--timeout'
       - '300'
       - '--port'
-      - '3000'
+      - '3001'
       - '--set-env-vars'
-      - 'NEXT_PUBLIC_API_URL=${_API_URL}'
+      - 'NEXT_PUBLIC_APP_URL=${_APP_URL}'
 
 substitutions:
   _REGION: us-central1
-  _API_URL: https://propvestor-api-XXXXX.run.app/api
+  _APP_URL: https://app.propvestor.com
 
 options:
   machineType: 'E2_HIGHCPU_8'
   logging: CLOUD_LOGGING_ONLY
 
 images:
-  - 'gcr.io/$PROJECT_ID/propvestor-web:$SHORT_SHA'
-  - 'gcr.io/$PROJECT_ID/propvestor-web:latest'
+  - 'gcr.io/$PROJECT_ID/propvestor-marketing:$SHORT_SHA'
+  - 'gcr.io/$PROJECT_ID/propvestor-marketing:latest'

@@ -14,8 +14,9 @@ export const apiFetch = async (path: string, options: FetchOptions = {}) => {
       method: options.method ?? 'GET',
       headers: {
         'Content-Type': 'application/json',
-        ...(options.token ? { Authorization: `Bearer ${options.token}` } : {}),
+        ...(options.token && options.token !== 'cookie' ? { Authorization: `Bearer ${options.token}` } : {}),
       },
+      credentials: 'include',
       body: options.body ? JSON.stringify(options.body) : undefined,
     });
 

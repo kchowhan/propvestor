@@ -1,16 +1,12 @@
-# TEMPORARILY DISABLED - Uncomment push trigger to re-enable automatic frontend deployments
-# Currently set to manual trigger only (workflow_dispatch)
-
 name: Deploy Frontend to GCP
 
 on:
-  workflow_dispatch: # Manual trigger only - change to 'push:' to enable automatic deployments
-#   push:
-#     branches: [main]
-#     paths:
-#       - 'apps/web/**'
-#       - 'cloudbuild-frontend.yaml'
-#       - '.github/workflows/deploy-frontend.yml'
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/**'
+      - 'cloudbuild-frontend.yaml'
+      - '.github/workflows/deploy-frontend.yml'
 
 env:
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
@@ -41,7 +37,11 @@ jobs:
         run: |
           BACKEND_URL=$(gcloud run services describe propvestor-api \
             --region=${{ env.REGION }} \
-            --format="value(status.url)")
+            --format="value(status.url)" 2>/dev/null || echo "")
+          if [ -z "$BACKEND_URL" ]; then
+            echo "Backend service not found. Please deploy backend first."
+            exit 1
+          fi
           echo "url=${BACKEND_URL}/api" >> $GITHUB_OUTPUT
 
       - name: 'Submit to Cloud Build'

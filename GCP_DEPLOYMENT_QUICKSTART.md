@@ -56,6 +56,46 @@ gcloud sql instances describe propvestor-db \
   --format="value(connectionName)"
 ```
 
+### 3.5 Set Up Redis (Memorystore)
+
+```bash
+# Enable APIs
+gcloud services enable redis.googleapis.com vpcaccess.googleapis.com
+
+# Create VPC connector
+gcloud compute networks vpc-access connectors create propvestor-connector \
+  --region=$REGION \
+  --subnet-project=$PROJECT_ID \
+  --subnet=default \
+  --min-instances=2 \
+  --max-instances=3 \
+  --machine-type=e2-micro
+
+# Create Redis instance (Basic tier for dev/testing)
+gcloud redis instances create propvestor-redis \
+  --size=1 \
+  --region=$REGION \
+  --network=default \
+  --redis-version=redis_7_0 \
+  --tier=basic
+
+# Get Redis connection details
+REDIS_HOST=$(gcloud redis instances describe propvestor-redis \
+  --region=$REGION \
+  --format="value(host)")
+REDIS_PORT=$(gcloud redis instances describe propvestor-redis \
+  --region=$REGION \
+  --format="value(port)")
+
+# Store Redis URL as secret
+echo -n "redis://${REDIS_HOST}:${REDIS_PORT}" | gcloud secrets create redis-url --data-file=-
+
+# Grant access
+gcloud secrets add-iam-policy-binding redis-url \
+  --member="serviceAccount:propvestor-backend@${PROJECT_ID}.iam.gserviceaccount.com" \
+  --role="roles/secretmanager.secretAccessor"
+```
+
 ### 4. Store Secrets
 
 ```bash
@@ -173,6 +213,7 @@ Store these in Secret Manager:
 - [ ] `jwt-secret` - JWT signing secret (generate with `openssl rand -base64 32`)
 - [ ] `db-password` - Database password
 - [ ] `cors-origin` - Frontend URL (e.g., `https://app.yourdomain.com`)
+- [ ] `redis-url` - Redis connection URL (created automatically in step 3.5)
 
 ### Optional (based on your integrations)
 - [ ] `stripe-secret-key` - Stripe secret key
@@ -240,10 +281,10 @@ gcloud run services list --region=$REGION
 ## Cost Estimation
 
 **Development/Testing:**
-- ~$20-55/month
+- ~$58-120/month (includes Redis Basic tier)
 
 **Production:**
-- ~$130-360/month (varies with usage)
+- ~$240-575/month (includes Redis Standard tier, varies with usage)
 
 ## Next Steps
 

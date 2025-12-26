@@ -151,6 +151,22 @@ describe('Rate Limiting Middleware', () => {
 
       expect(nextFunction).toHaveBeenCalled();
     });
+
+    it('should clean up expired entries in custom limiter store', () => {
+      const customLimiter = createRateLimiter({
+        windowMs: 1000,
+        max: 2,
+      });
+
+      customLimiter.store.set('custom-key', {
+        count: 2,
+        windowStart: Date.now() - 2000,
+      });
+
+      customLimiter.cleanup();
+
+      expect(customLimiter.store.has('custom-key')).toBe(false);
+    });
   });
 
   describe('strictRateLimit', () => {
@@ -299,4 +315,3 @@ describe('Rate Limiting Middleware', () => {
     });
   });
 });
-

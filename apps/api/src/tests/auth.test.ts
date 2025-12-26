@@ -35,6 +35,9 @@ describe('Auth Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.token).toBeDefined();
+      expect(response.headers['set-cookie']).toEqual(
+        expect.arrayContaining([expect.stringContaining('pv_session=')])
+      );
       expect(response.body.user.email).toBe('test@example.com');
       expect(response.body.organization.name).toBe('Test Org');
     });
@@ -115,6 +118,9 @@ describe('Auth Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.token).toBeDefined();
+      expect(response.headers['set-cookie']).toEqual(
+        expect.arrayContaining([expect.stringContaining('pv_session=')])
+      );
       expect(response.body.user.email).toBe('login@example.com');
       expect(response.body.organizations).toBeDefined();
       expect(response.body.organizations.length).toBeGreaterThan(0);
@@ -258,6 +264,9 @@ describe('Auth Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.token).toBeDefined();
+      expect(response.headers['set-cookie']).toEqual(
+        expect.arrayContaining([expect.stringContaining('pv_session=')])
+      );
       expect(response.body.organization.id).toBe(secondOrg.id);
     });
 
@@ -279,5 +288,15 @@ describe('Auth Routes', () => {
       expect(response.status).toBe(403);
     });
   });
-});
 
+  describe('POST /api/auth/logout', () => {
+    it('should clear session cookies', async () => {
+      const response = await request(app).post('/api/auth/logout');
+
+      expect(response.status).toBe(200);
+      expect(response.headers['set-cookie']).toEqual(
+        expect.arrayContaining([expect.stringContaining('pv_session=')])
+      );
+    });
+  });
+});

@@ -4,6 +4,7 @@ import { AppError } from '../lib/errors.js';
 import { env } from '../config/env.js';
 import { prisma } from '../lib/prisma.js';
 import { AuthPayload } from './auth.js';
+import { HOMEOWNER_SESSION_COOKIE_NAME, SESSION_COOKIE_NAME } from '../lib/auth-cookies.js';
 
 export interface HomeownerAuthPayload {
   homeownerId: string;
@@ -19,11 +20,14 @@ declare module 'express-serve-static-core' {
 
 export const requireHomeownerAuth = async (req: Request, _res: Response, next: NextFunction) => {
   const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
+  const bearerToken = header && header.startsWith('Bearer ') ? header.replace('Bearer ', '') : null;
+  const homeownerCookie = req.cookies?.[HOMEOWNER_SESSION_COOKIE_NAME] as string | undefined;
+  const sessionCookie = req.cookies?.[SESSION_COOKIE_NAME] as string | undefined;
+  const token = bearerToken || homeownerCookie || sessionCookie;
+
+  if (!token) {
     return next(new AppError(401, 'UNAUTHORIZED', 'Missing authorization header.'));
   }
-
-  const token = header.replace('Bearer ', '');
   try {
     const payload = jwt.verify(token, env.JWT_SECRET) as HomeownerAuthPayload | AuthPayload;
     
@@ -75,19 +79,19 @@ export const requireHomeownerAuth = async (req: Request, _res: Response, next: N
 // Optional homeowner auth - sets req.homeownerAuth if token is provided, but doesn't throw error if missing
 export const optionalHomeownerAuth = (req: Request, _res: Response, next: NextFunction) => {
   const header = req.headers.authorization;
-  if (!header || !header.startsWith('Bearer ')) {
-    return next();
-  }
+  const bearerToken = header && header.startsWith('Bearer ') ? header.replace('Bearer ', '') : null;
+  const homeownerCookie = req.cookies?.[HOMEOWNER_SESSION_COOKIE_NAME] as string | undefined;
+  const token = bearerToken || homeownerCookie;
 
-  const token = header.replace('Bearer ', '');
-  try {
-    const payload = jwt.verify(token, env.JWT_SECRET) as HomeownerAuthPayload;
-    if (payload.homeownerId) {
-      req.homeownerAuth = payload;
+  if (token) {
+    try {
+      const payload = jwt.verify(token, env.JWT_SECRET) as HomeownerAuthPayload;
+      if (payload.homeownerId) {
+        req.homeownerAuth = payload;
+      }
+    } catch (err) {
+      // Ignore errors for optional auth
     }
-  } catch (err) {
-    // Ignore errors for optional auth
   }
   return next();
 };
-

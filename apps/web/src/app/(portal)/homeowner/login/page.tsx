@@ -51,7 +51,7 @@ export default function HomeownerLoginPage() {
           setLoading(false);
           return;
         }
-        await impersonateAsHomeowner(selectedHomeownerId, userToken);
+        await impersonateAsHomeowner(selectedHomeownerId);
       } else {
         // Regular homeowner login
         console.log('Submitting homeowner login:', { email: form.email, hasPassword: !!form.password, associationId: form.associationId });
@@ -213,4 +213,3 @@ export default function HomeownerLoginPage() {
     </div>
   );
 }
-

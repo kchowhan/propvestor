@@ -8,7 +8,7 @@ import { createTestUser, createTestOrganization, createTestMembership, cleanupTe
 
 // Mock storage functions
 vi.mock('../lib/storage.js', () => ({
-  uploadFile: vi.fn(() => Promise.resolve('documents/test-file.pdf')),
+  uploadFileStream: vi.fn(() => Promise.resolve('documents/test-file.pdf')),
   getSignedUrl: vi.fn(() => Promise.resolve('https://signed-url.com')),
   deleteFile: vi.fn(() => Promise.resolve()),
 }));
@@ -295,4 +295,3 @@ describe('Documents Routes', () => {
     });
   });
 });
-

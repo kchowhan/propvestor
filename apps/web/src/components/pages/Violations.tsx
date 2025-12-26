@@ -595,9 +595,7 @@ export const ViolationsPage = () => {
                           const API_URL = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:4000/api';
                           const response = await fetch(`${API_URL}/documents/upload`, {
                             method: 'POST',
-                            headers: {
-                              Authorization: `Bearer ${token}`,
-                            },
+                            credentials: 'include',
                             body: formData,
                           });
 
@@ -694,4 +692,3 @@ export const ViolationsPage = () => {
     </div>
   );
 };
-

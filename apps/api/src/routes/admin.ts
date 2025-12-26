@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
 import { parseBody, parseQuery } from '../validators/common.js';
+import { getSessionCookieOptions, SESSION_COOKIE_NAME } from '../lib/auth-cookies.js';
 import { requireAuth } from '../middleware/auth.js';
 import { requireSuperAdmin, getAdminStats } from '../middleware/admin.js';
 import { adminRateLimit } from '../middleware/rate-limit.js';
@@ -506,6 +507,7 @@ adminRouter.post('/organizations/:id/impersonate', async (req, res, next) => {
       { expiresIn: '7d' }
     );
 
+    res.cookie(SESSION_COOKIE_NAME, token, getSessionCookieOptions());
     res.json({
       token,
       user: {
@@ -524,4 +526,3 @@ adminRouter.post('/organizations/:id/impersonate', async (req, res, next) => {
     next(err);
   }
 });
-
