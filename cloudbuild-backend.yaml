@@ -68,7 +68,9 @@ steps:
 substitutions:
   _REGION: us-central1
   _CLOUDSQL_CONNECTION_NAME: ${PROJECT_ID}:${REGION}:propvestor-db
-  _DB_PASSWORD: '$(gcloud secrets versions access latest --secret=db-password)'
+  # Note: _DB_PASSWORD must be passed explicitly when running gcloud builds submit
+  # It cannot be resolved from secrets in the substitutions section
+  # Run: gcloud builds submit --config=cloudbuild-backend.yaml --substitutions=_DB_PASSWORD=$(gcloud secrets versions access latest --secret=db-password),...
   _GCS_BUCKET_NAME: propvestor-documents-prod
   # VPC connector name - required for Memorystore Redis access
   # Set to empty string '' if not using Redis
