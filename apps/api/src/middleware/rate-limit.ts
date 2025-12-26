@@ -16,8 +16,11 @@ type SubscriptionLimitCacheEntry = {
   expiresAt: number;
 };
 
+// In-memory cache fallback (only used when Redis is not available)
+// In production with Redis, this should not be used to ensure statelessness across instances
 const subscriptionLimitCache = new Map<string, SubscriptionLimitCacheEntry>();
 const SUBSCRIPTION_LIMIT_CACHE_TTL_MS = 60 * 1000;
+const SUBSCRIPTION_LIMIT_CACHE_TTL_SEC = Math.floor(SUBSCRIPTION_LIMIT_CACHE_TTL_MS / 1000);
 
 // Default limits for unauthenticated requests
 const DEFAULT_RATE_LIMIT = 60; // requests per hour
@@ -44,21 +47,43 @@ function cleanupStore(store: Map<string, RateLimitEntry>, windowMs: number): voi
   }
 }
 
-export function cleanupRateLimitStore(): void {
+export async function cleanupRateLimitStore(): Promise<void> {
   if (!isRedisEnabled()) {
     cleanupStore(rateLimitStore, WINDOW_SIZE_MS);
   }
-  cleanupSubscriptionLimitCache();
+  await cleanupSubscriptionLimitCache();
 }
 
 // Run cleanup every 5 minutes
-setInterval(cleanupRateLimitStore, 5 * 60 * 1000);
+// Note: Redis keys expire automatically, so cleanup is mainly for in-memory fallback
+setInterval(() => {
+  cleanupRateLimitStore().catch((err) => {
+    console.error('Error during rate limit cleanup:', err);
+  });
+}, 5 * 60 * 1000);
 
 /**
  * Get rate limit for an organization based on their subscription plan
+ * Uses Redis cache when available for multi-instance support
  */
 async function getRateLimitForOrganization(organizationId: string): Promise<number> {
   try {
+    // Try Redis first (for multi-instance support)
+    if (isRedisEnabled()) {
+      const client = await getRedisClient();
+      if (client) {
+        const cacheKey = `subscription-limits:org:${organizationId}`;
+        const cached = await client.get(cacheKey);
+        if (cached) {
+          const apiCalls = parseInt(cached, 10);
+          if (!isNaN(apiCalls)) {
+            return apiCalls;
+          }
+        }
+      }
+    }
+
+    // Fallback to in-memory cache (only when Redis is not available)
     const cached = subscriptionLimitCache.get(organizationId);
     if (cached && cached.expiresAt > Date.now()) {
       return cached.apiCalls || DEFAULT_RATE_LIMIT;
@@ -67,12 +92,25 @@ async function getRateLimitForOrganization(organizationId: string): Promise<numb
       subscriptionLimitCache.delete(organizationId);
     }
 
+    // Fetch from database
     const limits = await getSubscriptionLimits(organizationId);
     const apiCalls = limits.apiCalls || DEFAULT_RATE_LIMIT;
-    subscriptionLimitCache.set(organizationId, {
-      apiCalls,
-      expiresAt: Date.now() + SUBSCRIPTION_LIMIT_CACHE_TTL_MS,
-    });
+
+    // Store in Redis if available
+    if (isRedisEnabled()) {
+      const client = await getRedisClient();
+      if (client) {
+        const cacheKey = `subscription-limits:org:${organizationId}`;
+        await client.setEx(cacheKey, SUBSCRIPTION_LIMIT_CACHE_TTL_SEC, apiCalls.toString());
+      }
+    } else {
+      // Fallback to in-memory cache
+      subscriptionLimitCache.set(organizationId, {
+        apiCalls,
+        expiresAt: Date.now() + SUBSCRIPTION_LIMIT_CACHE_TTL_MS,
+      });
+    }
+
     return apiCalls;
   } catch {
     return DEFAULT_RATE_LIMIT;
@@ -358,24 +396,39 @@ export function resetRateLimit(key: string): boolean {
 /**
  * Clear all rate limits (useful for testing)
  */
-export function clearAllRateLimits(): void {
+export async function clearAllRateLimits(): Promise<void> {
   if (!isRedisEnabled()) {
     rateLimitStore.clear();
   }
-  clearSubscriptionLimitCache();
+  await clearSubscriptionLimitCache();
 }
 
-function cleanupSubscriptionLimitCache(): void {
-  const now = Date.now();
-  for (const [key, entry] of subscriptionLimitCache.entries()) {
-    if (entry.expiresAt <= now) {
-      subscriptionLimitCache.delete(key);
+async function cleanupSubscriptionLimitCache(): Promise<void> {
+  // Redis keys expire automatically, so only clean in-memory cache
+  if (!isRedisEnabled()) {
+    const now = Date.now();
+    for (const [key, entry] of subscriptionLimitCache.entries()) {
+      if (entry.expiresAt <= now) {
+        subscriptionLimitCache.delete(key);
+      }
     }
   }
 }
 
-export function clearSubscriptionLimitCache(): void {
-  subscriptionLimitCache.clear();
+export async function clearSubscriptionLimitCache(): Promise<void> {
+  if (isRedisEnabled()) {
+    // Clear Redis cache
+    const client = await getRedisClient();
+    if (client) {
+      const keys = await client.keys('subscription-limits:*');
+      if (keys.length > 0) {
+        await client.del(keys);
+      }
+    }
+  } else {
+    // Clear in-memory cache
+    subscriptionLimitCache.clear();
+  }
 }
 
 // Export the store for testing purposes

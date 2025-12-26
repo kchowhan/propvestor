@@ -33,10 +33,10 @@ describe('Rate Limiting Middleware', () => {
   let mockResponse: Partial<Response>;
   let nextFunction: NextFunction;
 
-  beforeEach(() => {
+  beforeEach(async () => {
     // Clear rate limit store before each test
-    clearAllRateLimits();
-    clearSubscriptionLimitCache();
+    await clearAllRateLimits();
+    await clearSubscriptionLimitCache();
 
     mockRequest = {
       ip: '127.0.0.1',
@@ -228,7 +228,7 @@ describe('Rate Limiting Middleware', () => {
   });
 
   describe('cleanupRateLimitStore', () => {
-    it('should remove expired entries', () => {
+    it('should remove expired entries', async () => {
       // When Redis is enabled, cleanupRateLimitStore doesn't clean in-memory store
       if (isRedisEnabled()) {
         console.warn('Redis is enabled - skipping in-memory cleanup test');
@@ -241,18 +241,18 @@ describe('Rate Limiting Middleware', () => {
         windowStart: Date.now() - WINDOW_SIZE_MS - 1000, // Expired
       });
 
-      cleanupRateLimitStore();
+      await cleanupRateLimitStore();
 
       expect(rateLimitStore.has('test-key')).toBe(false);
     });
 
-    it('should keep non-expired entries', () => {
+    it('should keep non-expired entries', async () => {
       rateLimitStore.set('fresh-key', {
         count: 5,
         windowStart: Date.now(),
       });
 
-      cleanupRateLimitStore();
+      await cleanupRateLimitStore();
 
       expect(rateLimitStore.has('fresh-key')).toBe(true);
     });
@@ -317,7 +317,7 @@ describe('Rate Limiting Middleware', () => {
         // clearAllRateLimits doesn't clear when Redis is enabled
         // This is by design - Redis handles its own expiration via TTL
         // The test verifies that the function runs without error
-        clearAllRateLimits();
+        await         await clearAllRateLimits();
         // Function should complete successfully (it's a no-op with Redis)
         expect(true).toBe(true);
         return;
@@ -331,7 +331,7 @@ describe('Rate Limiting Middleware', () => {
 
       expect(rateLimitStore.size).toBeGreaterThan(0);
 
-      clearAllRateLimits();
+      await clearAllRateLimits();
 
       expect(rateLimitStore.size).toBe(0);
     });
