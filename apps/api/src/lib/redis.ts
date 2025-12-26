@@ -24,4 +24,4 @@ export const getRedisClient = async (): Promise<RedisClientType | null> => {
   return connectPromise;
 };
 
-export const isRedisEnabled = (): boolean => Boolean(env.REDIS_URL) && process.env.NODE_ENV !== 'test';
+export const isRedisEnabled = (): boolean => Boolean(env.REDIS_URL);

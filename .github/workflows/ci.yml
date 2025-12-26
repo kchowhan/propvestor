@@ -26,6 +26,16 @@ jobs:
         ports:
           - 5432:5432
 
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
     env:
       DATABASE_URL: postgresql://postgres:postgres@localhost:5432/propvestor_test
       NODE_ENV: test
@@ -45,6 +55,7 @@ jobs:
       SMTP_USER: test@example.com
       SMTP_PASS: test_password
       SMTP_FROM: test@example.com
+      REDIS_URL: redis://localhost:6379
 
     steps:
       - name: Checkout code
