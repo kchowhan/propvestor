@@ -29,6 +29,7 @@ const mockAuth = {
 
 jest.mock('../../context/AuthContext', () => ({
   useAuth: () => mockAuth,
+  AuthProvider: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
 describe('Sidebar', () => {

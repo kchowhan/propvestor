@@ -35,15 +35,15 @@ export default function SubscriptionPage() {
   // Fetch usage counts
   const { data: propertiesResponse } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => apiFetch('/properties', { token }),
+    queryFn: () => apiFetch('/properties?limit=1&offset=0', { token }),
   });
   const { data: tenantsResponse } = useQuery({
     queryKey: ['tenants'],
-    queryFn: () => apiFetch('/tenants', { token }),
+    queryFn: () => apiFetch('/tenants?limit=1&offset=0', { token }),
   });
   const { data: usersResponse } = useQuery({
     queryKey: ['users'],
-    queryFn: () => apiFetch('/users', { token }),
+    queryFn: () => apiFetch('/users?limit=1&offset=0', { token }),
   });
 
   const invoicesList = invoices || [];
@@ -307,4 +307,3 @@ export default function SubscriptionPage() {
     </div>
   );
 }
-

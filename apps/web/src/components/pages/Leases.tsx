@@ -5,11 +5,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { PaginationControls } from '../PaginationControls';
 
 export const LeasesPage = () => {
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'create' | 'leases'>('create');
+  const [page, setPage] = useState(1);
+  const listLimit = 20;
   const [form, setForm] = useState({
     unitId: '',
     tenantIds: [] as string[],
@@ -21,18 +24,18 @@ export const LeasesPage = () => {
   });
 
   const leasesQuery = useQuery({
-    queryKey: ['leases'],
-    queryFn: () => apiFetch('/leases', { token }),
+    queryKey: ['leases', page],
+    queryFn: () => apiFetch(`/leases?limit=${listLimit}&offset=${(page - 1) * listLimit}`, { token }),
   });
 
   const propertiesQuery = useQuery({
     queryKey: ['properties'],
-    queryFn: () => apiFetch('/properties', { token }),
+    queryFn: () => apiFetch('/properties?limit=100&offset=0', { token }),
   });
 
   const tenantsQuery = useQuery({
     queryKey: ['tenants'],
-    queryFn: () => apiFetch('/tenants', { token }),
+    queryFn: () => apiFetch('/tenants?limit=100&offset=0', { token }),
   });
 
   // Extract data arrays from paginated responses
@@ -236,6 +239,13 @@ export const LeasesPage = () => {
               ))}
             </tbody>
           </table>
+          <PaginationControls
+            pagination={leasesQuery.data?.pagination}
+            page={page}
+            limit={listLimit}
+            onPageChange={setPage}
+            label="leases"
+          />
           </div>
         </div>
       )}

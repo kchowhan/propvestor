@@ -20,7 +20,7 @@ reportRouter.get('/rent-roll', async (req, res, next) => {
 
     const where = {
       organizationId: req.auth?.organizationId,
-      type: 'RENT',
+      type: 'RENT' as const,
       dueDate: { gte: start, lt: end },
     };
 
@@ -37,14 +37,14 @@ reportRouter.get('/rent-roll', async (req, res, next) => {
           payments: true,
         },
         orderBy: { dueDate: 'asc' },
-        take: data.limit,
-        skip: data.offset,
+        take: data.limit ?? 50,
+        skip: data.offset ?? 0,
       }),
       prisma.charge.count({ where }),
     ]);
 
     const rows = charges.map((charge) => {
-      const paid = charge.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+      const paid = (charge.payments || []).reduce((sum, payment) => sum + Number(payment.amount), 0);
       return {
         chargeId: charge.id,
         property: charge.lease?.unit.property,
@@ -64,7 +64,7 @@ reportRouter.get('/rent-roll', async (req, res, next) => {
         total,
         limit: data.limit,
         offset: data.offset,
-        hasMore: data.offset + data.limit < total,
+        hasMore: (data.offset ?? 0) + (data.limit ?? 50) < total,
       },
     });
   } catch (err) {

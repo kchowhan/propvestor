@@ -5,10 +5,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { PaginationControls } from '../PaginationControls';
 
 export const PropertiesPage = () => {
   const { token } = useAuth();
   const queryClient = useQueryClient();
+  const [page, setPage] = useState(1);
+  const listLimit = 20;
   const [form, setForm] = useState({
     name: '',
     addressLine1: '',
@@ -21,8 +24,9 @@ export const PropertiesPage = () => {
   });
 
   const { data: propertiesResponse, isLoading, error } = useQuery({
-    queryKey: ['properties'],
-    queryFn: () => apiFetch('/properties', { token }),
+    queryKey: ['properties', page],
+    queryFn: () =>
+      apiFetch(`/properties?limit=${listLimit}&offset=${(page - 1) * listLimit}`, { token }),
   });
 
   // Extract data array from paginated response
@@ -159,6 +163,13 @@ export const PropertiesPage = () => {
               ))}
             </tbody>
           </table>
+          <PaginationControls
+            pagination={propertiesResponse?.pagination}
+            page={page}
+            limit={listLimit}
+            onPageChange={setPage}
+            label="properties"
+          />
         </div>
       </div>
     </div>

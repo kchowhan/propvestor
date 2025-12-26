@@ -19,7 +19,7 @@ jest.mock('../../context/AuthContext', () => ({
 describe('PropertiesPage', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    mockApiFetch.mockResolvedValue({ data: [], pagination: { total: 0, page: 1, pageSize: 10 } });
+    mockApiFetch.mockResolvedValue({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } });
   });
 
   it('should render properties list', async () => {
@@ -28,7 +28,7 @@ describe('PropertiesPage', () => {
         { id: '1', name: 'Property 1', city: 'City A' },
         { id: '2', name: 'Property 2', city: 'City B' },
       ],
-      pagination: { total: 2, page: 1, pageSize: 10 },
+      pagination: { total: 2, limit: 20, offset: 0, hasMore: false },
     });
 
     renderWithProviders(<PropertiesPage />);
@@ -41,7 +41,7 @@ describe('PropertiesPage', () => {
 
   it('should create new property', async () => {
     mockApiFetch
-      .mockResolvedValueOnce({ data: [], pagination: { total: 0, page: 1, pageSize: 10 } }) // Initial load
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }) // Initial load
       .mockResolvedValueOnce({ data: { id: '1', name: 'New Property' } }); // Create
 
     renderWithProviders(<PropertiesPage />);
@@ -82,7 +82,7 @@ describe('PropertiesPage', () => {
   });
 
   it('should show empty state when no properties', async () => {
-    mockApiFetch.mockResolvedValue({ data: [], pagination: { total: 0, page: 1, pageSize: 10 } });
+    mockApiFetch.mockResolvedValue({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } });
 
     renderWithProviders(<PropertiesPage />);
 
@@ -205,7 +205,7 @@ describe('PropertiesPage', () => {
           type: 'SINGLE_FAMILY',
         },
       ],
-      pagination: { total: 1, page: 1, pageSize: 10 },
+      pagination: { total: 1, limit: 20, offset: 0, hasMore: false },
     });
 
     renderWithProviders(<PropertiesPage />);
@@ -216,4 +216,3 @@ describe('PropertiesPage', () => {
     });
   });
 });
-

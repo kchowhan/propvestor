@@ -24,7 +24,7 @@ describe('UserManagementPage', () => {
   });
 
   it('should render create user tab by default', async () => {
-    mockApiFetch.mockResolvedValue([]);
+    mockApiFetch.mockResolvedValue({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } });
 
     renderWithProviders(<UserManagementPage />);
 
@@ -36,7 +36,7 @@ describe('UserManagementPage', () => {
 
   it('should create new user', async () => {
     mockApiFetch
-      .mockResolvedValueOnce([]) // Users
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }) // Users
       .mockResolvedValueOnce({ data: { id: '1' } }); // Create
 
     renderWithProviders(<UserManagementPage />);
@@ -75,7 +75,7 @@ describe('UserManagementPage', () => {
   });
 
   it('should switch to add existing user tab', async () => {
-    mockApiFetch.mockResolvedValue([]);
+    mockApiFetch.mockResolvedValue({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } });
 
     renderWithProviders(<UserManagementPage />);
 
@@ -94,9 +94,10 @@ describe('UserManagementPage', () => {
   });
 
   it('should switch to users tab', async () => {
-    mockApiFetch.mockResolvedValue([
-      { id: '1', name: 'User 1', email: 'user1@example.com', role: 'ADMIN' },
-    ]);
+    mockApiFetch.mockResolvedValue({
+      data: [{ id: '1', name: 'User 1', email: 'user1@example.com', role: 'ADMIN' }],
+      pagination: { total: 1, limit: 20, offset: 0, hasMore: false },
+    });
 
     renderWithProviders(<UserManagementPage />);
 
@@ -116,9 +117,10 @@ describe('UserManagementPage', () => {
 
   it('should update user role', async () => {
     mockApiFetch
-      .mockResolvedValueOnce([
-        { id: '1', name: 'User 1', email: 'user1@example.com', role: 'ADMIN' },
-      ])
+      .mockResolvedValueOnce({
+        data: [{ id: '1', name: 'User 1', email: 'user1@example.com', role: 'ADMIN' }],
+        pagination: { total: 1, limit: 20, offset: 0, hasMore: false },
+      })
       .mockResolvedValueOnce({ data: { role: 'MANAGER' } }); // Update
 
     renderWithProviders(<UserManagementPage />);
@@ -133,7 +135,7 @@ describe('UserManagementPage', () => {
 
   it('should add existing user', async () => {
     mockApiFetch
-      .mockResolvedValueOnce([]) // Users
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }) // Users
       .mockResolvedValueOnce({ data: { id: '1' } }); // Add existing user
 
     renderWithProviders(<UserManagementPage />);
@@ -155,9 +157,10 @@ describe('UserManagementPage', () => {
   it('should remove user', async () => {
     window.confirm = jest.fn(() => true);
     mockApiFetch
-      .mockResolvedValueOnce([
-        { id: '1', name: 'User 1', email: 'user1@example.com', role: 'ADMIN' },
-      ]) // Users
+      .mockResolvedValueOnce({
+        data: [{ id: '1', name: 'User 1', email: 'user1@example.com', role: 'ADMIN' }],
+        pagination: { total: 1, limit: 20, offset: 0, hasMore: false },
+      }) // Users
       .mockResolvedValueOnce({ data: { success: true } }); // Remove user
 
     renderWithProviders(<UserManagementPage />);
@@ -179,7 +182,7 @@ describe('UserManagementPage', () => {
   it('should handle create user error', async () => {
     window.alert = jest.fn();
     mockApiFetch
-      .mockResolvedValueOnce([]) // Users
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }) // Users
       .mockRejectedValueOnce(new Error('Failed to create user')); // Create error
 
     renderWithProviders(<UserManagementPage />);
@@ -207,7 +210,7 @@ describe('UserManagementPage', () => {
   it('should handle add existing user error', async () => {
     window.alert = jest.fn();
     mockApiFetch
-      .mockResolvedValueOnce([]) // Users
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }) // Users
       .mockRejectedValueOnce(new Error('User not found')); // Add existing error
 
     renderWithProviders(<UserManagementPage />);
@@ -236,9 +239,10 @@ describe('UserManagementPage', () => {
 
   it('should handle update role error', async () => {
     window.alert = jest.fn();
-    mockApiFetch.mockResolvedValue([
-      { id: '1', name: 'User 1', email: 'user1@example.com', role: 'ADMIN' },
-    ]);
+    mockApiFetch.mockResolvedValue({
+      data: [{ id: '1', name: 'User 1', email: 'user1@example.com', role: 'ADMIN' }],
+      pagination: { total: 1, limit: 20, offset: 0, hasMore: false },
+    });
 
     renderWithProviders(<UserManagementPage />);
 
@@ -259,9 +263,10 @@ describe('UserManagementPage', () => {
   it('should handle remove user error', async () => {
     window.confirm = jest.fn(() => true);
     window.alert = jest.fn();
-    mockApiFetch.mockResolvedValue([
-      { id: '1', name: 'User 1', email: 'user1@example.com', role: 'ADMIN' },
-    ]);
+    mockApiFetch.mockResolvedValue({
+      data: [{ id: '1', name: 'User 1', email: 'user1@example.com', role: 'ADMIN' }],
+      pagination: { total: 1, limit: 20, offset: 0, hasMore: false },
+    });
 
     renderWithProviders(<UserManagementPage />);
 
@@ -312,10 +317,13 @@ describe('UserManagementPage', () => {
   });
 
   it('should display users list', async () => {
-    mockApiFetch.mockResolvedValue([
-      { id: '1', name: 'User 1', email: 'user1@example.com', role: 'ADMIN', joinedAt: '2024-01-01' },
-      { id: '2', name: 'User 2', email: 'user2@example.com', role: 'MANAGER', joinedAt: '2024-01-02' },
-    ]);
+    mockApiFetch.mockResolvedValue({
+      data: [
+        { id: '1', name: 'User 1', email: 'user1@example.com', role: 'ADMIN', joinedAt: '2024-01-01' },
+        { id: '2', name: 'User 2', email: 'user2@example.com', role: 'MANAGER', joinedAt: '2024-01-02' },
+      ],
+      pagination: { total: 2, limit: 20, offset: 0, hasMore: false },
+    });
 
     renderWithProviders(<UserManagementPage />);
 
@@ -329,15 +337,19 @@ describe('UserManagementPage', () => {
       fireEvent.click(usersTab);
     }
 
-    await waitFor(() => {
-      expect(screen.getByText('user1@example.com')).toBeInTheDocument();
-    });
+    await waitFor(
+      () => {
+        expect(screen.getByText('user1@example.com')).toBeInTheDocument();
+      },
+      { timeout: 3000 }
+    );
   });
 
   it('should change role select value', async () => {
-    mockApiFetch.mockResolvedValue([
-      { id: '1', name: 'User 1', email: 'user1@example.com', role: 'ADMIN', joinedAt: '2024-01-01' },
-    ]);
+    mockApiFetch.mockResolvedValue({
+      data: [{ id: '1', name: 'User 1', email: 'user1@example.com', role: 'ADMIN', joinedAt: '2024-01-01' }],
+      pagination: { total: 1, limit: 20, offset: 0, hasMore: false },
+    });
 
     renderWithProviders(<UserManagementPage />);
 
@@ -358,7 +370,7 @@ describe('UserManagementPage', () => {
   });
 
   it('should handle form field changes for new user', async () => {
-    mockApiFetch.mockResolvedValue([]);
+    mockApiFetch.mockResolvedValue({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } });
 
     renderWithProviders(<UserManagementPage />);
 
@@ -376,7 +388,7 @@ describe('UserManagementPage', () => {
   });
 
   it('should handle form field changes for existing user', async () => {
-    mockApiFetch.mockResolvedValue([]);
+    mockApiFetch.mockResolvedValue({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } });
 
     renderWithProviders(<UserManagementPage />);
 

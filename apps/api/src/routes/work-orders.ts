@@ -56,7 +56,7 @@ workOrderRouter.get('/', async (req, res, next) => {
         total,
         limit: query.limit,
         offset: query.offset,
-        hasMore: query.offset + query.limit < total,
+        hasMore: (query.offset ?? 0) + (query.limit ?? 50) < total,
       },
     });
   } catch (err) {

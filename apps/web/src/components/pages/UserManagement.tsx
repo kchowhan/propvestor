@@ -4,17 +4,20 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { PaginationControls } from '../PaginationControls';
 
 export const UserManagementPage = () => {
   const { token, currentRole } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'create' | 'add-existing' | 'users'>('create');
+  const [page, setPage] = useState(1);
+  const listLimit = 20;
   const [newUserForm, setNewUserForm] = useState({ name: '', email: '', role: 'VIEWER' });
   const [existingUserForm, setExistingUserForm] = useState({ email: '', role: 'VIEWER' });
 
   const usersQuery = useQuery({
-    queryKey: ['users'],
-    queryFn: () => apiFetch('/users', { token }),
+    queryKey: ['users', page],
+    queryFn: () => apiFetch(`/users?limit=${listLimit}&offset=${(page - 1) * listLimit}`, { token }),
     enabled: currentRole === 'OWNER' || currentRole === 'ADMIN',
   });
 
@@ -257,7 +260,7 @@ export const UserManagementPage = () => {
                   </tr>
                 </thead>
                 <tbody>
-                  {usersQuery.data?.map((user: any) => (
+                  {usersQuery.data?.data?.map((user: any) => (
                     <tr key={user.id} className="border-t border-slate-100">
                       <td className="py-2">{user.name}</td>
                       <td className="py-2 text-slate-600">{user.email}</td>
@@ -297,6 +300,13 @@ export const UserManagementPage = () => {
                   ))}
                 </tbody>
               </table>
+              <PaginationControls
+                pagination={usersQuery.data?.pagination}
+                page={page}
+                limit={listLimit}
+                onPageChange={setPage}
+                label="users"
+              />
             </div>
           )}
           </div>
@@ -305,4 +315,3 @@ export const UserManagementPage = () => {
     </div>
   );
 };
-

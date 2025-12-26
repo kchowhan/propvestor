@@ -26,16 +26,16 @@ const setupMocks = (options: {
     if (options.error) {
       return Promise.reject(new Error('Failed to load'));
     }
-    if (path === '/properties') {
+    if (path.startsWith('/properties')) {
       return Promise.resolve({
         data: options.properties || [],
-        pagination: { total: options.properties?.length || 0, page: 1, pageSize: 10 },
+        pagination: { total: options.properties?.length || 0, limit: 100, offset: 0, hasMore: false },
       });
     }
-    if (path === '/tenants') {
+    if (path.startsWith('/tenants')) {
       return Promise.resolve({
         data: options.tenants || [],
-        pagination: { total: options.tenants?.length || 0, page: 1, pageSize: 10 },
+        pagination: { total: options.tenants?.length || 0, limit: 20, offset: 0, hasMore: false },
       });
     }
     if (path === '/screening/request') {

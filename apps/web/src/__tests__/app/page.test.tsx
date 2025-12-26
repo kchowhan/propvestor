@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { vi } from '@jest/globals';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
+import { useHomeownerAuth } from '@/context/HomeownerAuthContext';
 import Home from '@/app/page';
 
 jest.mock('next/navigation', () => ({
@@ -12,8 +13,13 @@ jest.mock('@/context/AuthContext', () => ({
   useAuth: jest.fn(),
 }));
 
+jest.mock('@/context/HomeownerAuthContext', () => ({
+  useHomeownerAuth: jest.fn(),
+}));
+
 const mockUseRouter = useRouter as jest.MockedFunction<typeof useRouter>;
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
+const mockUseHomeownerAuth = useHomeownerAuth as jest.MockedFunction<typeof useHomeownerAuth>;
 
 describe('Home Page', () => {
   const mockReplace = jest.fn();
@@ -44,6 +50,14 @@ describe('Home Page', () => {
       switchOrganization: jest.fn(),
       createOrganization: jest.fn(),
     } as any);
+    mockUseHomeownerAuth.mockReturnValue({
+      token: null,
+      loading: true,
+      homeowner: null,
+      association: null,
+      login: jest.fn(),
+      logout: jest.fn(),
+    } as any);
 
     render(<Home />);
 
@@ -64,6 +78,14 @@ describe('Home Page', () => {
       logout: jest.fn(),
       switchOrganization: jest.fn(),
       createOrganization: jest.fn(),
+    } as any);
+    mockUseHomeownerAuth.mockReturnValue({
+      token: null,
+      loading: false,
+      homeowner: null,
+      association: null,
+      login: jest.fn(),
+      logout: jest.fn(),
     } as any);
 
     render(<Home />);
@@ -87,6 +109,14 @@ describe('Home Page', () => {
       switchOrganization: jest.fn(),
       createOrganization: jest.fn(),
     } as any);
+    mockUseHomeownerAuth.mockReturnValue({
+      token: null,
+      loading: false,
+      homeowner: null,
+      association: null,
+      login: jest.fn(),
+      logout: jest.fn(),
+    } as any);
 
     render(<Home />);
 
@@ -108,6 +138,14 @@ describe('Home Page', () => {
       logout: jest.fn(),
       switchOrganization: jest.fn(),
       createOrganization: jest.fn(),
+    } as any);
+    mockUseHomeownerAuth.mockReturnValue({
+      token: null,
+      loading: true,
+      homeowner: null,
+      association: null,
+      login: jest.fn(),
+      logout: jest.fn(),
     } as any);
 
     render(<Home />);

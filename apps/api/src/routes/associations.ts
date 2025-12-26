@@ -122,9 +122,9 @@ associationRouter.get('/', requireAuth, async (req, res, next) => {
       data: associationsWithPropertyCounts,
       pagination: {
         total,
-        limit: query.limit,
-        offset: query.offset,
-        hasMore: query.offset + query.limit < total,
+        limit: query.limit ?? 50,
+        offset: query.offset ?? 0,
+        hasMore: (query.offset ?? 0) + (query.limit ?? 50) < total,
       },
     });
   } catch (err) {

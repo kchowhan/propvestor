@@ -26,10 +26,11 @@ export const ApplicantsPage = () => {
     queryFn: () => apiFetch('/applicants', { token }),
   });
 
-  const { data: properties } = useQuery({
+  const { data: propertiesResponse } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => apiFetch('/properties', { token }),
+    queryFn: () => apiFetch('/properties?limit=100&offset=0', { token }),
   });
+  const properties = propertiesResponse?.data || [];
 
   const createApplicant = useMutation({
     mutationFn: () =>
@@ -165,7 +166,7 @@ export const ApplicantsPage = () => {
                   onChange={(e) => setForm((prev) => ({ ...prev, propertyId: e.target.value }))}
                 >
                   <option value="">Select property</option>
-                  {properties?.map((property: any) => (
+                  {properties.map((property: any) => (
                     <option key={property.id} value={property.id}>
                       {property.name}
                     </option>
@@ -302,4 +303,3 @@ export const ApplicantsPage = () => {
     </div>
   );
 };
-

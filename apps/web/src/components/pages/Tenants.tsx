@@ -5,11 +5,14 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { PaginationControls } from '../PaginationControls';
 
 export const TenantsPage = () => {
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'active' | 'prospects'>('active');
+  const [page, setPage] = useState(1);
+  const listLimit = 20;
   const [form, setForm] = useState({ 
     firstName: '', 
     lastName: '', 
@@ -21,12 +24,12 @@ export const TenantsPage = () => {
 
   const { data: propertiesResponse } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => apiFetch('/properties', { token }),
+    queryFn: () => apiFetch('/properties?limit=100&offset=0', { token }),
   });
 
   const { data: tenantsResponse, isLoading, error } = useQuery({
-    queryKey: ['tenants'],
-    queryFn: () => apiFetch('/tenants', { token }),
+    queryKey: ['tenants', page],
+    queryFn: () => apiFetch(`/tenants?limit=${listLimit}&offset=${(page - 1) * listLimit}`, { token }),
   });
 
   // Extract data arrays from paginated responses
@@ -253,6 +256,13 @@ export const TenantsPage = () => {
                   : 'No prospects or applicants found.'}
               </div>
             )}
+            <PaginationControls
+              pagination={tenantsResponse?.pagination}
+              page={page}
+              limit={listLimit}
+              onPageChange={setPage}
+              label="tenants"
+            />
           </div>
         </div>
       </div>

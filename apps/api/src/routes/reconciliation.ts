@@ -78,9 +78,9 @@ reconciliationRouter.get('/', async (req, res, next) => {
       data: reconciliations,
       pagination: {
         total,
-        limit: query.limit,
-        offset: query.offset,
-        hasMore: query.offset + query.limit < total,
+        limit: query.limit ?? 50,
+        offset: query.offset ?? 0,
+        hasMore: (query.offset ?? 0) + (query.limit ?? 50) < total,
       },
     });
   } catch (err) {
@@ -201,15 +201,15 @@ reconciliationRouter.get('/:id', async (req, res, next) => {
       pagination: {
         unmatchedPayments: {
           total: unmatchedPaymentsTotal,
-          limit: query.limit,
-          offset: query.offset,
-          hasMore: query.offset + query.limit < unmatchedPaymentsTotal,
+          limit: query.limit ?? 50,
+          offset: query.offset ?? 0,
+          hasMore: (query.offset ?? 0) + (query.limit ?? 50) < unmatchedPaymentsTotal,
         },
         unmatchedTransactions: {
           total: unmatchedTransactionsTotal,
-          limit: query.limit,
-          offset: query.offset,
-          hasMore: query.offset + query.limit < unmatchedTransactionsTotal,
+          limit: query.limit ?? 50,
+          offset: query.offset ?? 0,
+          hasMore: (query.offset ?? 0) + (query.limit ?? 50) < unmatchedTransactionsTotal,
         },
       },
     });
@@ -361,15 +361,15 @@ reconciliationRouter.get('/unmatched/list', async (req, res, next) => {
       pagination: {
         unmatchedPayments: {
           total: unmatchedPaymentsTotal,
-          limit: query.limit,
-          offset: query.offset,
-          hasMore: query.offset + query.limit < unmatchedPaymentsTotal,
+          limit: query.limit ?? 50,
+          offset: query.offset ?? 0,
+          hasMore: (query.offset ?? 0) + (query.limit ?? 50) < unmatchedPaymentsTotal,
         },
         unmatchedTransactions: {
           total: unmatchedTransactionsTotal,
-          limit: query.limit,
-          offset: query.offset,
-          hasMore: query.offset + query.limit < unmatchedTransactionsTotal,
+          limit: query.limit ?? 50,
+          offset: query.offset ?? 0,
+          hasMore: (query.offset ?? 0) + (query.limit ?? 50) < unmatchedTransactionsTotal,
         },
       },
     });
