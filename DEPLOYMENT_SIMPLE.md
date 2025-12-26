@@ -34,7 +34,7 @@ This is a simplified deployment setup - one environment, auto-deploy on push to 
 - Builds and deploys API
 - Service: `propvestor-api`
 - Database: `propvestor-db`
-- Bucket: `propvestor-documents`
+- Bucket: `propvestor-documents-prod`
 - Min instances: 1 (always available)
 
 ### `cloudbuild-frontend.yaml`
@@ -79,7 +79,7 @@ gcloud sql users create propvestor_user \
   --password=CHANGE_ME
 
 # Create storage bucket
-gsutil mb -p $PROJECT_ID -c STANDARD -l $REGION gs://propvestor-documents
+gsutil mb -p $PROJECT_ID -c STANDARD -l $REGION gs://propvestor-documents-prod
 
 # Store secrets
 echo -n "YOUR_JWT_SECRET" | gcloud secrets create jwt-secret --data-file=-

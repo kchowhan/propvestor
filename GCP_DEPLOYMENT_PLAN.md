@@ -459,7 +459,7 @@ substitutions:
   _REGION: us-central1
   _CLOUDSQL_CONNECTION_NAME: ${PROJECT_ID}:${REGION}:propvestor-db
   _DB_PASSWORD: '$(gcloud secrets versions access latest --secret=db-password)'
-  _GCS_BUCKET_NAME: propvestor-documents
+  _GCS_BUCKET_NAME: propvestor-documents-prod
   # VPC connector name - required for Memorystore Redis access
   _VPC_CONNECTOR: propvestor-connector
 
