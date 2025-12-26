@@ -191,6 +191,10 @@ describe('ViolationsPage', () => {
         data: Array.from({ length: 20 }, (_, i) => ({
           id: `${i + 1}`,
           type: `Violation ${i + 1}`,
+          description: 'Test violation',
+          severity: 'MINOR',
+          status: 'OPEN',
+          violationDate: '2024-01-01',
           homeowner: { id: '1', firstName: 'John', lastName: 'Doe' },
           association: { id: '1', name: 'Test Association' },
         })),
@@ -200,6 +204,10 @@ describe('ViolationsPage', () => {
         data: Array.from({ length: 5 }, (_, i) => ({
           id: `${i + 21}`,
           type: `Violation ${i + 21}`,
+          description: 'Test violation',
+          severity: 'MINOR',
+          status: 'OPEN',
+          violationDate: '2024-01-01',
           homeowner: { id: '1', firstName: 'John', lastName: 'Doe' },
           association: { id: '1', name: 'Test Association' },
         })),
@@ -208,24 +216,52 @@ describe('ViolationsPage', () => {
 
     renderWithProviders(<ViolationsPage />);
 
+    // Wait for initial data to load
     await waitFor(() => {
       expect(screen.queryByText('Loading violations...')).not.toBeInTheDocument();
     });
 
-    // Wait for pagination controls to appear (only shows when totalPages > 1)
+    // Ensure we're on the list tab (default)
+    const listTab = screen.getByRole('button', { name: 'Violations' });
+    expect(listTab).toHaveClass('border-primary-600');
+
+    // Wait for pagination controls to appear
+    // With 25 items and limit 20, totalPages = Math.ceil(25/20) = 2, so pagination should show
     await waitFor(() => {
-      const nextButton = screen.queryByRole('button', { name: /next/i });
-      expect(nextButton).toBeInTheDocument();
+      expect(screen.getByText(/Showing \d+ to \d+ of 25/i)).toBeInTheDocument();
     });
 
+    // Click next button
     const nextButton = screen.getByRole('button', { name: /next/i });
+    expect(nextButton).not.toBeDisabled();
     fireEvent.click(nextButton);
 
+    // Verify API was called with offset=20 for page 2
     await waitFor(() => {
-      expect(mockApiFetch).toHaveBeenCalledWith(
-        expect.stringContaining('offset=20'),
-        expect.any(Object)
+      const calls = mockApiFetch.mock.calls;
+      const page2Call = calls.find((call: any) => 
+        typeof call[0] === 'string' && call[0].includes('offset=20')
       );
+      expect(page2Call).toBeDefined();
+    });
+
+    // Verify we're now on page 2 - check pagination text shows correct range
+    await waitFor(() => {
+      expect(screen.getByText(/Showing 21 to 25 of 25/i)).toBeInTheDocument();
+    });
+
+    // Test Prev button - go back to page 1
+    const prevButton = screen.getByRole('button', { name: /prev/i });
+    expect(prevButton).not.toBeDisabled();
+    fireEvent.click(prevButton);
+
+    // Verify API was called with offset=0 for page 1
+    await waitFor(() => {
+      const calls = mockApiFetch.mock.calls;
+      const page1Call = calls.find((call: any) => 
+        typeof call[0] === 'string' && call[0].includes('offset=0') && !call[0].includes('offset=20')
+      );
+      expect(page1Call).toBeDefined();
     });
   });
 

@@ -31,6 +31,8 @@ export const createApp = () => {
   
   app.use(cors(corsOptions));
   app.use(cookieParser());
+  // Stripe webhooks require the raw request body for signature verification.
+  app.use('/api/stripe/webhook', express.raw({ type: 'application/json' }));
   app.use(express.json());
 
   // Apply strict rate limiting to auth endpoints (before general rate limiting)
