@@ -57,6 +57,7 @@ describe('Associations Routes', () => {
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body.data)).toBe(true);
       expect(response.body.data.length).toBeGreaterThanOrEqual(2);
+      expect(response.body.pagination.total).toBeGreaterThanOrEqual(2);
       // Find our specific associations in the response
       const association1Data = response.body.data.find((a: any) => a.id === association1.id);
       const association2Data = response.body.data.find((a: any) => a.id === association2.id);
@@ -90,6 +91,7 @@ describe('Associations Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data).toHaveLength(1);
       expect(response.body.data[0].name).toBe('Active HOA');
+      expect(response.body.pagination.total).toBe(1);
     });
 
     it('should filter by isActive=false', async () => {
@@ -116,6 +118,7 @@ describe('Associations Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data).toHaveLength(1);
       expect(response.body.data[0].name).toBe('Inactive HOA');
+      expect(response.body.pagination.total).toBe(1);
     });
 
     it('should include property counts from homeowners with units', async () => {
@@ -624,4 +627,3 @@ describe('Associations Routes', () => {
     });
   });
 });
-

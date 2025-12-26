@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
-import { parseBody } from '../validators/common.js';
+import { parseBody, parseQuery, paginationQuerySchema } from '../validators/common.js';
 
 export const chargeRouter = Router();
 
@@ -17,15 +17,39 @@ const chargeSchema = z.object({
   status: z.enum(['PENDING', 'PARTIALLY_PAID', 'PAID', 'CANCELLED']).optional(),
 });
 
+const querySchema = paginationQuerySchema.extend({
+  status: z.enum(['PENDING', 'PARTIALLY_PAID', 'PAID', 'CANCELLED']).optional(),
+  type: z.enum(['RENT', 'LATE_FEE', 'UTILITY', 'OTHER']).optional(),
+});
+
 chargeRouter.get('/', async (req, res, next) => {
   try {
-    const charges = await prisma.charge.findMany({
-      where: { organizationId: req.auth?.organizationId },
-      include: { lease: true, unit: true, property: true, payments: true },
-      orderBy: { dueDate: 'desc' },
-    });
+    const query = parseQuery(querySchema, req.query);
+    const where = {
+      organizationId: req.auth?.organizationId,
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.type ? { type: query.type } : {}),
+    };
+    const [charges, total] = await Promise.all([
+      prisma.charge.findMany({
+        where,
+        include: { lease: true, unit: true, property: true, payments: true },
+        orderBy: { dueDate: 'desc' },
+        take: query.limit,
+        skip: query.offset,
+      }),
+      prisma.charge.count({ where }),
+    ]);
 
-    res.json({ data: charges });
+    res.json({
+      data: charges,
+      pagination: {
+        total,
+        limit: query.limit,
+        offset: query.offset,
+        hasMore: query.offset + query.limit < total,
+      },
+    });
   } catch (err) {
     next(err);
   }

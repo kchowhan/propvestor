@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { PaginationControls } from '../PaginationControls';
 
 export const HomeownersPage = () => {
   const { token } = useAuth();
@@ -12,6 +13,8 @@ export const HomeownersPage = () => {
   const [activeTab, setActiveTab] = useState<'list' | 'create'>('list');
   const [filterAssociationId, setFilterAssociationId] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const listLimit = 20;
   const [form, setForm] = useState({
     associationId: '',
     unitId: '',
@@ -26,12 +29,12 @@ export const HomeownersPage = () => {
 
   const { data: associationsResponse } = useQuery({
     queryKey: ['associations'],
-    queryFn: () => apiFetch('/associations', { token }),
+    queryFn: () => apiFetch('/associations?limit=100&offset=0', { token }),
   });
 
   const { data: propertiesResponse } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => apiFetch('/properties', { token }),
+    queryFn: () => apiFetch('/properties?limit=100&offset=0', { token }),
   });
 
   const associations = associationsResponse?.data || [];
@@ -47,8 +50,12 @@ export const HomeownersPage = () => {
   if (filterStatus) queryParams.set('status', filterStatus);
 
   const { data: homeownersResponse, isLoading, error } = useQuery({
-    queryKey: ['homeowners', filterAssociationId, filterStatus],
-    queryFn: () => apiFetch(`/homeowners?${queryParams.toString()}`, { token }),
+    queryKey: ['homeowners', filterAssociationId, filterStatus, page],
+    queryFn: () =>
+      apiFetch(
+        `/homeowners?${queryParams.toString()}&limit=${listLimit}&offset=${(page - 1) * listLimit}`,
+        { token }
+      ),
   });
 
   const homeowners = homeownersResponse?.data || [];
@@ -335,7 +342,16 @@ export const HomeownersPage = () => {
           </div>
         </div>
       )}
+
+      {activeTab === 'list' && (
+        <PaginationControls
+          pagination={homeownersResponse?.pagination}
+          page={page}
+          limit={listLimit}
+          onPageChange={setPage}
+          label="homeowners"
+        />
+      )}
     </div>
   );
 };
-

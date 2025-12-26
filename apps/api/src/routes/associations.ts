@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
-import { parseBody, parseQuery } from '../validators/common.js';
+import { parseBody, parseQuery, paginationQuerySchema } from '../validators/common.js';
 import { requireAuth } from '../middleware/auth.js';
 
 export const associationRouter = Router();
@@ -24,7 +24,7 @@ const createAssociationSchema = z.object({
 
 const updateAssociationSchema = createAssociationSchema.partial();
 
-const querySchema = z.object({
+const querySchema = paginationQuerySchema.extend({
   isActive: z.preprocess(
     (val) => (val === undefined ? undefined : val === 'true' || val === true),
     z.boolean().optional()
@@ -47,18 +47,23 @@ associationRouter.get('/', requireAuth, async (req, res, next) => {
       where.isActive = query.isActive;
     }
 
-    const associations = await prisma.association.findMany({
-      where,
-      include: {
-        _count: {
-          select: {
-            homeowners: true,
-            boardMembers: true,
+    const [associations, total] = await Promise.all([
+      prisma.association.findMany({
+        where,
+        include: {
+          _count: {
+            select: {
+              homeowners: true,
+              boardMembers: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+        take: query.limit,
+        skip: query.offset,
+      }),
+      prisma.association.count({ where }),
+    ]);
 
     // Get property counts for each association
     const associationsWithPropertyCounts = await Promise.all(
@@ -115,6 +120,12 @@ associationRouter.get('/', requireAuth, async (req, res, next) => {
 
     res.json({
       data: associationsWithPropertyCounts,
+      pagination: {
+        total,
+        limit: query.limit,
+        offset: query.offset,
+        hasMore: query.offset + query.limit < total,
+      },
     });
   } catch (err) {
     next(err);
@@ -382,4 +393,3 @@ associationRouter.delete('/:id', requireAuth, async (req, res, next) => {
     next(err);
   }
 });
-

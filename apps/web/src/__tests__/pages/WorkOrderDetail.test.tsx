@@ -35,7 +35,7 @@ describe('WorkOrderDetailPage', () => {
         status: 'OPEN',
         category: 'PLUMBING',
       })
-      .mockResolvedValueOnce([]); // Vendors
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 100, offset: 0, hasMore: false } }); // Vendors
 
     renderWithProviders(<WorkOrderDetailPage />);
 
@@ -60,7 +60,7 @@ describe('WorkOrderDetailPage', () => {
   it('should render error state', async () => {
     mockApiFetch
       .mockRejectedValueOnce(new Error('Failed to fetch'))
-      .mockResolvedValueOnce([]); // Vendors
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 100, offset: 0, hasMore: false } }); // Vendors
 
     renderWithProviders(<WorkOrderDetailPage />);
 
@@ -79,7 +79,7 @@ describe('WorkOrderDetailPage', () => {
         property: { id: 'prop-1', name: 'Property 1' },
         priority: 'MEDIUM',
       })
-      .mockResolvedValueOnce([]) // Vendors
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 100, offset: 0, hasMore: false } }) // Vendors
       .mockResolvedValueOnce({ data: { status: 'IN_PROGRESS' } }); // Update
 
     renderWithProviders(<WorkOrderDetailPage />);
@@ -110,8 +110,8 @@ describe('WorkOrderDetailPage', () => {
           assignedVendorId: null,
         });
       }
-      if (path === '/vendors') {
-        return Promise.resolve([]);
+      if (path.startsWith('/vendors')) {
+        return Promise.resolve({ data: [], pagination: { total: 0, limit: 100, offset: 0, hasMore: false } });
       }
       return Promise.resolve({});
     });
@@ -143,11 +143,14 @@ describe('WorkOrderDetailPage', () => {
           assignedVendorId: null,
         });
       }
-      if (path === '/vendors') {
-        return Promise.resolve([
-          { id: '1', name: 'Vendor 1', category: 'PLUMBING' },
-          { id: '2', name: 'Vendor 2', category: 'HVAC' },
-        ]);
+      if (path.startsWith('/vendors')) {
+        return Promise.resolve({
+          data: [
+            { id: '1', name: 'Vendor 1', category: 'PLUMBING' },
+            { id: '2', name: 'Vendor 2', category: 'HVAC' },
+          ],
+          pagination: { total: 2, limit: 100, offset: 0, hasMore: false },
+        });
       }
       return Promise.resolve({});
     });
@@ -163,4 +166,3 @@ describe('WorkOrderDetailPage', () => {
     });
   });
 });
-

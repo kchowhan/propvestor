@@ -37,6 +37,12 @@ describe('Vendors Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.data).toEqual([]);
+      expect(response.body.pagination).toMatchObject({
+        total: 0,
+        limit: 50,
+        offset: 0,
+        hasMore: false,
+      });
     });
 
     it('should return vendors for organization', async () => {
@@ -56,6 +62,7 @@ describe('Vendors Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data.length).toBe(1);
       expect(response.body.data[0].name).toBe('Test Vendor');
+      expect(response.body.pagination.total).toBe(1);
     });
   });
 
@@ -240,4 +247,3 @@ describe('Vendors Routes', () => {
     });
   });
 });
-

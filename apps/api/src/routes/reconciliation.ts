@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
-import { parseBody } from '../validators/common.js';
+import { parseBody, parseQuery, paginationQuerySchema } from '../validators/common.js';
 import {
   importBankTransactions,
   createReconciliation,
@@ -36,6 +36,13 @@ const manualMatchSchema = z.object({
   bankTransactionId: z.string().uuid(),
 });
 
+const listQuerySchema = paginationQuerySchema;
+
+const unmatchedQuerySchema = paginationQuerySchema.extend({
+  startDate: z.coerce.date().optional(),
+  endDate: z.coerce.date().optional(),
+});
+
 // List all reconciliations
 reconciliationRouter.get('/', async (req, res, next) => {
   try {
@@ -43,24 +50,39 @@ reconciliationRouter.get('/', async (req, res, next) => {
       throw new AppError(401, 'UNAUTHORIZED', 'Missing auth context.');
     }
 
-    const reconciliations = await prisma.reconciliation.findMany({
-      where: { organizationId: req.auth.organizationId },
-      include: {
-        reviewer: {
-          select: { id: true, name: true, email: true },
-        },
-        _count: {
-          select: {
-            matches: true,
-            payments: true,
-            bankTransactions: true,
+    const query = parseQuery(listQuerySchema, req.query);
+    const where = { organizationId: req.auth.organizationId };
+    const [reconciliations, total] = await Promise.all([
+      prisma.reconciliation.findMany({
+        where,
+        include: {
+          reviewer: {
+            select: { id: true, name: true, email: true },
+          },
+          _count: {
+            select: {
+              matches: true,
+              payments: true,
+              bankTransactions: true,
+            },
           },
         },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
+        orderBy: { createdAt: 'desc' },
+        take: query.limit,
+        skip: query.offset,
+      }),
+      prisma.reconciliation.count({ where }),
+    ]);
 
-    res.json({ data: reconciliations });
+    res.json({
+      data: reconciliations,
+      pagination: {
+        total,
+        limit: query.limit,
+        offset: query.offset,
+        hasMore: query.offset + query.limit < total,
+      },
+    });
   } catch (err) {
     next(err);
   }
@@ -73,6 +95,7 @@ reconciliationRouter.get('/:id', async (req, res, next) => {
       throw new AppError(401, 'UNAUTHORIZED', 'Missing auth context.');
     }
 
+    const query = parseQuery(paginationQuerySchema, req.query);
     const reconciliation = await prisma.reconciliation.findFirst({
       where: {
         id: req.params.id,
@@ -120,43 +143,74 @@ reconciliationRouter.get('/:id', async (req, res, next) => {
     }
 
     // Get unmatched payments and transactions
-    const unmatchedPayments = await prisma.payment.findMany({
-      where: {
-        organizationId: req.auth.organizationId,
-        receivedDate: {
-          gte: reconciliation.startDate,
-          lte: reconciliation.endDate,
-        },
-        reconciled: false,
+    const paymentsWhere = {
+      organizationId: req.auth.organizationId,
+      receivedDate: {
+        gte: reconciliation.startDate,
+        lte: reconciliation.endDate,
       },
-      include: {
-        charge: true,
-        lease: {
-          include: {
-            unit: {
-              include: { property: true },
+      reconciled: false,
+    };
+    const transactionsWhere = {
+      organizationId: req.auth.organizationId,
+      date: {
+        gte: reconciliation.startDate,
+        lte: reconciliation.endDate,
+      },
+      reconciled: false,
+    };
+
+    const [
+      unmatchedPayments,
+      unmatchedTransactions,
+      unmatchedPaymentsTotal,
+      unmatchedTransactionsTotal,
+    ] = await Promise.all([
+      prisma.payment.findMany({
+        where: paymentsWhere,
+        include: {
+          charge: true,
+          lease: {
+            include: {
+              unit: {
+                include: { property: true },
+              },
             },
           },
         },
-      },
-    });
-
-    const unmatchedTransactions = await prisma.bankTransaction.findMany({
-      where: {
-        organizationId: req.auth.organizationId,
-        date: {
-          gte: reconciliation.startDate,
-          lte: reconciliation.endDate,
-        },
-        reconciled: false,
-      },
-    });
+        orderBy: { receivedDate: 'desc' },
+        take: query.limit,
+        skip: query.offset,
+      }),
+      prisma.bankTransaction.findMany({
+        where: transactionsWhere,
+        orderBy: { date: 'desc' },
+        take: query.limit,
+        skip: query.offset,
+      }),
+      prisma.payment.count({ where: paymentsWhere }),
+      prisma.bankTransaction.count({ where: transactionsWhere }),
+    ]);
 
     res.json({
       data: {
         ...reconciliation,
         unmatchedPayments,
         unmatchedTransactions,
+      },
+      pagination: {
+        unmatchedPayments: {
+          total: unmatchedPaymentsTotal,
+          limit: query.limit,
+          offset: query.offset,
+          hasMore: query.offset + query.limit < unmatchedPaymentsTotal,
+        },
+        unmatchedTransactions: {
+          total: unmatchedTransactionsTotal,
+          limit: query.limit,
+          offset: query.offset,
+          hasMore: query.offset + query.limit < unmatchedTransactionsTotal,
+        },
       },
     });
   } catch (err) {
@@ -243,52 +297,80 @@ reconciliationRouter.get('/unmatched/list', async (req, res, next) => {
       throw new AppError(401, 'UNAUTHORIZED', 'Missing auth context.');
     }
 
-    const startDate = req.query.startDate
-      ? new Date(String(req.query.startDate))
-      : new Date(new Date().getFullYear(), new Date().getMonth(), 1);
-    const endDate = req.query.endDate
-      ? new Date(String(req.query.endDate))
-      : new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
+    const query = parseQuery(unmatchedQuerySchema, req.query);
+    const startDate =
+      query.startDate ?? new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const endDate =
+      query.endDate ?? new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0);
 
-    const unmatchedPayments = await prisma.payment.findMany({
-      where: {
-        organizationId: req.auth.organizationId,
-        receivedDate: {
-          gte: startDate,
-          lte: endDate,
-        },
-        reconciled: false,
+    const paymentsWhere = {
+      organizationId: req.auth.organizationId,
+      receivedDate: {
+        gte: startDate,
+        lte: endDate,
       },
-      include: {
-        charge: true,
-        lease: {
-          include: {
-            unit: {
-              include: { property: true },
+      reconciled: false,
+    };
+    const transactionsWhere = {
+      organizationId: req.auth.organizationId,
+      date: {
+        gte: startDate,
+        lte: endDate,
+      },
+      reconciled: false,
+    };
+
+    const [
+      unmatchedPayments,
+      unmatchedTransactions,
+      unmatchedPaymentsTotal,
+      unmatchedTransactionsTotal,
+    ] = await Promise.all([
+      prisma.payment.findMany({
+        where: paymentsWhere,
+        include: {
+          charge: true,
+          lease: {
+            include: {
+              unit: {
+                include: { property: true },
+              },
             },
           },
         },
-      },
-      orderBy: { receivedDate: 'desc' },
-    });
-
-    const unmatchedTransactions = await prisma.bankTransaction.findMany({
-      where: {
-        organizationId: req.auth.organizationId,
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-        reconciled: false,
-      },
-      orderBy: { date: 'desc' },
-    });
+        orderBy: { receivedDate: 'desc' },
+        take: query.limit,
+        skip: query.offset,
+      }),
+      prisma.bankTransaction.findMany({
+        where: transactionsWhere,
+        orderBy: { date: 'desc' },
+        take: query.limit,
+        skip: query.offset,
+      }),
+      prisma.payment.count({ where: paymentsWhere }),
+      prisma.bankTransaction.count({ where: transactionsWhere }),
+    ]);
 
     res.json({
       data: {
         unmatchedPayments,
         unmatchedTransactions,
         period: { startDate, endDate },
+      },
+      pagination: {
+        unmatchedPayments: {
+          total: unmatchedPaymentsTotal,
+          limit: query.limit,
+          offset: query.offset,
+          hasMore: query.offset + query.limit < unmatchedPaymentsTotal,
+        },
+        unmatchedTransactions: {
+          total: unmatchedTransactionsTotal,
+          limit: query.limit,
+          offset: query.offset,
+          hasMore: query.offset + query.limit < unmatchedTransactionsTotal,
+        },
       },
     });
   } catch (err) {
@@ -525,4 +607,3 @@ reconciliationRouter.put('/bank-transactions/:id', async (req, res, next) => {
     next(err);
   }
 });
-

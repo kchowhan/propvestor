@@ -7,6 +7,17 @@ import { apiFetch } from '@/api/client';
 import { useAuth } from '@/context/AuthContext';
 import { format } from 'date-fns';
 
+// Helper function to extract error message from unknown error type
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return 'Unknown error';
+}
+
 export default function AssociationDetailPage() {
   const params = useParams();
   const associationId = params.id as string;
@@ -27,7 +38,7 @@ export default function AssociationDetailPage() {
 
   if (error) {
     console.error('Association detail error:', error);
-    return <div className="text-red-600">Failed to load association details. {error instanceof Error ? error.message : 'Unknown error'}</div>;
+    return <div className="text-red-600">Failed to load association details. {getErrorMessage(error)}</div>;
   }
 
   // apiFetch unwraps the data property, so response should be the association object directly
@@ -37,11 +48,12 @@ export default function AssociationDetailPage() {
   console.log('Raw response data:', data);
   
   if (!association || !association.id) {
+    const errorMessage = error ? getErrorMessage(error) : 'No association data in response.';
     return (
       <div className="text-red-600">
         <p>Association not found.</p>
         <p className="text-xs mt-2 text-slate-400">
-          {error ? `Error: ${error instanceof Error ? error.message : 'Unknown error'}` : 'No association data in response.'}
+          Error: {errorMessage}
           <br />
           Response: {JSON.stringify(data, null, 2)}
         </p>

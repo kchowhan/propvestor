@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
-import { parseBody } from '../validators/common.js';
+import { parseBody, parseQuery, paginationQuerySchema } from '../validators/common.js';
 
 export const workOrderRouter = Router();
 
@@ -23,21 +23,42 @@ const workOrderSchema = z.object({
   completedAt: z.coerce.date().optional().nullable(),
 });
 
+const querySchema = paginationQuerySchema.extend({
+  status: z.enum(['OPEN', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED']).optional(),
+  propertyId: z.string().uuid().optional(),
+  priority: z.enum(['LOW', 'NORMAL', 'HIGH', 'EMERGENCY']).optional(),
+});
+
 workOrderRouter.get('/', async (req, res, next) => {
   try {
-    const { status, propertyId, priority } = req.query;
-    const workOrders = await prisma.workOrder.findMany({
-      where: {
-        organizationId: req.auth?.organizationId,
-        ...(status ? { status: String(status) as any } : {}),
-        ...(propertyId ? { propertyId: String(propertyId) } : {}),
-        ...(priority ? { priority: String(priority) as any } : {}),
-      },
-      include: { property: true, unit: true, assignedVendor: true, requestedByHomeowner: true },
-      orderBy: { openedAt: 'desc' },
-    });
+    const query = parseQuery(querySchema, req.query);
+    const where = {
+      organizationId: req.auth?.organizationId,
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.propertyId ? { propertyId: query.propertyId } : {}),
+      ...(query.priority ? { priority: query.priority } : {}),
+    };
 
-    res.json({ data: workOrders });
+    const [workOrders, total] = await Promise.all([
+      prisma.workOrder.findMany({
+        where,
+        include: { property: true, unit: true, assignedVendor: true, requestedByHomeowner: true },
+        orderBy: { openedAt: 'desc' },
+        take: query.limit,
+        skip: query.offset,
+      }),
+      prisma.workOrder.count({ where }),
+    ]);
+
+    res.json({
+      data: workOrders,
+      pagination: {
+        total,
+        limit: query.limit,
+        offset: query.offset,
+        hasMore: query.offset + query.limit < total,
+      },
+    });
   } catch (err) {
     next(err);
   }

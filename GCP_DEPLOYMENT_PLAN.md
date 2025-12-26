@@ -9,12 +9,19 @@ This document provides a comprehensive plan for deploying PropVestor to Google C
 │                    Google Cloud Platform                     │
 │                                                              │
 │  ┌──────────────────┐         ┌──────────────────┐          │
-│  │   Frontend       │         │    Backend       │          │
-│  │  (Cloud Run)     │ ──────> │  (Cloud Run)     │          │
-│  │  Next.js App     │  HTTP   │  Express API     │          │
+│  │   Marketing      │         │   Frontend       │          │
+│  │  (Cloud Run)    │         │  (Cloud Run)     │          │
+│  │  Next.js Site   │         │  Next.js App     │ ──────> │
 │  └──────────────────┘         └────────┬─────────┘          │
 │                                         │                    │
 │                                         ▼                    │
+│                              ┌──────────────────┐           │
+│                              │    Backend       │           │
+│                              │  (Cloud Run)     │           │
+│                              │  Express API     │           │
+│                              └────────┬─────────┘           │
+│                                       │                    │
+│                                       ▼                    │
 │                              ┌──────────────────┐           │
 │                              │   Cloud SQL       │           │
 │                              │   (PostgreSQL)    │           │
@@ -26,8 +33,13 @@ This document provides a comprehensive plan for deploying PropVestor to Google C
 │  └──────────────────┘         └──────────────────┘          │
 │                                                              │
 │  ┌──────────────────┐         ┌──────────────────┐          │
-│  │  Cloud Build     │         │  Secret Manager  │          │
-│  │  (CI/CD)         │         │  (Secrets)       │          │
+│  │  Memorystore     │         │  Secret Manager  │          │
+│  │  (Redis)        │         │  (Secrets)       │          │
+│  └──────────────────┘         └──────────────────┘          │
+│                                                              │
+│  ┌──────────────────┐         ┌──────────────────┐          │
+│  │  Cloud Build     │         │  VPC Connector   │          │
+│  │  (CI/CD)         │         │  (Redis Access)  │          │
 │  └──────────────────┘         └──────────────────┘          │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -627,6 +639,126 @@ gcloud builds triggers create github \
   --substitutions="_REGION=us-central1,_API_URL=${BACKEND_URL}/api"
 ```
 
+## Phase 6.5: Marketing Site Deployment (Cloud Run)
+
+### 6.5.1 Update Next.js Configuration
+
+Ensure `apps/marketing/next.config.js` has standalone output (already configured).
+
+### 6.5.2 Create Cloud Build Configuration
+
+Create `cloudbuild-marketing.yaml`:
+
+```yaml
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-f'
+      - 'apps/marketing/Dockerfile'
+      - '--build-arg'
+      - 'NEXT_PUBLIC_APP_URL=${_APP_URL}'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/propvestor-marketing:$SHORT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/propvestor-marketing:latest'
+      - '.'
+
+  # Push the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/propvestor-marketing:$SHORT_SHA'
+
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'push'
+      - 'gcr.io/$PROJECT_ID/propvestor-marketing:latest'
+
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'propvestor-marketing'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/propvestor-marketing:$SHORT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--service-account'
+      - 'propvestor-frontend@$PROJECT_ID.iam.gserviceaccount.com'
+      - '--memory'
+      - '512Mi'
+      - '--cpu'
+      - '1'
+      - '--min-instances'
+      - '0'
+      - '--max-instances'
+      - '10'
+      - '--timeout'
+      - '300'
+      - '--port'
+      - '3001'
+      - '--set-env-vars'
+      - 'NEXT_PUBLIC_APP_URL=${_APP_URL}'
+
+substitutions:
+  _REGION: us-central1
+  _APP_URL: https://app.propvestor.com
+
+options:
+  machineType: 'E2_HIGHCPU_8'
+  logging: CLOUD_LOGGING_ONLY
+
+images:
+  - 'gcr.io/$PROJECT_ID/propvestor-marketing:$SHORT_SHA'
+  - 'gcr.io/$PROJECT_ID/propvestor-marketing:latest'
+```
+
+**Note**: Update `_APP_URL` with your actual frontend application URL.
+
+### 6.5.3 Deploy Marketing Site
+
+```bash
+# Get frontend URL (for linking from marketing site)
+FRONTEND_URL=$(gcloud run services describe propvestor-web \
+  --region=us-central1 \
+  --format="value(status.url)")
+
+# Deploy marketing site
+gcloud builds submit --config=cloudbuild-marketing.yaml \
+  --substitutions="_REGION=us-central1,_APP_URL=${FRONTEND_URL}"
+
+# Or set up trigger
+gcloud builds triggers create github \
+  --name="deploy-marketing" \
+  --repo-name="PropVestor" \
+  --repo-owner="YOUR_GITHUB_USERNAME" \
+  --branch-pattern="^main$" \
+  --build-config="cloudbuild-marketing.yaml" \
+  --substitutions="_REGION=us-central1,_APP_URL=${FRONTEND_URL}"
+```
+
+### 6.5.4 Marketing Site Configuration
+
+The marketing site uses `NEXT_PUBLIC_APP_URL` to link to the main application. This should point to your frontend URL (e.g., `https://app.propvestor.com`).
+
+**Environment Variable:**
+- `NEXT_PUBLIC_APP_URL` - Set during build via Cloud Build substitution
+
+**Service Details:**
+- **Service Name**: `propvestor-marketing`
+- **Port**: 3001
+- **Min Instances**: 0 (scales to zero when not in use)
+- **Max Instances**: 10
+- **Memory**: 512Mi
+- **CPU**: 1
+
 ## Phase 7: Custom Domain Setup (Optional)
 
 ### 7.1 Map Custom Domain to Cloud Run
@@ -644,6 +776,12 @@ gcloud run domain-mappings create \
   --domain=app.yourdomain.com \
   --region=us-central1
 
+# Map domain to marketing site
+gcloud run domain-mappings create \
+  --service=propvestor-marketing \
+  --domain=yourdomain.com \
+  --region=us-central1
+
 # Get DNS records to add
 gcloud run domain-mappings describe \
   --domain=api.yourdomain.com \
@@ -651,6 +789,10 @@ gcloud run domain-mappings describe \
 
 gcloud run domain-mappings describe \
   --domain=app.yourdomain.com \
+  --region=us-central1
+
+gcloud run domain-mappings describe \
+  --domain=yourdomain.com \
   --region=us-central1
 ```
 
@@ -667,6 +809,10 @@ echo -n "https://app.yourdomain.com" | gcloud secrets versions add cors-origin \
 
 # Redeploy backend with new CORS origin
 gcloud builds submit --config=cloudbuild-backend.yaml
+
+# Update marketing site with new app URL
+gcloud builds submit --config=cloudbuild-marketing.yaml \
+  --substitutions="_APP_URL=https://app.yourdomain.com"
 ```
 
 ## Phase 8: Cloud Scheduler Setup
@@ -721,6 +867,11 @@ gcloud logging read "resource.type=cloud_run_revision AND resource.labels.servic
 gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=propvestor-web" \
   --limit=50 \
   --format=json
+
+# View marketing site logs
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=propvestor-marketing" \
+  --limit=50 \
+  --format=json
 ```
 
 ### 9.3 Set Up Uptime Checks
@@ -745,6 +896,19 @@ gcloud monitoring uptime-checks create propvestor-web-health \
   --http-check-use-ssl \
   --resource-type=uptime-url \
   --resource-labels=host=${FRONTEND_URL#https://}
+
+# Create uptime check for marketing site
+MARKETING_URL=$(gcloud run services describe propvestor-marketing \
+  --region=us-central1 \
+  --format="value(status.url)")
+gcloud monitoring uptime-checks create propvestor-marketing-health \
+  --display-name="PropVestor Marketing Health Check" \
+  --http-check-path="/" \
+  --http-check-service-path="" \
+  --http-check-port=443 \
+  --http-check-use-ssl \
+  --resource-type=uptime-url \
+  --resource-labels=host=${MARKETING_URL#https://}
 ```
 
 ## Phase 10: Security Hardening
@@ -850,7 +1014,8 @@ gcloud sql import sql propvestor-db \
 - **Cloud Run**: 
   - Backend: 512Mi-1Gi memory, 1-2 CPU
   - Frontend: 512Mi memory, 1 CPU
-  - Use min-instances=0 for frontend (cost savings)
+  - Marketing: 512Mi memory, 1 CPU
+  - Use min-instances=0 for frontend and marketing (cost savings)
   - Use min-instances=1 for backend (faster cold starts)
 
 ### 12.2 Enable Committed Use Discounts
@@ -922,6 +1087,8 @@ Use different Cloud SQL instances and secrets for each environment.
 
 - [ ] Backend health check endpoint responds: `curl https://api.yourdomain.com/api/health`
 - [ ] Frontend loads correctly
+- [ ] Marketing site loads correctly
+- [ ] Marketing site links to frontend correctly
 - [ ] Database migrations completed
 - [ ] API authentication works
 - [ ] File uploads to Cloud Storage work
@@ -995,9 +1162,10 @@ ab -n 1000 -c 10 https://api.yourdomain.com/api/health
 - VPC Connector: ~$10-15/month
 - Cloud Run (backend): ~$5-15/month (with min-instances=0)
 - Cloud Run (frontend): ~$5-15/month (with min-instances=0)
+- Cloud Run (marketing): ~$5-15/month (with min-instances=0)
 - Cloud Storage: ~$1-5/month (5GB storage)
 - Cloud Build: ~$0-10/month (depending on builds)
-- **Total: ~$58-120/month**
+- **Total: ~$63-135/month**
 
 **Production Environment:**
 - Cloud SQL (db-n1-standard-1): ~$50-100/month
@@ -1005,10 +1173,11 @@ ab -n 1000 -c 10 https://api.yourdomain.com/api/health
 - VPC Connector: ~$10-15/month
 - Cloud Run (backend): ~$30-100/month
 - Cloud Run (frontend): ~$20-50/month
+- Cloud Run (marketing): ~$20-50/month
 - Cloud Storage: ~$10-50/month (depending on usage)
 - Cloud Build: ~$10-30/month
 - Networking: ~$10-30/month
-- **Total: ~$240-575/month**
+- **Total: ~$260-625/month**
 
 *Note: Costs vary based on traffic, storage, and compute usage. Use GCP Pricing Calculator for accurate estimates.*
 

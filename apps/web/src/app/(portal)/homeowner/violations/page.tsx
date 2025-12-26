@@ -33,14 +33,14 @@ export default function HomeownerViolationsPage() {
 
   const violations = data?.data || [];
 
-  const severityColors = {
+  const severityColors: Record<string, string> = {
     MINOR: 'bg-yellow-100 text-yellow-800',
     MODERATE: 'bg-orange-100 text-orange-800',
     MAJOR: 'bg-red-100 text-red-800',
     CRITICAL: 'bg-red-200 text-red-900',
   };
 
-  const statusColors = {
+  const statusColors: Record<string, string> = {
     OPEN: 'bg-blue-100 text-blue-800',
     IN_PROGRESS: 'bg-purple-100 text-purple-800',
     RESOLVED: 'bg-green-100 text-green-800',
@@ -50,7 +50,7 @@ export default function HomeownerViolationsPage() {
 
   return (
     <div className="min-h-screen bg-slate-50">
-      <HomeownerPortalHeader title="Violations" backLink="/homeowner/dashboard" />
+      <HomeownerPortalHeader />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {violations.length === 0 ? (
@@ -73,10 +73,10 @@ export default function HomeownerViolationsPage() {
                     </p>
                   </div>
                   <div className="flex gap-2">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${severityColors[violation.severity]}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${severityColors[violation.severity] || 'bg-slate-100 text-slate-800'}`}>
                       {violation.severity}
                     </span>
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[violation.status]}`}>
+                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${statusColors[violation.status] || 'bg-slate-100 text-slate-800'}`}>
                       {violation.status.replace('_', ' ')}
                     </span>
                   </div>

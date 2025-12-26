@@ -298,9 +298,15 @@ export default function HomeownerMaintenancePage() {
 
                 {createMutation.isError && (
                   <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
-                    {createMutation.error instanceof Error
-                      ? createMutation.error.message
-                      : 'Failed to submit request. Please try again.'}
+                    {(() => {
+                      const isError = (e: unknown): e is Error => e instanceof Error;
+                      const err = createMutation.error;
+                      return isError(err)
+                        ? err.message
+                        : typeof err === 'string'
+                        ? err
+                        : 'Failed to submit request. Please try again.';
+                    })()}
                   </div>
                 )}
 

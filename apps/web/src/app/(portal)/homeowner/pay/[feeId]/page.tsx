@@ -330,7 +330,7 @@ export default function PayFeePage() {
   }
 
   const options: StripeElementsOptions = {
-    clientSecret,
+    clientSecret: clientSecret || undefined,
     appearance: {
       theme: 'stripe',
     },

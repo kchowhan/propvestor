@@ -40,9 +40,9 @@ describe('TenantDetailPage', () => {
         email: 'john@example.com',
         status: 'ACTIVE',
       })
-      .mockResolvedValueOnce([]) // Screening requests
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }) // Screening requests
       .mockResolvedValueOnce([]) // Payment methods
-      .mockResolvedValueOnce([]); // Payments
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }); // Payments
 
     renderWithProviders(<TenantDetailPage />);
 
@@ -66,9 +66,9 @@ describe('TenantDetailPage', () => {
         email: 'john@example.com',
         status: 'ACTIVE',
       })
-      .mockResolvedValueOnce([]) // Screening
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }) // Screening
       .mockResolvedValueOnce([]) // Payment methods
-      .mockResolvedValueOnce([]); // Payments
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }); // Payments
 
     renderWithProviders(<TenantDetailPage />);
 
@@ -106,9 +106,9 @@ describe('TenantDetailPage', () => {
   it('should handle error state gracefully', async () => {
     mockApiFetch
       .mockRejectedValueOnce(new Error('Failed to fetch'))
-      .mockResolvedValueOnce([]) // Screening requests
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }) // Screening requests
       .mockResolvedValueOnce([]) // Payment methods
-      .mockResolvedValueOnce([]); // Payments
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }); // Payments
 
     renderWithProviders(<TenantDetailPage />);
 
@@ -130,9 +130,9 @@ describe('TenantDetailPage', () => {
         email: 'john@example.com',
         status: 'ACTIVE',
       })
-      .mockResolvedValueOnce([]) // Screening
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }) // Screening
       .mockResolvedValueOnce([]) // Payment methods
-      .mockResolvedValueOnce([]); // Payments
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }); // Payments
 
     renderWithProviders(<TenantDetailPage />);
 
@@ -156,9 +156,9 @@ describe('TenantDetailPage', () => {
         email: 'john@example.com',
         status: 'ACTIVE',
       })
-      .mockResolvedValueOnce([]) // Screening
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }) // Screening
       .mockResolvedValueOnce([]) // Payment methods
-      .mockResolvedValueOnce([]); // Payments
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }); // Payments
 
     renderWithProviders(<TenantDetailPage />);
 
@@ -182,9 +182,9 @@ describe('TenantDetailPage', () => {
         email: 'john@example.com',
         status: 'ACTIVE',
       })
-      .mockResolvedValueOnce([]) // Screening
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }) // Screening
       .mockResolvedValueOnce([]) // Payment methods
-      .mockResolvedValueOnce([]); // Payments
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }); // Payments
 
     renderWithProviders(<TenantDetailPage />);
 
@@ -205,4 +205,3 @@ describe('TenantDetailPage', () => {
   });
 
 });
-

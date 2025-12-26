@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
-import { parseBody } from '../validators/common.js';
+import { parseQuery, paginationQuerySchema } from '../validators/common.js';
 
 export const reportRouter = Router();
 
@@ -10,28 +10,38 @@ const monthYearSchema = z.object({
   year: z.coerce.number().int().min(2000),
 });
 
+const rentRollQuerySchema = monthYearSchema.merge(paginationQuerySchema);
+
 reportRouter.get('/rent-roll', async (req, res, next) => {
   try {
-    const data = parseBody(monthYearSchema, req.query);
+    const data = parseQuery(rentRollQuerySchema, req.query);
     const start = new Date(data.year, data.month - 1, 1);
     const end = new Date(data.year, data.month, 1);
 
-    const charges = await prisma.charge.findMany({
-      where: {
-        organizationId: req.auth?.organizationId,
-        type: 'RENT',
-        dueDate: { gte: start, lt: end },
-      },
-      include: {
-        lease: {
-          include: {
-            unit: { include: { property: true } },
-            tenants: { include: { tenant: true } },
+    const where = {
+      organizationId: req.auth?.organizationId,
+      type: 'RENT',
+      dueDate: { gte: start, lt: end },
+    };
+
+    const [charges, total] = await Promise.all([
+      prisma.charge.findMany({
+        where,
+        include: {
+          lease: {
+            include: {
+              unit: { include: { property: true } },
+              tenants: { include: { tenant: true } },
+            },
           },
+          payments: true,
         },
-        payments: true,
-      },
-    });
+        orderBy: { dueDate: 'asc' },
+        take: data.limit,
+        skip: data.offset,
+      }),
+      prisma.charge.count({ where }),
+    ]);
 
     const rows = charges.map((charge) => {
       const paid = charge.payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
@@ -48,7 +58,15 @@ reportRouter.get('/rent-roll', async (req, res, next) => {
       };
     });
 
-    res.json({ data: rows });
+    res.json({
+      data: rows,
+      pagination: {
+        total,
+        limit: data.limit,
+        offset: data.offset,
+        hasMore: data.offset + data.limit < total,
+      },
+    });
   } catch (err) {
     next(err);
   }

@@ -228,6 +228,7 @@ describe('Reconciliation API', () => {
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body.data)).toBe(true);
       expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.pagination.total).toBeGreaterThan(0);
     });
   });
 
@@ -265,6 +266,7 @@ describe('Reconciliation API', () => {
       expect(response.body.data.id).toBe(reconciliation.id);
       expect(response.body.data.unmatchedPayments).toBeDefined();
       expect(Array.isArray(response.body.data.unmatchedPayments)).toBe(true);
+      expect(response.body.pagination.unmatchedPayments.total).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -503,7 +505,8 @@ describe('Reconciliation API', () => {
       expect(response.status).toBe(200);
       expect(response.body.data.unmatchedPayments.length).toBeGreaterThan(0);
       expect(response.body.data.unmatchedTransactions.length).toBeGreaterThan(0);
+      expect(response.body.pagination.unmatchedPayments.total).toBeGreaterThan(0);
+      expect(response.body.pagination.unmatchedTransactions.total).toBeGreaterThan(0);
     });
   });
 });
-

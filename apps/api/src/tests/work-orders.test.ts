@@ -61,6 +61,12 @@ describe('Work Orders Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.data).toEqual([]);
+      expect(response.body.pagination).toMatchObject({
+        total: 0,
+        limit: 50,
+        offset: 0,
+        hasMore: false,
+      });
     });
 
     it('should return work orders for organization', async () => {
@@ -81,6 +87,7 @@ describe('Work Orders Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data.length).toBe(1);
       expect(response.body.data[0].title).toBe('Test Work Order');
+      expect(response.body.pagination.total).toBe(1);
     });
 
     it('should filter by status', async () => {
@@ -112,6 +119,7 @@ describe('Work Orders Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data.length).toBe(1);
       expect(response.body.data[0].status).toBe('OPEN');
+      expect(response.body.pagination.total).toBe(1);
     });
   });
 
@@ -297,4 +305,3 @@ describe('Work Orders Routes', () => {
     });
   });
 });
-

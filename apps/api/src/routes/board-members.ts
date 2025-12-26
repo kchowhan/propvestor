@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
-import { parseBody, parseQuery } from '../validators/common.js';
+import { parseBody, parseQuery, paginationQuerySchema } from '../validators/common.js';
 import { requireAuth } from '../middleware/auth.js';
 
 export const boardMemberRouter = Router();
@@ -21,7 +21,7 @@ const updateBoardMemberSchema = createBoardMemberSchema.partial().extend({
   associationId: z.string().uuid().optional(), // Can't change association
 });
 
-const querySchema = z.object({
+const querySchema = paginationQuerySchema.extend({
   associationId: z.string().uuid().optional(),
   isActive: z.preprocess(
     (val) => (val === undefined ? undefined : val === 'true' || val === true),
@@ -48,7 +48,15 @@ boardMemberRouter.get('/', requireAuth, async (req, res, next) => {
     
     if (associationIds.length === 0) {
       // No associations, return empty array
-      return res.json({ data: [] });
+      return res.json({
+        data: [],
+        pagination: {
+          total: 0,
+          limit: query.limit,
+          offset: query.offset,
+          hasMore: false,
+        },
+      });
     }
     
     const where: any = {
@@ -72,38 +80,51 @@ boardMemberRouter.get('/', requireAuth, async (req, res, next) => {
       where.role = query.role;
     }
 
-    const boardMembers = await prisma.boardMember.findMany({
-      where,
-      include: {
-        association: {
-          select: {
-            id: true,
-            name: true,
+    const [boardMembers, total] = await Promise.all([
+      prisma.boardMember.findMany({
+        where,
+        include: {
+          association: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+          user: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+          homeowner: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              email: true,
+            },
           },
         },
-        user: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
-        },
-        homeowner: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-          },
-        },
-      },
-      orderBy: [
-        { isActive: 'desc' },
-        { startDate: 'desc' },
-      ],
-    });
+        orderBy: [
+          { isActive: 'desc' },
+          { startDate: 'desc' },
+        ],
+        take: query.limit,
+        skip: query.offset,
+      }),
+      prisma.boardMember.count({ where }),
+    ]);
 
-    res.json({ data: boardMembers });
+    res.json({
+      data: boardMembers,
+      pagination: {
+        total,
+        limit: query.limit,
+        offset: query.offset,
+        hasMore: query.offset + query.limit < total,
+      },
+    });
   } catch (err) {
     next(err);
   }
@@ -456,4 +477,3 @@ boardMemberRouter.get('/:id/tenure', requireAuth, async (req, res, next) => {
     next(err);
   }
 });
-

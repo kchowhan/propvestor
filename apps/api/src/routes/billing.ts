@@ -42,6 +42,7 @@ billingRouter.post('/generate-monthly-rent', async (req, res, next) => {
     let totalProcessed = 0;
     let totalFailed = 0;
     const paymentErrors: Array<{ chargeId: string; error: string }> = [];
+    const concurrencyLimit = 10;
 
     // Generate rent charges for all specified organizations
     for (const orgId of organizationIds) {
@@ -49,56 +50,80 @@ billingRouter.post('/generate-monthly-rent', async (req, res, next) => {
         where: { organizationId: orgId, status: 'ACTIVE' },
       });
 
-      for (const lease of leases) {
-        const charge = await createRentChargeForLease(lease, data.month, data.year);
-        if (charge) {
-          totalCreated += 1;
+      for (let i = 0; i < leases.length; i += concurrencyLimit) {
+        const batch = leases.slice(i, i + concurrencyLimit);
+        const results = await Promise.all(
+          batch.map(async (lease) => {
+            const counters = {
+              created: 0,
+              skipped: 0,
+              processed: 0,
+              failed: 0,
+              errors: [] as Array<{ chargeId: string; error: string }>,
+            };
 
-          // Try to automatically process payment if payment method is available
-          try {
-            const bestPaymentMethod = await findBestPaymentMethodForCharge(charge.id);
-            
-            if (bestPaymentMethod) {
-              try {
-                const result = await processPayment(
-                  charge.id,
-                  bestPaymentMethod.paymentMethodId,
-                  Number(charge.amount)
-                );
-
-                // Payment intent created successfully
-                // Note: Payment may still be processing (pending, requires_action, etc.)
-                // Webhook will update the final status
-                if (result.status === 'succeeded') {
-                  totalProcessed += 1;
-                } else if (result.status === 'requires_action' || result.status === 'processing') {
-                  // Payment is processing, webhook will handle final status
-                  totalProcessed += 1;
-                } else {
-                  // Payment failed immediately
-                  totalFailed += 1;
-                  paymentErrors.push({
-                    chargeId: charge.id,
-                    error: `Payment status: ${result.status}`,
-                  });
-                }
-              } catch (paymentError: any) {
-                // Payment processing failed, but charge was created
-                totalFailed += 1;
-                paymentErrors.push({
-                  chargeId: charge.id,
-                  error: paymentError.message || 'Payment processing failed',
-                });
-                console.error(`Failed to process payment for charge ${charge.id}:`, paymentError);
-              }
+            const charge = await createRentChargeForLease(lease, data.month, data.year);
+            if (!charge) {
+              counters.skipped += 1;
+              return counters;
             }
-            // If no payment method found, charge is created but not processed (manual payment required)
-          } catch (error: any) {
-            // Error finding payment method, but charge was created
-            console.error(`Error finding payment method for charge ${charge.id}:`, error);
-          }
-        } else {
-          totalSkipped += 1;
+
+            counters.created += 1;
+
+            // Try to automatically process payment if payment method is available
+            try {
+              const bestPaymentMethod = await findBestPaymentMethodForCharge(charge.id);
+              
+              if (bestPaymentMethod) {
+                try {
+                  const result = await processPayment(
+                    charge.id,
+                    bestPaymentMethod.paymentMethodId,
+                    Number(charge.amount)
+                  );
+
+                  // Payment intent created successfully
+                  // Note: Payment may still be processing (pending, requires_action, etc.)
+                  // Webhook will update the final status
+                  if (result.status === 'succeeded') {
+                    counters.processed += 1;
+                  } else if (result.status === 'requires_action' || result.status === 'processing') {
+                    // Payment is processing, webhook will handle final status
+                    counters.processed += 1;
+                  } else {
+                    // Payment failed immediately
+                    counters.failed += 1;
+                    counters.errors.push({
+                      chargeId: charge.id,
+                      error: `Payment status: ${result.status}`,
+                    });
+                  }
+                } catch (paymentError: any) {
+                  // Payment processing failed, but charge was created
+                  counters.failed += 1;
+                  counters.errors.push({
+                    chargeId: charge.id,
+                    error: paymentError.message || 'Payment processing failed',
+                  });
+                  console.error(`Failed to process payment for charge ${charge.id}:`, paymentError);
+                }
+              }
+              // If no payment method found, charge is created but not processed (manual payment required)
+            } catch (error: any) {
+              // Error finding payment method, but charge was created
+              console.error(`Error finding payment method for charge ${charge.id}:`, error);
+            }
+
+            return counters;
+          })
+        );
+
+        for (const result of results) {
+          totalCreated += result.created;
+          totalSkipped += result.skipped;
+          totalProcessed += result.processed;
+          totalFailed += result.failed;
+          paymentErrors.push(...result.errors);
         }
       }
     }

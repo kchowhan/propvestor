@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
-import { parseBody } from '../validators/common.js';
+import { parseBody, parseQuery, paginationQuerySchema } from '../validators/common.js';
 import { processPayment, getPaymentIntentStatus } from '../lib/stripe.js';
 import { importBankTransactions } from '../lib/reconciliation.js';
 
@@ -22,14 +22,19 @@ const paymentSchema = z.object({
 });
 
 const updateChargeStatus = async (chargeId: string) => {
-  const payments = await prisma.payment.findMany({ where: { chargeId } });
-  const charge = await prisma.charge.findUnique({ where: { id: chargeId } });
+  const [charge, paymentsAggregate] = await Promise.all([
+    prisma.charge.findUnique({ where: { id: chargeId } }),
+    prisma.payment.aggregate({
+      where: { chargeId },
+      _sum: { amount: true },
+    }),
+  ]);
 
   if (!charge) {
     return;
   }
 
-  const paidTotal = payments.reduce((sum, payment) => sum + Number(payment.amount), 0);
+  const paidTotal = Number(paymentsAggregate._sum.amount ?? 0);
   let status: 'PENDING' | 'PARTIALLY_PAID' | 'PAID' = 'PENDING';
 
   if (paidTotal <= 0) {
@@ -43,15 +48,19 @@ const updateChargeStatus = async (chargeId: string) => {
   await prisma.charge.update({ where: { id: chargeId }, data: { status } });
 };
 
+const querySchema = paginationQuerySchema.extend({
+  tenantId: z.string().uuid().optional(),
+});
+
 paymentRouter.get('/', async (req, res, next) => {
   try {
-    const { tenantId } = req.query;
+    const query = parseQuery(querySchema, req.query);
     const where: any = { organizationId: req.auth?.organizationId };
     
-    if (tenantId) {
+    if (query.tenantId) {
       // Find payments for a specific tenant via their leases
       const tenant = await prisma.tenant.findFirst({
-        where: { id: String(tenantId), organizationId: req.auth?.organizationId },
+        where: { id: query.tenantId, organizationId: req.auth?.organizationId },
         include: { leases: true },
       });
       
@@ -61,17 +70,30 @@ paymentRouter.get('/', async (req, res, next) => {
       }
     }
 
-    const payments = await prisma.payment.findMany({
-      where,
-      include: { 
-        charge: true, 
-        lease: true,
-        paymentMethod: true,
-      },
-      orderBy: { receivedDate: 'desc' },
-    });
+    const [payments, total] = await Promise.all([
+      prisma.payment.findMany({
+        where,
+        include: { 
+          charge: true, 
+          lease: true,
+          paymentMethod: true,
+        },
+        orderBy: { receivedDate: 'desc' },
+        take: query.limit,
+        skip: query.offset,
+      }),
+      prisma.payment.count({ where }),
+    ]);
 
-    res.json(payments);
+    res.json({
+      data: payments,
+      pagination: {
+        total,
+        limit: query.limit,
+        offset: query.offset,
+        hasMore: query.offset + query.limit < total,
+      },
+    });
   } catch (err) {
     next(err);
   }

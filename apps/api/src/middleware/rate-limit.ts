@@ -11,6 +11,14 @@ interface RateLimitEntry {
 
 const rateLimitStore = new Map<string, RateLimitEntry>();
 
+type SubscriptionLimitCacheEntry = {
+  apiCalls: number;
+  expiresAt: number;
+};
+
+const subscriptionLimitCache = new Map<string, SubscriptionLimitCacheEntry>();
+const SUBSCRIPTION_LIMIT_CACHE_TTL_MS = 60 * 1000;
+
 // Default limits for unauthenticated requests
 const DEFAULT_RATE_LIMIT = 60; // requests per hour
 const WINDOW_SIZE_MS = 60 * 60 * 1000; // 1 hour in milliseconds
@@ -40,6 +48,7 @@ export function cleanupRateLimitStore(): void {
   if (!isRedisEnabled()) {
     cleanupStore(rateLimitStore, WINDOW_SIZE_MS);
   }
+  cleanupSubscriptionLimitCache();
 }
 
 // Run cleanup every 5 minutes
@@ -50,8 +59,21 @@ setInterval(cleanupRateLimitStore, 5 * 60 * 1000);
  */
 async function getRateLimitForOrganization(organizationId: string): Promise<number> {
   try {
+    const cached = subscriptionLimitCache.get(organizationId);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.apiCalls || DEFAULT_RATE_LIMIT;
+    }
+    if (cached) {
+      subscriptionLimitCache.delete(organizationId);
+    }
+
     const limits = await getSubscriptionLimits(organizationId);
-    return limits.apiCalls || DEFAULT_RATE_LIMIT;
+    const apiCalls = limits.apiCalls || DEFAULT_RATE_LIMIT;
+    subscriptionLimitCache.set(organizationId, {
+      apiCalls,
+      expiresAt: Date.now() + SUBSCRIPTION_LIMIT_CACHE_TTL_MS,
+    });
+    return apiCalls;
   } catch {
     return DEFAULT_RATE_LIMIT;
   }
@@ -340,7 +362,27 @@ export function clearAllRateLimits(): void {
   if (!isRedisEnabled()) {
     rateLimitStore.clear();
   }
+  clearSubscriptionLimitCache();
+}
+
+function cleanupSubscriptionLimitCache(): void {
+  const now = Date.now();
+  for (const [key, entry] of subscriptionLimitCache.entries()) {
+    if (entry.expiresAt <= now) {
+      subscriptionLimitCache.delete(key);
+    }
+  }
+}
+
+export function clearSubscriptionLimitCache(): void {
+  subscriptionLimitCache.clear();
 }
 
 // Export the store for testing purposes
-export { rateLimitStore, PLAN_RATE_LIMITS, DEFAULT_RATE_LIMIT, WINDOW_SIZE_MS };
+export {
+  rateLimitStore,
+  PLAN_RATE_LIMITS,
+  DEFAULT_RATE_LIMIT,
+  WINDOW_SIZE_MS,
+  SUBSCRIPTION_LIMIT_CACHE_TTL_MS,
+};

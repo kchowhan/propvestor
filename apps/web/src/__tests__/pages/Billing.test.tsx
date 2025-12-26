@@ -31,19 +31,42 @@ const setupMocks = (options: {
       return Promise.reject(new Error('Failed to load'));
     }
     if (path.startsWith('/reports/rent-roll')) {
-      return Promise.resolve(options.rentRoll || []);
+      return Promise.resolve({
+        data: options.rentRoll || [],
+        pagination: { total: options.rentRoll?.length || 0, limit: 20, offset: 0, hasMore: false },
+      });
     }
-    if (path === '/charges') {
-      return Promise.resolve({ data: options.charges || [] });
+    if (path.startsWith('/charges')) {
+      return Promise.resolve({
+        data: options.charges || [],
+        pagination: { total: options.charges?.length || 0, limit: 100, offset: 0, hasMore: false },
+      });
     }
-    if (path === '/payments') {
-      return Promise.resolve(options.payments || []);
+    if (path.startsWith('/payments')) {
+      return Promise.resolve({
+        data: options.payments || [],
+        pagination: { total: options.payments?.length || 0, limit: 20, offset: 0, hasMore: false },
+      });
     }
-    if (path === '/reconciliation') {
-      return Promise.resolve({ data: options.reconciliations || [] });
+    if (path.startsWith('/reconciliation') && !path.includes('/unmatched') && !path.includes('/import-transactions')) {
+      return Promise.resolve({
+        data: options.reconciliations || [],
+        pagination: { total: options.reconciliations?.length || 0, limit: 20, offset: 0, hasMore: false },
+      });
     }
     if (path.startsWith('/reconciliation/unmatched')) {
-      return Promise.resolve(options.unmatched || { data: { unmatchedPayments: [], unmatchedTransactions: [] } });
+      const unmatchedPayments = options.unmatched?.data?.unmatchedPayments || [];
+      const unmatchedTransactions = options.unmatched?.data?.unmatchedTransactions || [];
+      return Promise.resolve({
+        data: {
+          unmatchedPayments,
+          unmatchedTransactions,
+        },
+        pagination: {
+          unmatchedPayments: { total: unmatchedPayments.length, limit: 20, offset: 0, hasMore: false },
+          unmatchedTransactions: { total: unmatchedTransactions.length, limit: 20, offset: 0, hasMore: false },
+        },
+      });
     }
     if (path === '/organization-fees') {
       return Promise.resolve({ data: options.organizationFees || [] });

@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { WORK_ORDER_CATEGORIES, getCategoryLabel } from '../../constants/workOrderCategories';
+import { PaginationControls } from '../PaginationControls';
 
 export const MaintenancePage = () => {
   const { token } = useAuth();
@@ -15,26 +16,38 @@ export const MaintenancePage = () => {
   const [vendorForm, setVendorForm] = useState({ name: '', email: '', phone: '', website: '', category: 'GENERAL', notes: '' });
   const [editingVendor, setEditingVendor] = useState<string | null>(null);
   const [showVendorForm, setShowVendorForm] = useState(false);
+  const [workOrdersPage, setWorkOrdersPage] = useState(1);
+  const [vendorsPage, setVendorsPage] = useState(1);
+  const listLimit = 20;
 
   const workOrdersQuery = useQuery({
-    queryKey: ['work-orders'],
-    queryFn: () => apiFetch('/work-orders', { token }),
+    queryKey: ['work-orders', workOrdersPage],
+    queryFn: () =>
+      apiFetch(`/work-orders?limit=${listLimit}&offset=${(workOrdersPage - 1) * listLimit}`, { token }),
   });
 
   const propertiesQuery = useQuery({
     queryKey: ['properties'],
-    queryFn: () => apiFetch('/properties', { token }),
+    queryFn: () => apiFetch('/properties?limit=100&offset=0', { token }),
   });
 
-  const vendorsQuery = useQuery({
-    queryKey: ['vendors'],
-    queryFn: () => apiFetch('/vendors', { token }),
+  const vendorsListQuery = useQuery({
+    queryKey: ['vendors', vendorsPage],
+    queryFn: () =>
+      apiFetch(`/vendors?limit=${listLimit}&offset=${(vendorsPage - 1) * listLimit}`, { token }),
+  });
+
+  const vendorsOptionsQuery = useQuery({
+    queryKey: ['vendors-options'],
+    queryFn: () => apiFetch('/vendors?limit=100&offset=0', { token }),
+    enabled: activeTab === 'create',
   });
 
   // Extract data arrays from paginated responses
   const workOrders = workOrdersQuery.data?.data || [];
   const properties = propertiesQuery.data?.data || [];
-  const vendors = vendorsQuery.data?.data || [];
+  const vendors = vendorsListQuery.data?.data || [];
+  const vendorOptions = vendorsOptionsQuery.data?.data || vendors;
 
   const createWorkOrder = useMutation({
     mutationFn: () =>
@@ -62,6 +75,7 @@ export const MaintenancePage = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendors'] });
+      queryClient.invalidateQueries({ queryKey: ['vendors-options'] });
       setVendorForm({ name: '', email: '', phone: '', website: '', category: 'GENERAL', notes: '' });
       setShowVendorForm(false);
     },
@@ -76,6 +90,7 @@ export const MaintenancePage = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendors'] });
+      queryClient.invalidateQueries({ queryKey: ['vendors-options'] });
       setVendorForm({ name: '', email: '', phone: '', website: '', category: 'GENERAL', notes: '' });
       setEditingVendor(null);
       setShowVendorForm(false);
@@ -90,6 +105,7 @@ export const MaintenancePage = () => {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendors'] });
+      queryClient.invalidateQueries({ queryKey: ['vendors-options'] });
     },
   });
 
@@ -278,7 +294,7 @@ export const MaintenancePage = () => {
           <div className="card">
             <div className="card-header">All Vendors</div>
             <div className="card-body">
-              {vendorsQuery.isLoading ? (
+              {vendorsListQuery.isLoading ? (
                 <div className="text-center py-8 text-slate-500">Loading vendors...</div>
               ) : vendors.length === 0 ? (
                 <div className="text-center py-8 text-slate-500">No vendors yet. Add your first vendor above.</div>
@@ -359,6 +375,13 @@ export const MaintenancePage = () => {
                   </table>
                 </div>
               )}
+              <PaginationControls
+                pagination={vendorsListQuery.data?.pagination}
+                page={vendorsPage}
+                limit={listLimit}
+                onPageChange={setVendorsPage}
+                label="vendors"
+              />
             </div>
           </div>
         </div>
@@ -457,7 +480,7 @@ export const MaintenancePage = () => {
                 onChange={(e) => setForm((prev) => ({ ...prev, assignedVendorId: e.target.value }))}
               >
                 <option value="">No vendor assigned</option>
-                {vendors
+                {vendorOptions
                   .filter((vendor: any) => vendor.category === form.category)
                   .map((vendor: any) => (
                     <option key={vendor.id} value={vendor.id}>
@@ -465,7 +488,7 @@ export const MaintenancePage = () => {
                     </option>
                   ))}
               </select>
-              {form.category && vendors.filter((v: any) => v.category === form.category).length === 0 && (
+              {form.category && vendorOptions.filter((v: any) => v.category === form.category).length === 0 && (
                 <p className="text-xs text-slate-500 mt-1">No vendors available for this category</p>
               )}
             </div>
@@ -502,6 +525,13 @@ export const MaintenancePage = () => {
               ))}
             </tbody>
           </table>
+          <PaginationControls
+            pagination={workOrdersQuery.data?.pagination}
+            page={workOrdersPage}
+            limit={listLimit}
+            onPageChange={setWorkOrdersPage}
+            label="work orders"
+          />
           </div>
         </div>
       )}

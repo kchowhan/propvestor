@@ -74,6 +74,7 @@ describe('Board Members Routes', () => {
 
       expect(response.status).toBe(200);
       expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.pagination.total).toBeGreaterThan(0);
       // Find our specific board member
       const found = response.body.data.find((m: any) => m.id === boardMember.id);
       expect(found).toBeDefined();
@@ -119,6 +120,7 @@ describe('Board Members Routes', () => {
       expect(found1).toBeDefined();
       expect(found1.role).toBe('PRESIDENT');
       expect(found2).toBeUndefined();
+      expect(response.body.pagination.total).toBe(1);
     });
 
     it('should filter by isActive', async () => {
@@ -150,6 +152,7 @@ describe('Board Members Routes', () => {
       expect(response.status).toBe(200);
       const activeMembers = response.body.data.filter((m: any) => m.isActive === true);
       expect(activeMembers.length).toBeGreaterThanOrEqual(1);
+      expect(response.body.pagination.total).toBeGreaterThanOrEqual(1);
     });
 
     it('should filter by role', async () => {
@@ -171,6 +174,7 @@ describe('Board Members Routes', () => {
       const found = response.body.data.find((m: any) => m.id === boardMember.id);
       expect(found).toBeDefined();
       expect(found.role).toBe('TREASURER');
+      expect(response.body.pagination.total).toBe(1);
     });
 
     it('should return 404 for invalid associationId', async () => {
@@ -503,4 +507,3 @@ describe('Board Members Routes', () => {
     });
   });
 });
-

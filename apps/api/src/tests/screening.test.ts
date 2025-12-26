@@ -146,6 +146,7 @@ describe('Screening Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.pagination.total).toBeGreaterThan(0);
     });
 
     it('should filter by status', async () => {
@@ -165,6 +166,7 @@ describe('Screening Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data.length).toBeGreaterThan(0);
       expect(response.body.data[0].status).toBe('COMPLETED');
+      expect(response.body.pagination.total).toBeGreaterThan(0);
     });
   });
 
@@ -305,4 +307,3 @@ describe('Screening Routes', () => {
     });
   });
 });
-

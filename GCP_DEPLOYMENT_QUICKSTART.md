@@ -185,6 +185,20 @@ FRONTEND_URL=$(gcloud run services describe propvestor-web \
 echo "Frontend URL: $FRONTEND_URL"
 ```
 
+### 9.5 Deploy Marketing Site
+
+```bash
+# Deploy marketing site
+gcloud builds submit --config=cloudbuild-marketing.yaml \
+  --substitutions=_REGION=$REGION,_APP_URL=${FRONTEND_URL}
+
+# Get marketing URL
+MARKETING_URL=$(gcloud run services describe propvestor-marketing \
+  --region=$REGION \
+  --format="value(status.url)")
+echo "Marketing URL: $MARKETING_URL"
+```
+
 ### 10. Set Up Custom Domain (Optional)
 
 ```bash
@@ -199,9 +213,18 @@ gcloud run domain-mappings create \
   --domain=app.yourdomain.com \
   --region=$REGION
 
+gcloud run domain-mappings create \
+  --service=propvestor-marketing \
+  --domain=yourdomain.com \
+  --region=$REGION
+
 # Get DNS records and add to your DNS provider
 gcloud run domain-mappings describe \
   --domain=api.yourdomain.com \
+  --region=$REGION
+
+gcloud run domain-mappings describe \
+  --domain=yourdomain.com \
   --region=$REGION
 ```
 
@@ -242,6 +265,9 @@ These are set automatically via Cloud Build or Cloud Run:
 ### Frontend (Cloud Run)
 - `NEXT_PUBLIC_API_URL` - Set during build (from Cloud Build substitutions)
 
+### Marketing (Cloud Run)
+- `NEXT_PUBLIC_APP_URL` - Set during build (from Cloud Build substitutions, points to frontend URL)
+
 ## Verification Commands
 
 ```bash
@@ -251,8 +277,13 @@ curl https://YOUR_BACKEND_URL/api/health
 # Check frontend
 curl https://YOUR_FRONTEND_URL
 
+# Check marketing site
+curl https://YOUR_MARKETING_URL
+
 # View logs
 gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=propvestor-api" --limit=50
+
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=propvestor-marketing" --limit=50
 
 # Check service status
 gcloud run services list --region=$REGION
@@ -281,10 +312,10 @@ gcloud run services list --region=$REGION
 ## Cost Estimation
 
 **Development/Testing:**
-- ~$58-120/month (includes Redis Basic tier)
+- ~$63-135/month (includes Redis Basic tier and marketing site)
 
 **Production:**
-- ~$240-575/month (includes Redis Standard tier, varies with usage)
+- ~$260-625/month (includes Redis Standard tier and marketing site, varies with usage)
 
 ## Next Steps
 

@@ -38,6 +38,12 @@ describe('Reports Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data).toBeDefined();
       expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.pagination).toMatchObject({
+        total: 0,
+        limit: 50,
+        offset: 0,
+        hasMore: false,
+      });
     });
   });
 
@@ -201,6 +207,7 @@ describe('Reports Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.data.length).toBeGreaterThan(0);
+      expect(response.body.pagination.total).toBe(1);
       const row = response.body.data.find((r: any) => r.chargeId === testCharge.id);
       expect(row).toBeDefined();
       expect(row.rentAmount).toBe(1000);
@@ -214,10 +221,10 @@ describe('Reports Routes', () => {
         .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(200);
+      expect(response.body.pagination.total).toBe(1);
       const row = response.body.data.find((r: any) => r.chargeId === testCharge.id);
       expect(row.amountPaid).toBe(0);
       expect(row.balance).toBe(1000);
     });
   });
 });
-

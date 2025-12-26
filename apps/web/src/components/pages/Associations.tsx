@@ -5,11 +5,25 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { PaginationControls } from '../PaginationControls';
+
+// Helper function to extract error message from unknown error type
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+  if (typeof error === 'string') {
+    return error;
+  }
+  return 'Unknown error';
+}
 
 export const AssociationsPage = () => {
   const { token } = useAuth();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'list' | 'create'>('list');
+  const [page, setPage] = useState(1);
+  const listLimit = 20;
   const [form, setForm] = useState({
     name: '',
     addressLine1: '',
@@ -26,28 +40,13 @@ export const AssociationsPage = () => {
   });
 
   const { data: associationsResponse, isLoading, error } = useQuery({
-    queryKey: ['associations'],
+    queryKey: ['associations', page],
     queryFn: async () => {
-      const response = await apiFetch('/associations', { token });
-      console.log('Associations API response:', response);
-      return response;
+      return apiFetch(`/associations?limit=${listLimit}&offset=${(page - 1) * listLimit}`, { token });
     },
   });
 
-  // apiFetch unwraps the data property, so response is already the array
-  // But check if it's wrapped in a data property (for consistency)
-  const associations = Array.isArray(associationsResponse) 
-    ? associationsResponse 
-    : (associationsResponse?.data || []);
-  
-  console.log('Associations response:', associationsResponse);
-  console.log('Associations array:', associations);
-  
-  // Debug logging
-  if (associationsResponse) {
-    console.log('Associations response:', associationsResponse);
-    console.log('Associations array:', associations);
-  }
+  const associations = associationsResponse?.data || [];
 
   const createMutation = useMutation({
     mutationFn: (payload: typeof form) =>
@@ -82,7 +81,7 @@ export const AssociationsPage = () => {
 
   if (error) {
     console.error('Associations query error:', error);
-    return <div className="text-red-600">Failed to load associations. {error instanceof Error ? error.message : 'Unknown error'}</div>;
+    return <div className="text-red-600">Failed to load associations. {getErrorMessage(error)}</div>;
   }
 
   const tabs = [
@@ -309,7 +308,16 @@ export const AssociationsPage = () => {
           </div>
         </div>
       )}
+
+      {activeTab === 'list' && (
+        <PaginationControls
+          pagination={associationsResponse?.pagination}
+          page={page}
+          limit={listLimit}
+          onPageChange={setPage}
+          label="associations"
+        />
+      )}
     </div>
   );
 };
-

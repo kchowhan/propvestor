@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
-import { parseBody } from '../validators/common.js';
+import { parseBody, parseQuery, paginationQuerySchema } from '../validators/common.js';
 
 export const vendorRouter = Router();
 
@@ -15,13 +15,31 @@ const vendorSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
+const querySchema = paginationQuerySchema;
+
 vendorRouter.get('/', async (req, res, next) => {
   try {
-    const vendors = await prisma.vendor.findMany({
-      where: { organizationId: req.auth?.organizationId },
-      orderBy: { createdAt: 'desc' },
+    const query = parseQuery(querySchema, req.query);
+    const where = { organizationId: req.auth?.organizationId };
+    const [vendors, total] = await Promise.all([
+      prisma.vendor.findMany({
+        where,
+        orderBy: { createdAt: 'desc' },
+        take: query.limit,
+        skip: query.offset,
+      }),
+      prisma.vendor.count({ where }),
+    ]);
+
+    res.json({
+      data: vendors,
+      pagination: {
+        total,
+        limit: query.limit,
+        offset: query.offset,
+        hasMore: query.offset + query.limit < total,
+      },
     });
-    res.json({ data: vendors });
   } catch (err) {
     next(err);
   }

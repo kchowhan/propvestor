@@ -27,27 +27,26 @@ const setupMocks = (options: {
     if (options.error) {
       return Promise.reject(new Error('Failed to load'));
     }
-    if (path === '/work-orders') {
+    if (path.startsWith('/work-orders')) {
       return Promise.resolve({
         data: options.workOrders || [],
-        pagination: { total: options.workOrders?.length || 0, page: 1, pageSize: 10 },
+        pagination: { total: options.workOrders?.length || 0, limit: 20, offset: 0, hasMore: false },
       });
     }
-    if (path === '/properties') {
+    if (path.startsWith('/properties')) {
       return Promise.resolve({
         data: options.properties || [],
-        pagination: { total: options.properties?.length || 0, page: 1, pageSize: 10 },
+        pagination: { total: options.properties?.length || 0, limit: 100, offset: 0, hasMore: false },
       });
     }
-    if (path === '/vendors') {
-      return Promise.resolve({
-        data: options.vendors || [],
-        pagination: { total: options.vendors?.length || 0, page: 1, pageSize: 10 },
-      });
-    }
-    // Handle vendor updates/deletes
     if (path.startsWith('/vendors/')) {
       return Promise.resolve({ data: { success: true } });
+    }
+    if (path.startsWith('/vendors')) {
+      return Promise.resolve({
+        data: options.vendors || [],
+        pagination: { total: options.vendors?.length || 0, limit: 20, offset: 0, hasMore: false },
+      });
     }
     return Promise.resolve({ data: {} });
   });

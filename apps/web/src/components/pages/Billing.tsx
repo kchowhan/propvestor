@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { PaginationControls } from '../PaginationControls';
 
 export const BillingPage = () => {
   const { token } = useAuth();
@@ -11,6 +12,11 @@ export const BillingPage = () => {
   const [activeTab, setActiveTab] = useState<'rent-roll' | 'payments' | 'reconciliation' | 'organization-fees'>('rent-roll');
   const [month, setMonth] = useState(String(new Date().getMonth() + 1));
   const [year, setYear] = useState(String(new Date().getFullYear()));
+  const [rentRollPage, setRentRollPage] = useState(1);
+  const [paymentsPage, setPaymentsPage] = useState(1);
+  const [reconciliationsPage, setReconciliationsPage] = useState(1);
+  const [unmatchedPage, setUnmatchedPage] = useState(1);
+  const listLimit = 20;
 
   // Payment form state
   const [paymentForm, setPaymentForm] = useState({
@@ -37,33 +43,39 @@ export const BillingPage = () => {
   });
 
   const rentRollQuery = useQuery({
-    queryKey: ['rent-roll', month, year],
-    queryFn: () => apiFetch(`/reports/rent-roll?month=${month}&year=${year}`, { token }),
+    queryKey: ['rent-roll', month, year, rentRollPage],
+    queryFn: () =>
+      apiFetch(
+        `/reports/rent-roll?month=${month}&year=${year}&limit=${listLimit}&offset=${(rentRollPage - 1) * listLimit}`,
+        { token }
+      ),
   });
 
   const chargesQuery = useQuery({
     queryKey: ['charges'],
-    queryFn: () => apiFetch('/charges', { token }),
+    queryFn: () => apiFetch('/charges?limit=100&offset=0', { token }),
     enabled: activeTab === 'payments',
   });
 
   const paymentsQuery = useQuery({
-    queryKey: ['payments'],
-    queryFn: () => apiFetch('/payments', { token }),
+    queryKey: ['payments', paymentsPage],
+    queryFn: () =>
+      apiFetch(`/payments?limit=${listLimit}&offset=${(paymentsPage - 1) * listLimit}`, { token }),
     enabled: activeTab === 'payments' || activeTab === 'reconciliation',
   });
 
   const reconciliationsQuery = useQuery({
-    queryKey: ['reconciliations'],
-    queryFn: () => apiFetch('/reconciliation', { token }),
+    queryKey: ['reconciliations', reconciliationsPage],
+    queryFn: () =>
+      apiFetch(`/reconciliation?limit=${listLimit}&offset=${(reconciliationsPage - 1) * listLimit}`, { token }),
     enabled: activeTab === 'reconciliation',
   });
 
   const unmatchedQuery = useQuery({
-    queryKey: ['unmatched', reconciliationForm.startDate, reconciliationForm.endDate],
+    queryKey: ['unmatched', reconciliationForm.startDate, reconciliationForm.endDate, unmatchedPage],
     queryFn: () =>
       apiFetch(
-        `/reconciliation/unmatched/list?startDate=${reconciliationForm.startDate}&endDate=${reconciliationForm.endDate}`,
+        `/reconciliation/unmatched/list?startDate=${reconciliationForm.startDate}&endDate=${reconciliationForm.endDate}&limit=${listLimit}&offset=${(unmatchedPage - 1) * listLimit}`,
         { token }
       ),
     enabled: activeTab === 'reconciliation',
@@ -284,9 +296,9 @@ export const BillingPage = () => {
                       <th className="pb-2">Balance</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {rentRollQuery.data && rentRollQuery.data.length > 0 ? (
-                      rentRollQuery.data.map((row: any) => (
+                    <tbody>
+                    {rentRollQuery.data?.data && rentRollQuery.data.data.length > 0 ? (
+                      rentRollQuery.data.data.map((row: any) => (
                         <tr key={row.chargeId} className="border-t border-slate-100">
                           <td className="py-2">{row.property?.name ?? '-'}</td>
                           <td className="py-2">{row.unit?.name ?? '-'}</td>
@@ -307,6 +319,13 @@ export const BillingPage = () => {
                     )}
                   </tbody>
                 </table>
+                <PaginationControls
+                  pagination={rentRollQuery.data?.pagination}
+                  page={rentRollPage}
+                  limit={listLimit}
+                  onPageChange={setRentRollPage}
+                  label="rent charges"
+                />
               </div>
             )}
           </div>
@@ -434,9 +453,9 @@ export const BillingPage = () => {
           <div className="card">
             <div className="card-header">All Payments</div>
             <div className="card-body">
-              {paymentsQuery.isLoading ? (
+                    {paymentsQuery.isLoading ? (
                 <div className="text-center py-8 text-slate-500">Loading payments...</div>
-              ) : paymentsQuery.data?.length === 0 ? (
+              ) : paymentsQuery.data?.data?.length === 0 ? (
                 <div className="text-center py-8 text-slate-500">No payments recorded yet.</div>
               ) : (
                 <div className="overflow-x-auto">
@@ -452,7 +471,7 @@ export const BillingPage = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {paymentsQuery.data?.map((payment: any) => (
+                      {paymentsQuery.data?.data?.map((payment: any) => (
                         <tr key={payment.id} className="border-b border-slate-100">
                           <td className="py-3 px-4">{new Date(payment.receivedDate).toLocaleDateString()}</td>
                           <td className="py-3 px-4 font-medium">${Number(payment.amount).toFixed(2)}</td>
@@ -480,6 +499,13 @@ export const BillingPage = () => {
                   </table>
                 </div>
               )}
+              <PaginationControls
+                pagination={paymentsQuery.data?.pagination}
+                page={paymentsPage}
+                limit={listLimit}
+                onPageChange={setPaymentsPage}
+                label="payments"
+              />
             </div>
           </div>
         </div>
@@ -612,7 +638,9 @@ export const BillingPage = () => {
               ) : (
                 <div className="space-y-6">
                   <div>
-                    <h3 className="font-semibold text-slate-700 mb-3">Unmatched Payments ({unmatchedQuery.data?.data?.unmatchedPayments?.length || 0})</h3>
+                    <h3 className="font-semibold text-slate-700 mb-3">
+                      Unmatched Payments ({unmatchedQuery.data?.data?.unmatchedPayments?.length || 0})
+                    </h3>
                     {unmatchedQuery.data?.data?.unmatchedPayments?.length > 0 ? (
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
@@ -648,7 +676,9 @@ export const BillingPage = () => {
                   </div>
 
                   <div>
-                    <h3 className="font-semibold text-slate-700 mb-3">Unmatched Bank Transactions ({unmatchedQuery.data?.data?.unmatchedTransactions?.length || 0})</h3>
+                    <h3 className="font-semibold text-slate-700 mb-3">
+                      Unmatched Bank Transactions ({unmatchedQuery.data?.data?.unmatchedTransactions?.length || 0})
+                    </h3>
                     {unmatchedQuery.data?.data?.unmatchedTransactions?.length > 0 ? (
                       <div className="overflow-x-auto">
                         <table className="w-full text-sm">
@@ -688,6 +718,13 @@ export const BillingPage = () => {
                     )}
                 </div>
               )}
+              <PaginationControls
+                pagination={unmatchedQuery.data?.pagination?.unmatchedPayments}
+                page={unmatchedPage}
+                limit={listLimit}
+                onPageChange={setUnmatchedPage}
+                label="unmatched items"
+              />
             </div>
           </div>
 
@@ -758,6 +795,13 @@ export const BillingPage = () => {
                   </table>
                 </div>
               )}
+              <PaginationControls
+                pagination={reconciliationsQuery.data?.pagination}
+                page={reconciliationsPage}
+                limit={listLimit}
+                onPageChange={setReconciliationsPage}
+                label="reconciliations"
+              />
             </div>
           </div>
         </div>

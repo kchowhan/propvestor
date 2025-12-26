@@ -75,7 +75,13 @@ describe('Payments Routes', () => {
         .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(200);
-      expect(Array.isArray(response.body)).toBe(true);
+      expect(response.body.data).toEqual([]);
+      expect(response.body.pagination).toMatchObject({
+        total: 0,
+        limit: 50,
+        offset: 0,
+        hasMore: false,
+      });
     });
 
     it('should return payments for organization', async () => {
@@ -94,8 +100,9 @@ describe('Payments Routes', () => {
         .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.length).toBe(1);
-      expect(response.body[0].method).toBe('ONLINE_PROCESSOR');
+      expect(response.body.data.length).toBe(1);
+      expect(response.body.data[0].method).toBe('ONLINE_PROCESSOR');
+      expect(response.body.pagination.total).toBe(1);
     });
   });
 
@@ -286,7 +293,8 @@ describe('Payments Routes', () => {
         .set('Authorization', `Bearer ${token}`);
 
       expect(response.status).toBe(200);
-      expect(response.body.length).toBe(1);
+      expect(response.body.data.length).toBe(1);
+      expect(response.body.pagination.total).toBe(1);
     });
   });
 
@@ -391,4 +399,3 @@ describe('Payments Routes', () => {
     });
   });
 });
-

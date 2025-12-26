@@ -8,10 +8,12 @@ import {
   getRateLimitStatus,
   resetRateLimit,
   clearAllRateLimits,
+  clearSubscriptionLimitCache,
   rateLimitStore,
   DEFAULT_RATE_LIMIT,
   WINDOW_SIZE_MS,
 } from '../middleware/rate-limit.js';
+import { getSubscriptionLimits } from '../lib/subscriptions.js';
 
 // Mock the subscriptions module
 vi.mock('../lib/subscriptions.js', () => ({
@@ -32,6 +34,7 @@ describe('Rate Limiting Middleware', () => {
   beforeEach(() => {
     // Clear rate limit store before each test
     clearAllRateLimits();
+    clearSubscriptionLimitCache();
 
     mockRequest = {
       ip: '127.0.0.1',
@@ -93,6 +96,25 @@ describe('Rate Limiting Middleware', () => {
 
       expect(nextFunction).toHaveBeenCalled();
       expect(rateLimitStore.has('org:org-1')).toBe(true);
+    });
+
+    it('should reuse subscription limits within cache TTL', async () => {
+      mockRequest.auth = { userId: 'user-1', organizationId: 'org-1' };
+      const subscriptionMock = getSubscriptionLimits as unknown as ReturnType<typeof vi.fn>;
+
+      await rateLimit(
+        mockRequest as Request,
+        mockResponse as Response,
+        nextFunction
+      );
+
+      await rateLimit(
+        mockRequest as Request,
+        mockResponse as Response,
+        nextFunction
+      );
+
+      expect(subscriptionMock).toHaveBeenCalledTimes(1);
     });
 
     it('should block requests when rate limit is exceeded', async () => {

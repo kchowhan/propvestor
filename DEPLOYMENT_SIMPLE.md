@@ -152,6 +152,9 @@ gcloud logging read "resource.type=cloud_run_revision AND resource.labels.servic
 
 # Frontend logs
 gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=propvestor-web" --limit=50
+
+# Marketing site logs
+gcloud logging read "resource.type=cloud_run_revision AND resource.labels.service_name=propvestor-marketing" --limit=50
 ```
 
 ### View Deployment Status

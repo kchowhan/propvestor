@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
+import { PaginationControls } from '../PaginationControls';
 
 export const ViolationsPage = () => {
   const { token } = useAuth();
@@ -14,6 +15,8 @@ export const ViolationsPage = () => {
   const [filterAssociationId, setFilterAssociationId] = useState<string>('');
   const [filterStatus, setFilterStatus] = useState<string>('');
   const [filterSeverity, setFilterSeverity] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const listLimit = 20;
   const [form, setForm] = useState({
     associationId: '',
     homeownerId: '',
@@ -28,12 +31,12 @@ export const ViolationsPage = () => {
 
   const { data: associationsResponse } = useQuery({
     queryKey: ['associations'],
-    queryFn: () => apiFetch('/associations', { token }),
+    queryFn: () => apiFetch('/associations?limit=100&offset=0', { token }),
   });
 
   const { data: propertiesResponse } = useQuery({
     queryKey: ['properties'],
-    queryFn: () => apiFetch('/properties', { token }),
+    queryFn: () => apiFetch('/properties?limit=100&offset=0', { token }),
   });
 
   const associations = associationsResponse?.data || [];
@@ -42,7 +45,7 @@ export const ViolationsPage = () => {
   // Get homeowners for selected association
   const { data: homeownersResponse } = useQuery({
     queryKey: ['homeowners', form.associationId],
-    queryFn: () => apiFetch(`/homeowners?associationId=${form.associationId}`, { token }),
+    queryFn: () => apiFetch(`/homeowners?associationId=${form.associationId}&limit=100&offset=0`, { token }),
     enabled: !!form.associationId,
   });
 
@@ -59,8 +62,12 @@ export const ViolationsPage = () => {
   if (filterSeverity) queryParams.set('severity', filterSeverity);
 
   const { data: violationsResponse, isLoading, error } = useQuery({
-    queryKey: ['violations', filterAssociationId, filterStatus, filterSeverity],
-    queryFn: () => apiFetch(`/violations?${queryParams.toString()}`, { token }),
+    queryKey: ['violations', filterAssociationId, filterStatus, filterSeverity, page],
+    queryFn: () =>
+      apiFetch(
+        `/violations?${queryParams.toString()}&limit=${listLimit}&offset=${(page - 1) * listLimit}`,
+        { token }
+      ),
   });
 
   const violations = violationsResponse?.data || [];
@@ -128,14 +135,14 @@ export const ViolationsPage = () => {
     },
   });
 
-  const severityColors = {
+  const severityColors: Record<string, string> = {
     MINOR: 'bg-yellow-100 text-yellow-800',
     MODERATE: 'bg-orange-100 text-orange-800',
     MAJOR: 'bg-red-100 text-red-800',
     CRITICAL: 'bg-red-200 text-red-900',
   };
 
-  const statusColors = {
+  const statusColors: Record<string, string> = {
     OPEN: 'bg-blue-100 text-blue-800',
     IN_PROGRESS: 'bg-purple-100 text-purple-800',
     RESOLVED: 'bg-green-100 text-green-800',
@@ -270,12 +277,12 @@ export const ViolationsPage = () => {
                         </td>
                         <td className="px-4 py-3 text-sm text-slate-600">{v.type}</td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${severityColors[v.severity]}`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${severityColors[v.severity] || 'bg-slate-100 text-slate-800'}`}>
                             {v.severity}
                           </span>
                         </td>
                         <td className="px-4 py-3">
-                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[v.status]}`}>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${statusColors[v.status] || 'bg-slate-100 text-slate-800'}`}>
                             {v.status.replace('_', ' ')}
                           </span>
                         </td>
@@ -293,6 +300,13 @@ export const ViolationsPage = () => {
                 </tbody>
               </table>
             </div>
+            <PaginationControls
+              pagination={violationsResponse?.pagination}
+              page={page}
+              limit={listLimit}
+              onPageChange={setPage}
+              label="violations"
+            />
           </div>
         </div>
       )}

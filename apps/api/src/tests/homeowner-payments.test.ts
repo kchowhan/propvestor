@@ -90,6 +90,7 @@ describe('Homeowner Payments Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data).toHaveLength(1);
       expect(response.body.data[0].id).toBe(payment.id);
+      expect(response.body.pagination.total).toBe(1);
     });
 
     it('should filter payments by hoaFeeId', async () => {
@@ -111,6 +112,7 @@ describe('Homeowner Payments Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data).toHaveLength(1);
       expect(response.body.data[0].id).toBe(payment.id);
+      expect(response.body.pagination.total).toBe(1);
     });
   });
 
@@ -182,4 +184,3 @@ describe('Homeowner Payments Routes', () => {
     });
   });
 });
-

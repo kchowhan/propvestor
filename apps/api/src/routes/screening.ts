@@ -2,12 +2,17 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/prisma.js';
 import { AppError } from '../lib/errors.js';
-import { parseBody } from '../validators/common.js';
+import { parseBody, parseQuery, paginationQuerySchema } from '../validators/common.js';
 import { createScreeningApplication, getApplicationStatus } from '../lib/rentspree.js';
 import { sendAdverseActionNotice } from '../lib/email.js';
 import { createRentSpreeScreeningFee } from '../lib/organization-fees.js';
 
 export const screeningRouter = Router();
+
+const listQuerySchema = paginationQuerySchema.extend({
+  status: z.string().optional(),
+  tenantId: z.string().uuid().optional(),
+});
 
 // Request screening for an applicant
 screeningRouter.post('/request', async (req, res, next) => {
@@ -201,21 +206,36 @@ screeningRouter.get('/:id', async (req, res, next) => {
 // List all screening requests
 screeningRouter.get('/', async (req, res, next) => {
   try {
-    const { status, applicantId, tenantId } = req.query;
+    const query = parseQuery(listQuerySchema, req.query);
 
-    const screeningRequests = await prisma.screeningRequest.findMany({
-      where: {
-        organizationId: req.auth?.organizationId,
-        ...(status ? { status: String(status) } : {}),
-        ...(tenantId ? { tenantId: String(tenantId) } : {}),
+    const where = {
+      organizationId: req.auth?.organizationId,
+      ...(query.status ? { status: query.status } : {}),
+      ...(query.tenantId ? { tenantId: query.tenantId } : {}),
+    };
+
+    const [screeningRequests, total] = await Promise.all([
+      prisma.screeningRequest.findMany({
+        where,
+        include: {
+          tenant: { include: { property: true, unit: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: query.limit,
+        skip: query.offset,
+      }),
+      prisma.screeningRequest.count({ where }),
+    ]);
+
+    res.json({
+      data: screeningRequests,
+      pagination: {
+        total,
+        limit: query.limit,
+        offset: query.offset,
+        hasMore: query.offset + query.limit < total,
       },
-      include: {
-        tenant: { include: { property: true, unit: true } },
-      },
-      orderBy: { createdAt: 'desc' },
     });
-
-    res.json({ data: screeningRequests });
   } catch (err) {
     next(err);
   }
@@ -335,4 +355,3 @@ screeningRouter.post('/:id/adverse-action', async (req, res, next) => {
     next(err);
   }
 });
-

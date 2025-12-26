@@ -4,6 +4,7 @@ import { useParams } from 'next/navigation';
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { AddPaymentMethodModal } from '../../components/AddPaymentMethodModal';
+import { PaginationControls } from '../PaginationControls';
 
 export const TenantDetailPage = () => {
   const params = useParams();
@@ -12,6 +13,9 @@ export const TenantDetailPage = () => {
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<'details' | 'leases' | 'screening' | 'payments'>('details');
   const [showAddPaymentMethod, setShowAddPaymentMethod] = useState(false);
+  const [screeningPage, setScreeningPage] = useState(1);
+  const [paymentsPage, setPaymentsPage] = useState(1);
+  const listLimit = 20;
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['tenant', id],
@@ -20,8 +24,9 @@ export const TenantDetailPage = () => {
   });
 
   const { data: screeningRequests } = useQuery({
-    queryKey: ['screening-requests', id],
-    queryFn: () => apiFetch(`/screening?tenantId=${id}`, { token }),
+    queryKey: ['screening-requests', id, screeningPage],
+    queryFn: () =>
+      apiFetch(`/screening?tenantId=${id}&limit=${listLimit}&offset=${(screeningPage - 1) * listLimit}`, { token }),
     enabled: Boolean(id) && activeTab === 'screening',
   });
 
@@ -32,8 +37,9 @@ export const TenantDetailPage = () => {
   });
 
   const { data: payments } = useQuery({
-    queryKey: ['payments', id],
-    queryFn: () => apiFetch(`/payments?tenantId=${id}`, { token }),
+    queryKey: ['payments', id, paymentsPage],
+    queryFn: () =>
+      apiFetch(`/payments?tenantId=${id}&limit=${listLimit}&offset=${(paymentsPage - 1) * listLimit}`, { token }),
     enabled: Boolean(id) && activeTab === 'payments',
   });
 
@@ -174,9 +180,9 @@ export const TenantDetailPage = () => {
                 </button>
               </div>
 
-              {screeningRequests?.length > 0 ? (
+              {screeningRequests?.data?.length > 0 ? (
                 <div className="space-y-4">
-                  {screeningRequests.map((request: any) => (
+                  {screeningRequests.data.map((request: any) => (
                     <div key={request.id} className="border border-slate-200 rounded-lg p-4">
                       <div className="flex justify-between items-start mb-3">
                         <div>
@@ -277,6 +283,13 @@ export const TenantDetailPage = () => {
                   No screening requests found. Click "Request Screening" to start.
                 </div>
               )}
+              <PaginationControls
+                pagination={screeningRequests?.pagination}
+                page={screeningPage}
+                limit={listLimit}
+                onPageChange={setScreeningPage}
+                label="screening requests"
+              />
             </div>
           )}
 
@@ -330,7 +343,7 @@ export const TenantDetailPage = () => {
               {/* Payment History Section */}
               <div>
                 <h3 className="text-sm font-semibold text-slate-700 mb-3">Payment History</h3>
-                {payments?.length > 0 ? (
+                {payments?.data?.length > 0 ? (
                   <table className="w-full text-sm">
                     <thead className="text-left text-slate-600">
                       <tr>
@@ -342,7 +355,7 @@ export const TenantDetailPage = () => {
                       </tr>
                     </thead>
                     <tbody>
-                      {payments.map((payment: any) => (
+                      {payments.data.map((payment: any) => (
                         <tr key={payment.id} className="border-t border-slate-100">
                           <td className="py-2">{new Date(payment.receivedDate).toLocaleDateString()}</td>
                           <td className="py-2">${Number(payment.amount).toFixed(2)}</td>
@@ -376,6 +389,13 @@ export const TenantDetailPage = () => {
                     No payment history found.
                   </div>
                 )}
+                <PaginationControls
+                  pagination={payments?.pagination}
+                  page={paymentsPage}
+                  limit={listLimit}
+                  onPageChange={setPaymentsPage}
+                  label="payments"
+                />
               </div>
             </div>
           )}

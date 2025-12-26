@@ -5,6 +5,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '../../api/client';
 import { useAuth } from '../../context/AuthContext';
 import { format } from 'date-fns';
+import { PaginationControls } from '../PaginationControls';
 
 export const BoardMembersPage = () => {
   const { token } = useAuth();
@@ -12,6 +13,8 @@ export const BoardMembersPage = () => {
   const [activeTab, setActiveTab] = useState<'list' | 'create'>('list');
   const [filterAssociationId, setFilterAssociationId] = useState<string>('');
   const [filterRole, setFilterRole] = useState<string>('');
+  const [page, setPage] = useState(1);
+  const listLimit = 20;
   const [form, setForm] = useState({
     associationId: '',
     userId: '',
@@ -24,17 +27,17 @@ export const BoardMembersPage = () => {
 
   const { data: associationsResponse } = useQuery({
     queryKey: ['associations'],
-    queryFn: () => apiFetch('/associations', { token }),
+    queryFn: () => apiFetch('/associations?limit=100&offset=0', { token }),
   });
 
   const { data: usersResponse } = useQuery({
     queryKey: ['users'],
-    queryFn: () => apiFetch('/users', { token }),
+    queryFn: () => apiFetch('/users?limit=100&offset=0', { token }),
   });
 
   const { data: homeownersResponse } = useQuery({
     queryKey: ['homeowners', form.associationId],
-    queryFn: () => apiFetch(`/homeowners?associationId=${form.associationId}`, { token }),
+    queryFn: () => apiFetch(`/homeowners?associationId=${form.associationId}&limit=100&offset=0`, { token }),
     enabled: !!form.associationId,
   });
 
@@ -48,8 +51,12 @@ export const BoardMembersPage = () => {
   if (filterRole) queryParams.set('role', filterRole);
 
   const { data: boardMembersResponse, isLoading, error } = useQuery({
-    queryKey: ['board-members', filterAssociationId, filterRole],
-    queryFn: () => apiFetch(`/board-members?${queryParams.toString()}`, { token }),
+    queryKey: ['board-members', filterAssociationId, filterRole, page],
+    queryFn: () =>
+      apiFetch(
+        `/board-members?${queryParams.toString()}&limit=${listLimit}&offset=${(page - 1) * listLimit}`,
+        { token }
+      ),
   });
 
   const boardMembers = boardMembersResponse?.data || [];
@@ -325,7 +332,16 @@ export const BoardMembersPage = () => {
           </div>
         </div>
       )}
+
+      {activeTab === 'list' && (
+        <PaginationControls
+          pagination={boardMembersResponse?.pagination}
+          page={page}
+          limit={listLimit}
+          onPageChange={setPage}
+          label="board members"
+        />
+      )}
     </div>
   );
 };
-

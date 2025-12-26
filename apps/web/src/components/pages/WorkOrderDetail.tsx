@@ -18,7 +18,7 @@ export const WorkOrderDetailPage = () => {
 
   const vendorsQuery = useQuery({
     queryKey: ['vendors'],
-    queryFn: () => apiFetch('/vendors', { token }),
+    queryFn: () => apiFetch('/vendors?limit=100&offset=0', { token }),
   });
 
   const updateStatus = useMutation({
@@ -98,7 +98,7 @@ export const WorkOrderDetailPage = () => {
             onChange={(e) => updateVendor.mutate(e.target.value)}
           >
             <option value="">No vendor assigned</option>
-            {vendorsQuery.data
+            {vendorsQuery.data?.data
               ?.filter((vendor: any) => vendor.category === data.category)
               .map((vendor: any) => (
                 <option key={vendor.id} value={vendor.id}>
@@ -106,7 +106,7 @@ export const WorkOrderDetailPage = () => {
                 </option>
               ))}
           </select>
-          {data.category && vendorsQuery.data?.filter((v: any) => v.category === data.category).length === 0 && (
+          {data.category && vendorsQuery.data?.data?.filter((v: any) => v.category === data.category).length === 0 && (
             <p className="text-xs text-slate-500 mt-2">No vendors available for this category</p>
           )}
         </div>
