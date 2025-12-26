@@ -140,9 +140,24 @@ This document lists all pending items that need to be implemented or configured 
 
 ---
 
+### 8. Unified Login Ambiguity (Homeowner vs Property Manager)
+**Status**: Needs decision + implementation
+
+**Issue**:
+- Homeowner login uses email-only lookup when `associationId` is not provided.
+- Emails are only unique per association, so duplicate emails across associations can resolve to the wrong homeowner.
+- If a homeowner record exists but password is wrong, property-manager login is never attempted.
+
+**What's Needed**:
+- [ ] Decide on a disambiguation strategy (e.g., require association selection when multiple homeowners match).
+- [ ] Allow fallback to property-manager login when homeowner match fails.
+- [ ] Add tests for ambiguous homeowner emails and fallback behavior.
+
+---
+
 ## 🟢 Nice to Have - Missing Features
 
-### 8. Bank Reconciliation API Endpoints
+### 9. Bank Reconciliation API Endpoints
 **Status**: ✅ Fully implemented
 
 **Location**: `apps/api/src/routes/reconciliation.ts`, `apps/web/src/pages/Billing.tsx`
@@ -169,7 +184,7 @@ This document lists all pending items that need to be implemented or configured 
 
 ---
 
-### 9. Stripe Recurring Payment Tracking & Reconciliation
+### 10. Stripe Recurring Payment Tracking & Reconciliation
 **Status**: ✅ Partially implemented - Auto bank transaction creation added
 
 **Location**: `apps/api/src/routes/stripe-webhook.ts`, `apps/api/src/routes/billing.ts`
@@ -205,7 +220,7 @@ This document lists all pending items that need to be implemented or configured 
 
 ---
 
-### 10. Phase 2 - Investment Management
+### 11. Phase 2 - Investment Management
 **Status**: Schema exists, no API or UI
 
 **Location**: `apps/api/prisma/schema.prisma` (Phase 2 models)
@@ -332,5 +347,4 @@ NEXT_PUBLIC_API_URL=http://localhost:5000
 - Stripe recurring payment enhancements (Balance Transactions import, retry logic, analytics)
 - Phase 2 investment management features
 
-**Total Pending Items**: 10 major items + configuration for 7 external services
-
+**Total Pending Items**: 11 major items + configuration for 7 external services

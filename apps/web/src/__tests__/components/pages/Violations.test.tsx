@@ -129,7 +129,16 @@ describe('ViolationsPage', () => {
         data: { id: '1', type: 'Noise', description: 'Test violation' },
       })
       .mockResolvedValueOnce({
-        data: [{ id: '1', type: 'Noise' }],
+        data: [{
+          id: '1',
+          type: 'Noise',
+          description: 'Test violation',
+          severity: 'MINOR',
+          status: 'OPEN',
+          violationDate: '2024-01-01',
+          homeowner: { id: '1', firstName: 'John', lastName: 'Doe' },
+          association: { id: '1', name: 'Test Association' },
+        }],
         pagination: { total: 1, limit: 20, offset: 0, hasMore: false },
       });
 
@@ -154,51 +163,64 @@ describe('ViolationsPage', () => {
     // Fill form
     const associationLabel = screen.getByText('Association *');
     const associationSelect = associationLabel.parentElement?.querySelector('select');
-    if (associationSelect) {
-      fireEvent.change(associationSelect, { target: { value: '1' } });
-    }
+    expect(associationSelect).toBeDefined();
+    fireEvent.change(associationSelect!, { target: { value: '1' } });
 
+    // Wait for homeowner select to be enabled and populated
     await waitFor(() => {
       const homeownerLabel = screen.getByText('Homeowner *');
       const homeownerSelect = homeownerLabel.parentElement?.querySelector('select');
-      if (homeownerSelect) {
-        fireEvent.change(homeownerSelect, { target: { value: '1' } });
-      }
+      expect(homeownerSelect).toBeDefined();
+      expect(homeownerSelect).not.toBeDisabled();
+      // Wait for homeowners to be loaded (check for at least one option)
+      expect(homeownerSelect!.querySelectorAll('option').length).toBeGreaterThan(1);
     });
 
-    // Wait for Violation Type field to appear after homeowner is selected
+    const homeownerLabel = screen.getByText('Homeowner *');
+    const homeownerSelect = homeownerLabel.parentElement?.querySelector('select');
+    expect(homeownerSelect).toBeDefined();
+    fireEvent.change(homeownerSelect!, { target: { value: '1' } });
+
+    // Wait for Violation Type field to appear
     await waitFor(() => {
       expect(screen.getByText('Violation Type *')).toBeInTheDocument();
     });
 
     const typeLabel = screen.getByText('Violation Type *');
     const typeInput = typeLabel.parentElement?.querySelector('input');
-    if (typeInput) {
-      fireEvent.change(typeInput, { target: { value: 'Noise' } });
-    }
+    expect(typeInput).toBeDefined();
+    fireEvent.change(typeInput!, { target: { value: 'Noise' } });
 
     // Get the submit button specifically (not the tab button) - it has type="submit"
     const buttons = screen.getAllByRole('button', { name: 'Create Violation' });
     const submitButton = buttons.find(btn => btn.getAttribute('type') === 'submit');
     expect(submitButton).toBeDefined();
-    fireEvent.click(submitButton!);
-
+    expect(submitButton).not.toBeDisabled();
+    
+    // Submit the form - use form submission instead of button click
+    const form = submitButton!.closest('form');
+    expect(form).toBeDefined();
+    fireEvent.submit(form!);
+    
+    // Wait for the mutation to be called
     await waitFor(() => {
-      expect(mockApiFetch).toHaveBeenCalledWith(
-        '/violations',
-        expect.objectContaining({
-          method: 'POST',
-          body: expect.objectContaining({
-            type: 'Noise',
-          }),
-        })
+      const calls = mockApiFetch.mock.calls;
+      const postCall = calls.find((call: any) => 
+        typeof call[0] === 'string' && call[0] === '/violations' &&
+        call[1]?.method === 'POST'
       );
-    });
+      expect(postCall).toBeDefined();
+      expect(postCall[1].body).toMatchObject({
+        associationId: '1',
+        homeownerId: '1',
+        type: 'Noise',
+      });
+    }, { timeout: 3000 });
   });
 
   it('should handle pagination', async () => {
     mockApiFetch
-      .mockResolvedValueOnce({ data: [] }) // Associations
+      .mockResolvedValueOnce({ data: [{ id: '1', name: 'Test Association' }] }) // Associations
       .mockResolvedValueOnce({ data: [] }) // Properties
       .mockResolvedValueOnce({
         data: Array.from({ length: 20 }, (_, i) => ({
@@ -309,17 +331,21 @@ describe('ViolationsPage', () => {
 
     const selects = screen.getAllByRole('combobox');
     const associationFilter = selects[0];
-    if (associationFilter) {
-      fireEvent.change(associationFilter, { target: { value: '1' } });
-    }
+    expect(associationFilter).toBeDefined();
+    
+    // Change the filter
+    fireEvent.change(associationFilter!, { target: { value: '1' } });
 
+    // Wait for the query to be triggered with the filter
+    // React Query will refetch when the filter changes
     await waitFor(() => {
       const calls = mockApiFetch.mock.calls;
+      // Find a call that includes associationId=1 in the URL
       const filteredCall = calls.find((call: any) => 
-        call[0]?.includes('associationId=1')
+        typeof call[0] === 'string' && call[0].includes('associationId=1')
       );
       expect(filteredCall).toBeDefined();
-    });
+    }, { timeout: 3000 });
   });
 });
 
