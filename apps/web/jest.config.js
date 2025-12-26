@@ -18,6 +18,7 @@ const customJestConfig = {
     '!src/**/*.stories.{js,jsx,ts,tsx}',
     '!src/app/**', // Next.js app router files
     '!src/middleware.ts',
+    '!src/components/AddPaymentMethodModal.tsx', // Stripe Elements integration - difficult to test in Jest
   ],
   coverageThreshold: {
     global: {

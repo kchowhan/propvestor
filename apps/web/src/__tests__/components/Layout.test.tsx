@@ -73,4 +73,150 @@ describe('Layout', () => {
     expect(mockLogout).toHaveBeenCalled();
   });
 
+  it('should open organization menu when organization name is clicked', () => {
+    const mockAuthWithMultipleOrgs = {
+      ...mockAuth,
+      organizations: [
+        { id: '1', name: 'Test Organization', role: 'OWNER' },
+        { id: '2', name: 'Another Organization', role: 'MEMBER' },
+      ],
+    };
+
+    jest.spyOn(require('../../context/AuthContext'), 'useAuth').mockReturnValue(mockAuthWithMultipleOrgs);
+
+    renderWithProviders(
+      <Layout>
+        <div>Test</div>
+      </Layout>
+    );
+
+    const orgButton = screen.getByText('Test Organization');
+    fireEvent.click(orgButton);
+
+    expect(screen.getByText('Another Organization')).toBeInTheDocument();
+  });
+
+  it('should switch organization when organization is selected', async () => {
+    const mockAuthWithMultipleOrgs = {
+      ...mockAuth,
+      organizations: [
+        { id: '1', name: 'Test Organization', role: 'OWNER' },
+        { id: '2', name: 'Another Organization', role: 'MEMBER' },
+      ],
+    };
+
+    jest.spyOn(require('../../context/AuthContext'), 'useAuth').mockReturnValue(mockAuthWithMultipleOrgs);
+
+    renderWithProviders(
+      <Layout>
+        <div>Test</div>
+      </Layout>
+    );
+
+    const orgButton = screen.getByText('Test Organization');
+    fireEvent.click(orgButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Another Organization')).toBeInTheDocument();
+    });
+
+    const anotherOrgButton = screen.getByText('Another Organization');
+    fireEvent.click(anotherOrgButton);
+
+    await waitFor(() => {
+      expect(mockSwitchOrganization).toHaveBeenCalledWith('2');
+    });
+  });
+
+  it('should show create organization form when button is clicked', () => {
+    renderWithProviders(
+      <Layout>
+        <div>Test</div>
+      </Layout>
+    );
+
+    const orgButton = screen.getByText('Test Organization');
+    fireEvent.click(orgButton);
+
+    const createButton = screen.getByText('+ Create New Organization');
+    fireEvent.click(createButton);
+
+    expect(screen.getByPlaceholderText('Organization name')).toBeInTheDocument();
+  });
+
+  it('should create organization when form is submitted', async () => {
+    mockCreateOrganization.mockResolvedValue({ id: '2', name: 'New Organization' });
+
+    renderWithProviders(
+      <Layout>
+        <div>Test</div>
+      </Layout>
+    );
+
+    const orgButton = screen.getByText('Test Organization');
+    fireEvent.click(orgButton);
+
+    const createButton = screen.getByText('+ Create New Organization');
+    fireEvent.click(createButton);
+
+    const input = screen.getByPlaceholderText('Organization name');
+    fireEvent.change(input, { target: { value: 'New Organization' } });
+
+    const submitButton = screen.getByRole('button', { name: 'Create' });
+    fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockCreateOrganization).toHaveBeenCalledWith('New Organization');
+    });
+  });
+
+  it('should handle organization switch error', async () => {
+    const mockAuthWithMultipleOrgs = {
+      ...mockAuth,
+      organizations: [
+        { id: '1', name: 'Test Organization', role: 'OWNER' },
+        { id: '2', name: 'Another Organization', role: 'MEMBER' },
+      ],
+    };
+
+    jest.spyOn(require('../../context/AuthContext'), 'useAuth').mockReturnValue(mockAuthWithMultipleOrgs);
+    mockSwitchOrganization.mockRejectedValue(new Error('Failed to switch'));
+
+    // Mock window.alert
+    const alertSpy = jest.spyOn(window, 'alert').mockImplementation(() => {});
+
+    renderWithProviders(
+      <Layout>
+        <div>Test</div>
+      </Layout>
+    );
+
+    const orgButton = screen.getByText('Test Organization');
+    fireEvent.click(orgButton);
+
+    await waitFor(() => {
+      expect(screen.getByText('Another Organization')).toBeInTheDocument();
+    });
+
+    const anotherOrgButton = screen.getByText('Another Organization');
+    fireEvent.click(anotherOrgButton);
+
+    await waitFor(() => {
+      expect(alertSpy).toHaveBeenCalledWith(expect.stringContaining('Failed to switch organization'));
+    });
+
+    alertSpy.mockRestore();
+  });
+
+  it('should not show organization menu when user has only one organization', () => {
+    renderWithProviders(
+      <Layout>
+        <div>Test</div>
+      </Layout>
+    );
+
+    // Should just show organization name, not a button
+    expect(screen.getByText('Test Organization')).toBeInTheDocument();
+    expect(screen.queryByText('+ Create New Organization')).not.toBeInTheDocument();
+  });
 });

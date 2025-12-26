@@ -160,5 +160,176 @@ describe('AssociationsPage', () => {
       expect(screen.getByText('Postal Code')).toBeInTheDocument();
     });
   });
+
+  it('should submit create association form successfully', async () => {
+    mockApiFetch
+      .mockResolvedValueOnce({
+        data: [],
+        pagination: { total: 0, limit: 20, offset: 0, hasMore: false },
+      })
+      .mockResolvedValueOnce({
+        data: { id: '1', name: 'New Association' },
+      })
+      .mockResolvedValueOnce({
+        data: [{ id: '1', name: 'New Association' }],
+        pagination: { total: 1, limit: 20, offset: 0, hasMore: false },
+      });
+
+    renderWithProviders(<AssociationsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading associations...')).not.toBeInTheDocument();
+    });
+
+    const createTab = screen.getByRole('button', { name: 'Create Association' });
+    fireEvent.click(createTab);
+
+    await waitFor(() => {
+      expect(screen.getByText('Association Name *')).toBeInTheDocument();
+    });
+
+    const nameLabel = screen.getByText('Association Name *');
+    const nameInput = nameLabel.parentElement?.querySelector('input');
+    if (nameInput) {
+      fireEvent.change(nameInput, { target: { value: 'New Association' } });
+    }
+
+    const submitButton = screen.getByRole('button', { name: 'Create Association' });
+    fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledWith(
+        '/associations',
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.objectContaining({
+            name: 'New Association',
+          }),
+        })
+      );
+    });
+  });
+
+  it('should handle create association form submission error', async () => {
+    mockApiFetch
+      .mockResolvedValueOnce({
+        data: [],
+        pagination: { total: 0, limit: 20, offset: 0, hasMore: false },
+      })
+      .mockRejectedValueOnce(new Error('Failed to create association'));
+
+    renderWithProviders(<AssociationsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading associations...')).not.toBeInTheDocument();
+    });
+
+    const createTab = screen.getByRole('button', { name: 'Create Association' });
+    fireEvent.click(createTab);
+
+    await waitFor(() => {
+      expect(screen.getByText('Association Name *')).toBeInTheDocument();
+    });
+
+    const nameLabel = screen.getByText('Association Name *');
+    const nameInput = nameLabel.parentElement?.querySelector('input');
+    if (nameInput) {
+      fireEvent.change(nameInput, { target: { value: 'New Association' } });
+    }
+
+    const submitButton = screen.getByRole('button', { name: 'Create Association' });
+    fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledWith(
+        '/associations',
+        expect.objectContaining({
+          method: 'POST',
+        })
+      );
+    });
+  });
+
+  it('should show loading state during form submission', async () => {
+    let resolveCreate: (value: any) => void;
+    const createPromise = new Promise((resolve) => {
+      resolveCreate = resolve;
+    });
+
+    mockApiFetch
+      .mockResolvedValueOnce({
+        data: [],
+        pagination: { total: 0, limit: 20, offset: 0, hasMore: false },
+      })
+      .mockReturnValueOnce(createPromise);
+
+    renderWithProviders(<AssociationsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading associations...')).not.toBeInTheDocument();
+    });
+
+    const createTab = screen.getByRole('button', { name: 'Create Association' });
+    fireEvent.click(createTab);
+
+    await waitFor(() => {
+      expect(screen.getByText('Association Name *')).toBeInTheDocument();
+    });
+
+    const nameLabel = screen.getByText('Association Name *');
+    const nameInput = nameLabel.parentElement?.querySelector('input');
+    if (nameInput) {
+      fireEvent.change(nameInput, { target: { value: 'New Association' } });
+    }
+
+    const submitButton = screen.getByRole('button', { name: 'Create Association' });
+    fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'Creating...' })).toBeInTheDocument();
+    });
+
+    resolveCreate!({ data: { id: '1', name: 'New Association' } });
+  });
+
+  it('should handle pagination', async () => {
+    mockApiFetch
+      .mockResolvedValueOnce({
+        data: Array.from({ length: 20 }, (_, i) => ({
+          id: `${i + 1}`,
+          name: `Association ${i + 1}`,
+        })),
+        pagination: { total: 25, limit: 20, offset: 0, hasMore: true },
+      })
+      .mockResolvedValueOnce({
+        data: Array.from({ length: 5 }, (_, i) => ({
+          id: `${i + 21}`,
+          name: `Association ${i + 21}`,
+        })),
+        pagination: { total: 25, limit: 20, offset: 20, hasMore: false },
+      });
+
+    renderWithProviders(<AssociationsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading associations...')).not.toBeInTheDocument();
+    });
+
+    // Wait for pagination controls to appear (only shows when totalPages > 1)
+    await waitFor(() => {
+      const nextButton = screen.queryByRole('button', { name: /next/i });
+      expect(nextButton).toBeInTheDocument();
+    });
+
+    const nextButton = screen.getByRole('button', { name: /next/i });
+    fireEvent.click(nextButton);
+
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledWith(
+        expect.stringContaining('offset=20'),
+        expect.any(Object)
+      );
+    });
+  });
 });
 

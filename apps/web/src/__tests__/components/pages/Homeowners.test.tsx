@@ -205,5 +205,125 @@ describe('HomeownersPage', () => {
       expect(screen.getByText('Status')).toBeInTheDocument();
     });
   });
+
+  it('should submit create homeowner form successfully', async () => {
+    mockApiFetch
+      .mockResolvedValueOnce({ data: [{ id: '1', name: 'Test Association' }] }) // Associations
+      .mockResolvedValueOnce({ data: [] }) // Properties
+      .mockResolvedValueOnce({
+        data: [],
+        pagination: { total: 0, limit: 20, offset: 0, hasMore: false },
+      })
+      .mockResolvedValueOnce({
+        data: { id: '1', firstName: 'John', lastName: 'Doe' },
+      })
+      .mockResolvedValueOnce({
+        data: [{ id: '1', firstName: 'John', lastName: 'Doe' }],
+        pagination: { total: 1, limit: 20, offset: 0, hasMore: false },
+      });
+
+    renderWithProviders(<HomeownersPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading homeowners...')).not.toBeInTheDocument();
+    });
+
+    const createTab = screen.getByRole('button', { name: 'Create Homeowner' });
+    fireEvent.click(createTab);
+
+    await waitFor(() => {
+      expect(screen.getByText('Association *')).toBeInTheDocument();
+    });
+
+    // Fill form
+    const associationLabel = screen.getByText('Association *');
+    const associationSelect = associationLabel.parentElement?.querySelector('select');
+    if (associationSelect) {
+      fireEvent.change(associationSelect, { target: { value: '1' } });
+    }
+
+    const firstNameLabel = screen.getByText('First Name *');
+    const firstNameInput = firstNameLabel.parentElement?.querySelector('input');
+    if (firstNameInput) {
+      fireEvent.change(firstNameInput, { target: { value: 'John' } });
+    }
+
+    const lastNameLabel = screen.getByText('Last Name *');
+    const lastNameInput = lastNameLabel.parentElement?.querySelector('input');
+    if (lastNameInput) {
+      fireEvent.change(lastNameInput, { target: { value: 'Doe' } });
+    }
+
+    const emailLabel = screen.getByText('Email *');
+    const emailInput = emailLabel.parentElement?.querySelector('input');
+    if (emailInput) {
+      fireEvent.change(emailInput, { target: { value: 'john@example.com' } });
+    }
+
+    const submitButton = screen.getByRole('button', { name: 'Create Homeowner' });
+    fireEvent.click(submitButton);
+
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledWith(
+        '/homeowners',
+        expect.objectContaining({
+          method: 'POST',
+          body: expect.objectContaining({
+            firstName: 'John',
+            lastName: 'Doe',
+            email: 'john@example.com',
+          }),
+        })
+      );
+    });
+  });
+
+  it('should handle pagination', async () => {
+    mockApiFetch
+      .mockResolvedValueOnce({ data: [] }) // Associations
+      .mockResolvedValueOnce({ data: [] }) // Properties
+      .mockResolvedValueOnce({
+        data: Array.from({ length: 20 }, (_, i) => ({
+          id: `${i + 1}`,
+          firstName: `Homeowner ${i + 1}`,
+          lastName: 'Doe',
+          email: `homeowner${i + 1}@example.com`,
+          status: 'ACTIVE',
+        })),
+        pagination: { total: 25, limit: 20, offset: 0, hasMore: true },
+      })
+      .mockResolvedValueOnce({
+        data: Array.from({ length: 5 }, (_, i) => ({
+          id: `${i + 21}`,
+          firstName: `Homeowner ${i + 21}`,
+          lastName: 'Doe',
+          email: `homeowner${i + 21}@example.com`,
+          status: 'ACTIVE',
+        })),
+        pagination: { total: 25, limit: 20, offset: 20, hasMore: false },
+      });
+
+    renderWithProviders(<HomeownersPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading homeowners...')).not.toBeInTheDocument();
+    });
+
+    // Wait for pagination controls to appear (only shows when totalPages > 1)
+    await waitFor(() => {
+      const nextButton = screen.queryByRole('button', { name: /next/i });
+      expect(nextButton).toBeInTheDocument();
+    });
+
+    const nextButton = screen.getByRole('button', { name: /next/i });
+    fireEvent.click(nextButton);
+
+    await waitFor(() => {
+      expect(mockApiFetch).toHaveBeenCalledWith(
+        expect.stringContaining('offset=20'),
+        expect.any(Object)
+      );
+    });
+  });
 });
 
