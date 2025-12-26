@@ -467,6 +467,68 @@ describe('Reconciliation API', () => {
 
       expect(updatedPayment?.reconciled).toBe(true);
     });
+
+    it('should not update payment when reconciled is false', async () => {
+      const payment = await prisma.payment.create({
+        data: {
+          organizationId: testOrg.id,
+          chargeId: testCharge.id,
+          amount: 1000,
+          receivedDate: new Date('2024-01-15'),
+          method: 'CHECK',
+          reconciled: false,
+        },
+      });
+
+      const transaction = await prisma.bankTransaction.create({
+        data: {
+          organizationId: testOrg.id,
+          date: new Date('2024-01-15'),
+          amount: 1000,
+          description: 'Check payment',
+          reference: 'CHECK-1234',
+          reconciled: false,
+          paymentId: payment.id,
+        },
+      });
+
+      await request(app)
+        .put(`/api/reconciliation/bank-transactions/${transaction.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          reconciled: false,
+        });
+
+      const updatedPayment = await prisma.payment.findUnique({
+        where: { id: payment.id },
+      });
+
+      expect(updatedPayment?.reconciled).toBe(false);
+    });
+
+    it('should not update payment when transaction has no paymentId', async () => {
+      const transaction = await prisma.bankTransaction.create({
+        data: {
+          organizationId: testOrg.id,
+          date: new Date('2024-01-15'),
+          amount: 1000,
+          description: 'Check payment',
+          reference: 'CHECK-1234',
+          reconciled: false,
+          paymentId: null,
+        },
+      });
+
+      const response = await request(app)
+        .put(`/api/reconciliation/bank-transactions/${transaction.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          reconciled: true,
+        })
+        .expect(200);
+
+      expect(response.body.data.reconciled).toBe(true);
+    });
   });
 
   describe('GET /api/reconciliation/unmatched/list', () => {

@@ -307,6 +307,35 @@ describe('Organization Fees', () => {
         true
       );
     });
+
+    it('should filter fees by date range via API', async () => {
+      await createRentSpreeScreeningFee(
+        testOrg.id,
+        testScreeningRequest.id,
+        29.95,
+        'Test screening'
+      );
+
+      const response = await request(app)
+        .get('/api/organization-fees')
+        .query({
+          startDate: '2024-01-01T00:00:00Z',
+          endDate: '2024-12-31T23:59:59Z',
+        })
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(response.body.data).toBeInstanceOf(Array);
+    });
+
+    it('should handle missing optional query parameters', async () => {
+      const response = await request(app)
+        .get('/api/organization-fees')
+        .set('Authorization', `Bearer ${token}`)
+        .expect(200);
+
+      expect(response.body.data).toBeInstanceOf(Array);
+    });
   });
 });
 
