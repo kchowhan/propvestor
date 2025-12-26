@@ -63,11 +63,19 @@ gcloud sql instances describe propvestor-db \
 # Enable APIs
 gcloud services enable redis.googleapis.com vpcaccess.googleapis.com
 
+# Create a subnet with /28 netmask (required for VPC connectors)
+# VPC connectors require a subnet with exactly /28 netmask (16 IP addresses)
+gcloud compute networks subnets create vpc-connector-subnet \
+  --network=default \
+  --range=10.8.0.0/28 \
+  --region=$REGION \
+  --description="Subnet for VPC connector to access Memorystore Redis"
+
 # Create VPC connector
 gcloud compute networks vpc-access connectors create propvestor-connector \
   --region=$REGION \
   --subnet-project=$PROJECT_ID \
-  --subnet=default \
+  --subnet=vpc-connector-subnet \
   --min-instances=2 \
   --max-instances=3 \
   --machine-type=e2-micro

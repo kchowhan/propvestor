@@ -19,13 +19,15 @@ This document provides a comprehensive plan for deploying PropVestor to Google C
 │                              │    Backend       │           │
 │                              │  (Cloud Run)     │           │
 │                              │  Express API     │           │
-│                              └────────┬─────────┘           │
-│                                       │                    │
-│                                       ▼                    │
-│                              ┌──────────────────┐           │
-│                              │   Cloud SQL       │           │
-│                              │   (PostgreSQL)    │           │
-│                              └──────────────────┘           │
+│                              └───────┬─────────┘           │
+│                                      │                      │
+│                    ┌─────────────────┴──────────┐          │
+│                    │                             │          │
+│                    ▼                             ▼          │
+│         ┌──────────────────┐         ┌──────────────────┐  │
+│         │   Cloud SQL       │         │  Memorystore     │  │
+│         │   (PostgreSQL)    │         │  (Redis)         │  │
+│         └──────────────────┘         └──────────────────┘  │
 │                                                              │
 │  ┌──────────────────┐         ┌──────────────────┐          │
 │  │  Cloud Storage   │         │  Cloud Scheduler │          │
@@ -33,14 +35,14 @@ This document provides a comprehensive plan for deploying PropVestor to Google C
 │  └──────────────────┘         └──────────────────┘          │
 │                                                              │
 │  ┌──────────────────┐         ┌──────────────────┐          │
-│  │  Memorystore     │         │  Secret Manager  │          │
-│  │  (Redis)        │         │  (Secrets)       │          │
+│  │  VPC Connector   │         │  Secret Manager  │          │
+│  │  (Redis Access)  │         │  (Secrets)       │          │
 │  └──────────────────┘         └──────────────────┘          │
 │                                                              │
-│  ┌──────────────────┐         ┌──────────────────┐          │
-│  │  Cloud Build     │         │  VPC Connector   │          │
-│  │  (CI/CD)         │         │  (Redis Access)  │          │
-│  └──────────────────┘         └──────────────────┘          │
+│  ┌──────────────────┐                                       │
+│  │  Cloud Build     │                                       │
+│  │  (CI/CD)         │                                       │
+│  └──────────────────┘                                       │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -198,15 +200,25 @@ gcloud services enable vpcaccess.googleapis.com
 ### 2.5.2 Create VPC Connector (Required for Memorystore)
 
 ```bash
+# First, create a subnet with /28 netmask (required for VPC connectors)
+# VPC connectors require a subnet with exactly /28 netmask (16 IP addresses)
+gcloud compute networks subnets create vpc-connector-subnet \
+  --network=default \
+  --range=10.8.0.0/28 \
+  --region=$REGION \
+  --description="Subnet for VPC connector to access Memorystore Redis"
+
 # Create VPC connector for Cloud Run to access Memorystore
 gcloud compute networks vpc-access connectors create propvestor-connector \
   --region=$REGION \
   --subnet-project=$PROJECT_ID \
-  --subnet=default \
+  --subnet=vpc-connector-subnet \
   --min-instances=2 \
   --max-instances=3 \
   --machine-type=e2-micro
 ```
+
+**Note**: If you get an error about IP range conflicts, choose a different CIDR block (e.g., `10.9.0.0/28`, `10.10.0.0/28`, etc.) that doesn't overlap with existing subnets.
 
 ### 2.5.3 Create Memorystore Redis Instance
 
@@ -919,11 +931,18 @@ gcloud monitoring uptime-checks create propvestor-marketing-health \
 **Note**: The VPC connector should already be created in Phase 2.5. If not, create it now:
 
 ```bash
+# First, create a subnet with /28 netmask (if not already created)
+gcloud compute networks subnets create vpc-connector-subnet \
+  --network=default \
+  --range=10.8.0.0/28 \
+  --region=us-central1 \
+  --description="Subnet for VPC connector to access Memorystore Redis" || true
+
 # Create VPC connector (if not already created)
 gcloud compute networks vpc-access connectors create propvestor-connector \
   --region=us-central1 \
   --subnet-project=$PROJECT_ID \
-  --subnet=default \
+  --subnet=vpc-connector-subnet \
   --min-instances=2 \
   --max-instances=3 \
   --machine-type=e2-micro
