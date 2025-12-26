@@ -267,9 +267,10 @@ These are set automatically via Cloud Build or Cloud Run:
 - `DATABASE_URL` - Set automatically from Cloud SQL connection
 - `JWT_SECRET` - From Secret Manager
 - `CORS_ORIGIN` - From Secret Manager
+- `REDIS_URL` - From Secret Manager (Memorystore Redis connection URL)
 - `GCS_PROJECT_ID` - Set to `$PROJECT_ID`
 - `GCS_BUCKET_NAME` - Set in Cloud Build substitutions
-- Other secrets loaded from Secret Manager
+- Other secrets loaded from Secret Manager (Stripe, DocuSign, RentSpree, etc.)
 
 ### Frontend (Cloud Run)
 - `NEXT_PUBLIC_API_URL` - Set during build (from Cloud Build substitutions)

@@ -434,7 +434,14 @@ steps:
       - '--set-env-vars'
       - 'DATABASE_URL=postgresql://propvestor_user:$${_DB_PASSWORD}@/${_CLOUDSQL_CONNECTION_NAME}/propvestor?host=/cloudsql/${_CLOUDSQL_CONNECTION_NAME}'
       - '--set-secrets'
-      - 'JWT_SECRET=jwt-secret:latest,CORS_ORIGIN=cors-origin:latest,STRIPE_SECRET_KEY=stripe-secret-key:latest,STRIPE_PUBLISHABLE_KEY=stripe-publishable-key:latest'
+      - 'JWT_SECRET=jwt-secret:latest,CORS_ORIGIN=cors-origin:latest,STRIPE_SECRET_KEY=stripe-secret-key:latest,STRIPE_PUBLISHABLE_KEY=stripe-publishable-key:latest,STRIPE_WEBHOOK_SECRET=stripe-webhook-secret:latest,DOCUSIGN_INTEGRATOR_KEY=docusign-integrator-key:latest,DOCUSIGN_USER_ID=docusign-user-id:latest,DOCUSIGN_PRIVATE_KEY=docusign-private-key:latest,RENTSPREE_API_KEY=rentspree-api-key:latest,RENTSPREE_WEBHOOK_SECRET=rentspree-webhook-secret:latest,SCHEDULER_SECRET=scheduler-secret:latest,REDIS_URL=redis-url:latest'
+      - '--set-env-vars'
+      - 'GCS_PROJECT_ID=$PROJECT_ID,GCS_BUCKET_NAME=${_GCS_BUCKET_NAME},GCS_SCHEDULER_LOCATION=${_REGION}'
+      # VPC connector is required for Memorystore Redis access
+      - '--vpc-connector'
+      - '${_VPC_CONNECTOR}'
+      - '--vpc-egress'
+      - 'all-traffic'
       - '--memory'
       - '512Mi'
       - '--cpu'
@@ -452,6 +459,9 @@ substitutions:
   _REGION: us-central1
   _CLOUDSQL_CONNECTION_NAME: ${PROJECT_ID}:${REGION}:propvestor-db
   _DB_PASSWORD: '$(gcloud secrets versions access latest --secret=db-password)'
+  _GCS_BUCKET_NAME: propvestor-documents
+  # VPC connector name - required for Memorystore Redis access
+  _VPC_CONNECTOR: propvestor-connector
 
 options:
   machineType: 'E2_HIGHCPU_8'
@@ -464,6 +474,8 @@ images:
 
 ### 5.3 Store Additional Secrets
 
+**Note:** The `redis-url` secret is already created in Phase 2.5.5 (Memorystore Redis Setup). If you skipped that phase, create it now.
+
 ```bash
 # Store CORS origin
 echo -n "https://your-frontend-domain.com" | gcloud secrets create cors-origin \
@@ -474,6 +486,9 @@ echo -n "https://your-frontend-domain.com" | gcloud secrets create cors-origin \
 gcloud secrets add-iam-policy-binding cors-origin \
   --member="serviceAccount:propvestor-backend@${PROJECT_ID}.iam.gserviceaccount.com" \
   --role="roles/secretmanager.secretAccessor"
+
+# Store other required secrets (Stripe, DocuSign, RentSpree, etc.)
+# See Phase 3 for complete list of required secrets
 ```
 
 ### 5.4 Grant Cloud Build Permissions
