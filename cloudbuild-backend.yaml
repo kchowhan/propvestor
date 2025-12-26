@@ -71,6 +71,8 @@ substitutions:
   # Note: _DB_PASSWORD must be passed explicitly when running gcloud builds submit
   # It cannot be resolved from secrets in the substitutions section
   # Run: gcloud builds submit --config=cloudbuild-backend.yaml --substitutions=_DB_PASSWORD=$(gcloud secrets versions access latest --secret=db-password),...
+  # This placeholder will be overridden by the value passed via command line
+  _DB_PASSWORD: ''
   _GCS_BUCKET_NAME: propvestor-documents-prod
   # VPC connector name - required for Memorystore Redis access
   # Set to empty string '' if not using Redis
