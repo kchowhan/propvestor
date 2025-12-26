@@ -41,7 +41,7 @@ steps:
       - '--add-cloudsql-instances'
       - '${_CLOUDSQL_CONNECTION_NAME}'
       - '--set-env-vars'
-      - 'DATABASE_URL=postgresql://propvestor_user:$${_DB_PASSWORD}@/${_CLOUDSQL_CONNECTION_NAME}/propvestor?host=/cloudsql/${_CLOUDSQL_CONNECTION_NAME}'
+      - 'DATABASE_URL=postgresql://propvestor_user:${_DB_PASSWORD}@/${_CLOUDSQL_CONNECTION_NAME}/propvestor?host=/cloudsql/${_CLOUDSQL_CONNECTION_NAME}'
       - '--set-secrets'
       - 'JWT_SECRET=jwt-secret:latest,CORS_ORIGIN=cors-origin:latest,STRIPE_SECRET_KEY=stripe-secret-key:latest,STRIPE_PUBLISHABLE_KEY=stripe-publishable-key:latest,STRIPE_WEBHOOK_SECRET=stripe-webhook-secret:latest,DOCUSIGN_INTEGRATOR_KEY=docusign-integrator-key:latest,DOCUSIGN_USER_ID=docusign-user-id:latest,DOCUSIGN_PRIVATE_KEY=docusign-private-key:latest,RENTSPREE_API_KEY=rentspree-api-key:latest,RENTSPREE_WEBHOOK_SECRET=rentspree-webhook-secret:latest,SCHEDULER_SECRET=scheduler-secret:latest,REDIS_URL=redis-url:latest'
       - '--set-env-vars'
