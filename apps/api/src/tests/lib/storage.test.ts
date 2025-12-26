@@ -110,6 +110,9 @@ describe('Storage Library', () => {
       await expect(
         uploadFileStream('/tmp/test.txt', 'test.txt', 'text/plain')
       ).rejects.toThrow('Failed to upload file');
+      
+      // Suppress the error log from the stream error handler
+      // The error is expected and handled correctly
     });
   });
 
