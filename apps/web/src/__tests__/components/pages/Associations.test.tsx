@@ -403,5 +403,113 @@ describe('AssociationsPage', () => {
     const nextButton = screen.queryByRole('button', { name: /next/i });
     expect(nextButton).not.toBeInTheDocument();
   });
+
+  it('should handle form field changes', async () => {
+    mockApiFetch.mockResolvedValue({
+      data: [],
+      pagination: { total: 0, limit: 20, offset: 0, hasMore: false },
+    });
+
+    renderWithProviders(<AssociationsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading associations...')).not.toBeInTheDocument();
+    });
+
+    const createTab = screen.getByRole('button', { name: 'Create Association' });
+    fireEvent.click(createTab);
+
+    await waitFor(() => {
+      expect(screen.getByText('Association Name *')).toBeInTheDocument();
+    });
+
+    // Test various form field changes
+    const nameInput = screen.getByLabelText('Association Name *');
+    fireEvent.change(nameInput, { target: { value: 'Test Association' } });
+    expect(nameInput).toHaveValue('Test Association');
+
+    const emailInput = screen.getByLabelText('Email');
+    fireEvent.change(emailInput, { target: { value: 'test@example.com' } });
+    expect(emailInput).toHaveValue('test@example.com');
+
+    const phoneInput = screen.getByLabelText('Phone');
+    fireEvent.change(phoneInput, { target: { value: '123-456-7890' } });
+    expect(phoneInput).toHaveValue('123-456-7890');
+
+    const cityInput = screen.getByLabelText('City');
+    fireEvent.change(cityInput, { target: { value: 'Test City' } });
+    expect(cityInput).toHaveValue('Test City');
+
+    const stateInput = screen.getByLabelText('State');
+    fireEvent.change(stateInput, { target: { value: 'CA' } });
+    expect(stateInput).toHaveValue('CA');
+
+    const postalCodeInput = screen.getByLabelText('Postal Code');
+    fireEvent.change(postalCodeInput, { target: { value: '12345' } });
+    expect(postalCodeInput).toHaveValue('12345');
+
+    const fiscalYearInput = screen.getByLabelText('Fiscal Year Start (Month 1-12)');
+    fireEvent.change(fiscalYearInput, { target: { value: '6' } });
+    expect(fiscalYearInput).toHaveValue(6);
+
+    const notesInput = screen.getByLabelText('Notes');
+    fireEvent.change(notesInput, { target: { value: 'Test notes' } });
+    expect(notesInput).toHaveValue('Test notes');
+  });
+
+  it('should display association details in list view', async () => {
+    mockApiFetch.mockResolvedValue({
+      data: [
+        {
+          id: '1',
+          name: 'Test Association',
+          addressLine1: '123 Main St',
+          addressLine2: 'Suite 100',
+          city: 'Test City',
+          state: 'CA',
+          postalCode: '12345',
+          email: 'test@example.com',
+          phone: '123-456-7890',
+          homeownerCount: 10,
+          propertyCount: 5,
+          boardMemberCount: 3,
+          isActive: true,
+        },
+      ],
+      pagination: { total: 1, limit: 20, offset: 0, hasMore: false },
+    });
+
+    renderWithProviders(<AssociationsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading associations...')).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Test Association')).toBeInTheDocument();
+    expect(screen.getByText('123 Main St')).toBeInTheDocument();
+    expect(screen.getByText('Test City')).toBeInTheDocument();
+    expect(screen.getByText('Active')).toBeInTheDocument();
+  });
+
+  it('should display inactive association status', async () => {
+    mockApiFetch.mockResolvedValue({
+      data: [
+        {
+          id: '1',
+          name: 'Inactive Association',
+          isActive: false,
+        },
+      ],
+      pagination: { total: 1, limit: 20, offset: 0, hasMore: false },
+    });
+
+    renderWithProviders(<AssociationsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading associations...')).not.toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Inactive')).toBeInTheDocument();
+  });
 });
 

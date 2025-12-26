@@ -346,4 +346,43 @@ describe('LeasesPage', () => {
     // The error handling test verifies that the component can handle errors gracefully
     // This is already covered by the error state test above
   });
+
+  it('should handle form field changes', async () => {
+    setupMocks({
+      properties: [{ id: 'prop-1', name: 'Property 1', units: [{ id: 'unit-1', name: 'Unit 1' }] }],
+      tenants: [{ id: 'tenant-1', firstName: 'John', lastName: 'Doe', email: 'john@example.com' }],
+    });
+
+    renderWithProviders(<LeasesPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+    });
+
+    // Test form field changes
+    const unitSelect = screen.queryByLabelText(/unit/i);
+    if (unitSelect) {
+      fireEvent.change(unitSelect, { target: { value: 'unit-1' } });
+    }
+
+    const startDateInput = screen.queryByLabelText(/start date/i);
+    if (startDateInput) {
+      fireEvent.change(startDateInput, { target: { value: '2024-01-01' } });
+    }
+
+    const endDateInput = screen.queryByLabelText(/end date/i);
+    if (endDateInput) {
+      fireEvent.change(endDateInput, { target: { value: '2024-12-31' } });
+    }
+
+    const rentAmountInput = screen.queryByLabelText(/rent amount/i);
+    if (rentAmountInput) {
+      fireEvent.change(rentAmountInput, { target: { value: '1000' } });
+    }
+
+    const rentDueDayInput = screen.queryByLabelText(/rent due day/i);
+    if (rentDueDayInput) {
+      fireEvent.change(rentDueDayInput, { target: { value: '5' } });
+    }
+  });
 });

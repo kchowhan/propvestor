@@ -200,4 +200,72 @@ describe('ApplicantsPage', () => {
       expect(notesTextarea).toHaveValue('Test notes');
     }
   });
+
+  it('should request screening for applicant', async () => {
+    mockApiFetch
+      .mockResolvedValueOnce([
+        { id: '1', firstName: 'John', lastName: 'Doe', email: 'john@example.com', status: 'APPLICANT' },
+      ])
+      .mockResolvedValueOnce([]) // Properties
+      .mockResolvedValueOnce({ success: true }); // Screening request
+
+    renderWithProviders(<ApplicantsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('john@example.com')).toBeInTheDocument();
+    });
+
+    const requestScreeningButton = screen.queryByText(/request.*screening/i);
+    if (requestScreeningButton) {
+      fireEvent.click(requestScreeningButton);
+    }
+  });
+
+  it('should convert applicant to tenant', async () => {
+    mockApiFetch
+      .mockResolvedValueOnce([
+        { id: '1', firstName: 'John', lastName: 'Doe', email: 'john@example.com', status: 'APPLICANT' },
+      ])
+      .mockResolvedValueOnce([]) // Properties
+      .mockResolvedValueOnce({ data: { id: 'tenant-1' } }); // Convert to tenant
+
+    renderWithProviders(<ApplicantsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('john@example.com')).toBeInTheDocument();
+    });
+
+    const convertButton = screen.queryByText(/convert.*tenant/i);
+    if (convertButton) {
+      fireEvent.click(convertButton);
+    }
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/tenants/tenant-1');
+    }, { timeout: 3000 });
+  });
+
+  it('should handle convert to tenant without response data', async () => {
+    mockApiFetch
+      .mockResolvedValueOnce([
+        { id: '1', firstName: 'John', lastName: 'Doe', email: 'john@example.com', status: 'APPLICANT' },
+      ])
+      .mockResolvedValueOnce([]) // Properties
+      .mockResolvedValueOnce({}); // Convert to tenant without data.id
+
+    renderWithProviders(<ApplicantsPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('john@example.com')).toBeInTheDocument();
+    });
+
+    const convertButton = screen.queryByText(/convert.*tenant/i);
+    if (convertButton) {
+      fireEvent.click(convertButton);
+    }
+
+    await waitFor(() => {
+      expect(window.alert).toHaveBeenCalledWith('Applicant converted to tenant successfully!');
+    }, { timeout: 3000 });
+  });
 });

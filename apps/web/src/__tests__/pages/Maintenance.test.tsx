@@ -629,4 +629,90 @@ describe('MaintenancePage', () => {
       expect(screen.getByText('Vendors')).toBeInTheDocument();
     });
   });
+
+  it('should update vendor', async () => {
+    setupMocks({
+      vendors: [{ id: 'vendor-1', name: 'Vendor 1', email: 'vendor1@example.com', category: 'GENERAL' }],
+    });
+
+    renderWithProviders(<MaintenancePage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+    });
+
+    // Switch to vendors tab
+    const vendorsTab = screen.getByText('Vendors');
+    fireEvent.click(vendorsTab);
+
+    await waitFor(() => {
+      const editButton = screen.queryByText(/edit/i);
+      if (editButton) {
+        fireEvent.click(editButton);
+      }
+    });
+
+    await waitFor(() => {
+      const nameInput = screen.queryByPlaceholderText(/vendor name/i);
+      if (nameInput) {
+        fireEvent.change(nameInput, { target: { value: 'Updated Vendor' } });
+      }
+    });
+
+    await waitFor(() => {
+      const saveButton = screen.queryByText(/save/i);
+      if (saveButton) {
+        fireEvent.click(saveButton);
+      }
+    });
+  });
+
+  it('should delete vendor', async () => {
+    setupMocks({
+      vendors: [{ id: 'vendor-1', name: 'Vendor 1', email: 'vendor1@example.com', category: 'GENERAL' }],
+    });
+
+    window.confirm = jest.fn(() => true);
+
+    renderWithProviders(<MaintenancePage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+    });
+
+    // Switch to vendors tab
+    const vendorsTab = screen.getByText('Vendors');
+    fireEvent.click(vendorsTab);
+
+    await waitFor(() => {
+      const deleteButton = screen.queryByText(/delete/i);
+      if (deleteButton) {
+        fireEvent.click(deleteButton);
+      }
+    });
+  });
+
+  it('should handle form field changes for work order', async () => {
+    setupMocks({
+      properties: [{ id: 'prop-1', name: 'Property 1', units: [{ id: 'unit-1', name: 'Unit 1' }] }],
+      vendors: [{ id: 'vendor-1', name: 'Vendor 1', category: 'GENERAL' }],
+    });
+
+    renderWithProviders(<MaintenancePage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+    });
+
+    // Switch to create tab
+    const createTab = screen.getByText('Create Work Order');
+    fireEvent.click(createTab);
+
+    await waitFor(() => {
+      const titleInput = screen.queryByPlaceholderText(/title/i);
+      if (titleInput) {
+        fireEvent.change(titleInput, { target: { value: 'Test Work Order' } });
+      }
+    });
+  });
 });

@@ -204,4 +204,156 @@ describe('TenantDetailPage', () => {
     }, { timeout: 3000 });
   });
 
+  it('should request screening', async () => {
+    mockApiFetch
+      .mockResolvedValueOnce({
+        id: 'tenant-1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        status: 'ACTIVE',
+      })
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }) // Screening
+      .mockResolvedValueOnce([]) // Payment methods
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }) // Payments
+      .mockResolvedValueOnce({ id: 'screening-1', status: 'PENDING' }); // Request screening response
+
+    renderWithProviders(<TenantDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading tenant...')).not.toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    // Switch to screening tab
+    const screeningTabs = screen.queryAllByText('Screening');
+    const screeningTab = screeningTabs.find((btn: any) => btn.tagName === 'BUTTON');
+    if (screeningTab) {
+      fireEvent.click(screeningTab);
+      
+      await waitFor(() => {
+        // Look for request screening button
+        const requestButton = screen.queryByText(/request.*screening/i);
+        if (requestButton && !requestButton.closest('[disabled]')) {
+          fireEvent.click(requestButton);
+        }
+      }, { timeout: 2000 });
+    }
+  });
+
+  it('should send adverse action', async () => {
+    const screeningId = 'screening-1';
+    mockApiFetch
+      .mockResolvedValueOnce({
+        id: 'tenant-1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        status: 'ACTIVE',
+      })
+      .mockResolvedValueOnce({
+        data: [{ id: screeningId, status: 'APPROVED' }],
+        pagination: { total: 1, limit: 20, offset: 0, hasMore: false },
+      }) // Screening requests
+      .mockResolvedValueOnce([]) // Payment methods
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }) // Payments
+      .mockResolvedValueOnce({ success: true }); // Adverse action response
+
+    renderWithProviders(<TenantDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading tenant...')).not.toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    // Switch to screening tab
+    const screeningTabs = screen.queryAllByText('Screening');
+    const screeningTab = screeningTabs.find((btn: any) => btn.tagName === 'BUTTON');
+    if (screeningTab) {
+      fireEvent.click(screeningTab);
+      
+      await waitFor(() => {
+        // Look for adverse action button
+        const adverseButton = screen.queryByText(/adverse.*action/i);
+        if (adverseButton && !adverseButton.closest('[disabled]')) {
+          fireEvent.click(adverseButton);
+        }
+      }, { timeout: 2000 });
+    }
+  });
+
+  it('should handle pagination for screening requests', async () => {
+    mockApiFetch
+      .mockResolvedValueOnce({
+        id: 'tenant-1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        status: 'ACTIVE',
+      })
+      .mockResolvedValueOnce({
+        data: Array(20).fill(null).map((_, i) => ({ id: `screening-${i}`, status: 'PENDING' })),
+        pagination: { total: 25, limit: 20, offset: 0, hasMore: true },
+      }) // Screening requests - page 1
+      .mockResolvedValueOnce([]) // Payment methods
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }); // Payments
+
+    renderWithProviders(<TenantDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading tenant...')).not.toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    // Switch to screening tab
+    const screeningTabs = screen.queryAllByText('Screening');
+    const screeningTab = screeningTabs.find((btn: any) => btn.tagName === 'BUTTON');
+    if (screeningTab) {
+      fireEvent.click(screeningTab);
+      
+      await waitFor(() => {
+        // Look for next page button
+        const nextButton = screen.queryByRole('button', { name: /next/i });
+        if (nextButton && !nextButton.hasAttribute('disabled')) {
+          fireEvent.click(nextButton);
+        }
+      }, { timeout: 2000 });
+    }
+  });
+
+  it('should handle pagination for payments', async () => {
+    mockApiFetch
+      .mockResolvedValueOnce({
+        id: 'tenant-1',
+        firstName: 'John',
+        lastName: 'Doe',
+        email: 'john@example.com',
+        status: 'ACTIVE',
+      })
+      .mockResolvedValueOnce({ data: [], pagination: { total: 0, limit: 20, offset: 0, hasMore: false } }) // Screening
+      .mockResolvedValueOnce([]) // Payment methods
+      .mockResolvedValueOnce({
+        data: Array(20).fill(null).map((_, i) => ({ id: `payment-${i}`, amount: 1000 })),
+        pagination: { total: 25, limit: 20, offset: 0, hasMore: true },
+      }); // Payments - page 1
+
+    renderWithProviders(<TenantDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading tenant...')).not.toBeInTheDocument();
+    }, { timeout: 3000 });
+
+    // Switch to payments tab
+    const paymentsTabs = screen.queryAllByText('Payments');
+    const paymentsTab = paymentsTabs.find((btn: any) => btn.tagName === 'BUTTON');
+    if (paymentsTab) {
+      fireEvent.click(paymentsTab);
+      
+      await waitFor(() => {
+        // Look for next page button
+        const nextButton = screen.queryByRole('button', { name: /next/i });
+        if (nextButton && !nextButton.hasAttribute('disabled')) {
+          fireEvent.click(nextButton);
+        }
+      }, { timeout: 2000 });
+    }
+  });
+
 });

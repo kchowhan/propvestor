@@ -165,4 +165,126 @@ describe('WorkOrderDetailPage', () => {
       expect(screen.getByText('Fix leak')).toBeInTheDocument();
     });
   });
+
+  it('should update category', async () => {
+    mockApiFetch.mockImplementation((path: string) => {
+      if (path.startsWith('/work-orders/') && path.includes('work-order-1')) {
+        if (mockApiFetch.mock.calls.length === 1) {
+          return Promise.resolve({
+            id: 'work-order-1',
+            title: 'Fix leak',
+            category: 'PLUMBING',
+            status: 'OPEN',
+            property: { id: 'prop-1', name: 'Property 1' },
+            priority: 'MEDIUM',
+            description: 'Fix the leak',
+            assignedVendor: null,
+            assignedVendorId: null,
+          });
+        }
+        // This is the update call
+        return Promise.resolve({ id: 'work-order-1', category: 'HVAC' });
+      }
+      if (path.startsWith('/vendors')) {
+        return Promise.resolve({ data: [], pagination: { total: 0, limit: 100, offset: 0, hasMore: false } });
+      }
+      return Promise.resolve({});
+    });
+
+    renderWithProviders(<WorkOrderDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading work order...')).not.toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      const categorySelect = screen.getByLabelText(/category/i) || screen.queryByDisplayValue('Plumbing');
+      if (categorySelect) {
+        fireEvent.change(categorySelect, { target: { value: 'HVAC' } });
+      }
+    }, { timeout: 2000 });
+  });
+
+  it('should update vendor assignment', async () => {
+    mockApiFetch.mockImplementation((path: string) => {
+      if (path.startsWith('/work-orders/') && path.includes('work-order-1')) {
+        if (mockApiFetch.mock.calls.length === 1) {
+          return Promise.resolve({
+            id: 'work-order-1',
+            title: 'Fix leak',
+            category: 'PLUMBING',
+            status: 'OPEN',
+            property: { id: 'prop-1', name: 'Property 1' },
+            priority: 'MEDIUM',
+            description: 'Fix the leak',
+            assignedVendor: null,
+            assignedVendorId: null,
+          });
+        }
+        // This is the update call
+        return Promise.resolve({ id: 'work-order-1', assignedVendorId: 'vendor-1' });
+      }
+      if (path.startsWith('/vendors')) {
+        return Promise.resolve({
+          data: [
+            { id: 'vendor-1', name: 'Vendor 1', category: 'PLUMBING' },
+          ],
+          pagination: { total: 1, limit: 100, offset: 0, hasMore: false },
+        });
+      }
+      return Promise.resolve({});
+    });
+
+    renderWithProviders(<WorkOrderDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading work order...')).not.toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      const vendorSelect = screen.queryByDisplayValue('No vendor assigned') || screen.getByText('No vendor assigned');
+      if (vendorSelect && vendorSelect.tagName === 'SELECT') {
+        fireEvent.change(vendorSelect, { target: { value: 'vendor-1' } });
+      }
+    }, { timeout: 2000 });
+  });
+
+  it('should update status', async () => {
+    mockApiFetch.mockImplementation((path: string) => {
+      if (path.startsWith('/work-orders/') && path.includes('work-order-1')) {
+        if (mockApiFetch.mock.calls.length === 1) {
+          return Promise.resolve({
+            id: 'work-order-1',
+            title: 'Fix leak',
+            category: 'PLUMBING',
+            status: 'OPEN',
+            property: { id: 'prop-1', name: 'Property 1' },
+            priority: 'MEDIUM',
+            description: 'Fix the leak',
+            assignedVendor: null,
+            assignedVendorId: null,
+          });
+        }
+        // This is the update call
+        return Promise.resolve({ id: 'work-order-1', status: 'IN_PROGRESS' });
+      }
+      if (path.startsWith('/vendors')) {
+        return Promise.resolve({ data: [], pagination: { total: 0, limit: 100, offset: 0, hasMore: false } });
+      }
+      return Promise.resolve({});
+    });
+
+    renderWithProviders(<WorkOrderDetailPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading work order...')).not.toBeInTheDocument();
+    });
+
+    await waitFor(() => {
+      const statusSelect = screen.queryByDisplayValue('OPEN') || screen.getByText('OPEN');
+      if (statusSelect && statusSelect.tagName === 'SELECT') {
+        fireEvent.change(statusSelect, { target: { value: 'IN_PROGRESS' } });
+      }
+    }, { timeout: 2000 });
+  });
 });

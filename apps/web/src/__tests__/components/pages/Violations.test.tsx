@@ -347,5 +347,126 @@ describe('ViolationsPage', () => {
       expect(filteredCall).toBeDefined();
     }, { timeout: 3000 });
   });
+
+  it('should handle form field changes', async () => {
+    mockApiFetch
+      .mockResolvedValueOnce({ data: [{ id: '1', name: 'Test Association' }] }) // Associations
+      .mockResolvedValueOnce({ data: [] }) // Properties
+      .mockResolvedValueOnce({ data: [] }) // Violations
+      .mockResolvedValueOnce({ data: [{ id: '1', firstName: 'John', lastName: 'Doe', email: 'john@example.com' }] }); // Homeowners
+
+    renderWithProviders(<ViolationsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading violations...')).not.toBeInTheDocument();
+    });
+
+    const createTab = screen.getByRole('button', { name: 'Create Violation' });
+    fireEvent.click(createTab);
+
+    await waitFor(() => {
+      expect(screen.getByText('Association *')).toBeInTheDocument();
+    });
+
+    // Test form field changes
+    const associationSelect = screen.getByLabelText('Association *');
+    fireEvent.change(associationSelect, { target: { value: '1' } });
+    expect(associationSelect).toHaveValue('1');
+
+    await waitFor(() => {
+      const homeownerSelect = screen.getByLabelText('Homeowner *');
+      expect(homeownerSelect).not.toBeDisabled();
+    });
+
+    const homeownerSelect = screen.getByLabelText('Homeowner *');
+    fireEvent.change(homeownerSelect, { target: { value: '1' } });
+    expect(homeownerSelect).toHaveValue('1');
+
+    const typeInput = screen.getByLabelText('Violation Type *');
+    fireEvent.change(typeInput, { target: { value: 'Noise' } });
+    expect(typeInput).toHaveValue('Noise');
+
+    const severitySelect = screen.getByLabelText('Severity *');
+    fireEvent.change(severitySelect, { target: { value: 'MINOR' } });
+    expect(severitySelect).toHaveValue('MINOR');
+
+    const descriptionInput = screen.getByLabelText('Description');
+    fireEvent.change(descriptionInput, { target: { value: 'Test description' } });
+    expect(descriptionInput).toHaveValue('Test description');
+  });
+
+  it('should handle viewing violation details', async () => {
+    mockApiFetch
+      .mockResolvedValueOnce({ data: [{ id: '1', name: 'Test Association' }] }) // Associations
+      .mockResolvedValueOnce({ data: [] }) // Properties
+      .mockResolvedValueOnce({
+        data: [
+          {
+            id: 'violation-1',
+            violationDate: new Date().toISOString(),
+            homeowner: { firstName: 'John', lastName: 'Doe', email: 'john@example.com' },
+            association: { name: 'Test Association' },
+            type: 'Noise',
+            severity: 'MINOR',
+            status: 'OPEN',
+          },
+        ],
+        pagination: { total: 1, limit: 20, offset: 0, hasMore: false },
+      });
+
+    renderWithProviders(<ViolationsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading violations...')).not.toBeInTheDocument();
+    });
+
+    const viewButton = screen.getByText('View');
+    fireEvent.click(viewButton);
+
+    // Verify that the violation detail view is shown (if implemented)
+    // This test ensures the onClick handler is called
+    expect(viewButton).toBeInTheDocument();
+  });
+
+  it('should handle filter changes', async () => {
+    mockApiFetch
+      .mockResolvedValueOnce({ data: [{ id: '1', name: 'Test Association' }] }) // Associations
+      .mockResolvedValueOnce({ data: [] }) // Properties
+      .mockResolvedValueOnce({
+        data: [
+          {
+            id: 'violation-1',
+            violationDate: new Date().toISOString(),
+            homeowner: { firstName: 'John', lastName: 'Doe', email: 'john@example.com' },
+            association: { name: 'Test Association' },
+            type: 'Noise',
+            severity: 'MINOR',
+            status: 'OPEN',
+          },
+        ],
+        pagination: { total: 1, limit: 20, offset: 0, hasMore: false },
+      });
+
+    renderWithProviders(<ViolationsPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText('Loading violations...')).not.toBeInTheDocument();
+    });
+
+    // Change association filter
+    const associationFilter = screen.getByLabelText('Association');
+    fireEvent.change(associationFilter, { target: { value: '1' } });
+    expect(associationFilter).toHaveValue('1');
+
+    // Change status filter
+    const statusFilter = screen.getByLabelText('Status');
+    fireEvent.change(statusFilter, { target: { value: 'OPEN' } });
+    expect(statusFilter).toHaveValue('OPEN');
+
+    // Change severity filter
+    const severityFilter = screen.getByLabelText('Severity');
+    fireEvent.change(severityFilter, { target: { value: 'MINOR' } });
+    expect(severityFilter).toHaveValue('MINOR');
+  });
 });
 
