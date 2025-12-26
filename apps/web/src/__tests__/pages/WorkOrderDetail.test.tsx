@@ -1,5 +1,5 @@
 import React from 'react';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, fireEvent } from '@testing-library/react';
 import { renderWithProviders } from '../../../jest.setup';
 import { WorkOrderDetailPage } from '../../components/pages/WorkOrderDetail';
 
