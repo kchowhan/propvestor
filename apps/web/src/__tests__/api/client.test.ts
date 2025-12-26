@@ -134,4 +134,80 @@ describe('API Client', () => {
       'HTTP 500: Internal Server Error'
     );
   });
+
+  it('should handle error with message property', async () => {
+    const { apiFetch } = await import('../../api/client');
+    
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      statusText: 'Bad Request',
+      json: async () => ({
+        message: 'Validation error',
+      }),
+    });
+
+    await expect(apiFetch('/test', {})).rejects.toThrow('Validation error');
+  });
+
+  it('should handle error with status text only', async () => {
+    const { apiFetch } = await import('../../api/client');
+    
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: false,
+      status: 403,
+      statusText: 'Forbidden',
+      json: async () => ({}),
+    });
+
+    await expect(apiFetch('/test', {})).rejects.toThrow('HTTP 403: Forbidden');
+  });
+
+  it('should return data with pagination', async () => {
+    const { apiFetch } = await import('../../api/client');
+    
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: [{ id: '1' }, { id: '2' }],
+        pagination: { total: 2, limit: 20, offset: 0, hasMore: false },
+      }),
+    });
+
+    const result = await apiFetch('/test', {});
+    expect(result).toHaveProperty('data');
+    expect(result).toHaveProperty('pagination');
+  });
+
+  it('should return data without unwrapping when no data property', async () => {
+    const { apiFetch } = await import('../../api/client');
+    
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ id: '1', name: 'Test' }),
+    });
+
+    const result = await apiFetch('/test', {});
+    expect(result).toEqual({ id: '1', name: 'Test' });
+  });
+
+  it('should handle null token', async () => {
+    const { apiFetch } = await import('../../api/client');
+    
+    (global.fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: {} }),
+    });
+
+    await apiFetch('/test', { token: null });
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      'http://localhost:4000/api/test',
+      expect.objectContaining({
+        headers: expect.not.objectContaining({
+          Authorization: expect.any(String),
+        }),
+      })
+    );
+  });
 });

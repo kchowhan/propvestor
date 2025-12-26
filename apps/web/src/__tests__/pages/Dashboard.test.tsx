@@ -275,5 +275,122 @@ describe('DashboardPage', () => {
       expect(zeroValues.length).toBeGreaterThan(0);
     });
   });
+
+  it('should show high occupancy rate (>= 90%)', async () => {
+    mockApiFetch.mockResolvedValue({
+      totalProperties: 10,
+      totalUnits: 20,
+      occupancyRate: 0.95,
+      rentDueThisMonth: 10000,
+      rentCollectedThisMonth: 5000, // Different from occupancy to avoid duplicate percentages
+      openWorkOrders: 2,
+    });
+
+    renderWithProviders(<DashboardPage />);
+
+    await waitFor(() => {
+      // Check for occupancy rate specifically by looking for "Occupancy Rate" text nearby
+      const occupancyText = screen.getByText('Occupancy Rate');
+      const parent = occupancyText.closest('div');
+      expect(parent).toHaveTextContent('95%');
+    });
+  });
+
+  it('should show medium occupancy rate (70-89%)', async () => {
+    mockApiFetch.mockResolvedValue({
+      totalProperties: 10,
+      totalUnits: 20,
+      occupancyRate: 0.75,
+      rentDueThisMonth: 10000,
+      rentCollectedThisMonth: 5000, // Different from occupancy to avoid duplicate percentages
+      openWorkOrders: 2,
+    });
+
+    renderWithProviders(<DashboardPage />);
+
+    await waitFor(() => {
+      // Check for occupancy rate specifically by looking for "Occupancy Rate" text nearby
+      const occupancyText = screen.getByText('Occupancy Rate');
+      const parent = occupancyText.closest('div');
+      expect(parent).toHaveTextContent('75%');
+    });
+  });
+
+  it('should show low occupancy rate (< 70%)', async () => {
+    mockApiFetch.mockResolvedValue({
+      totalProperties: 10,
+      totalUnits: 20,
+      occupancyRate: 0.50,
+      rentDueThisMonth: 10000,
+      rentCollectedThisMonth: 8000, // Different from occupancy to avoid duplicate percentages
+      openWorkOrders: 2,
+    });
+
+    renderWithProviders(<DashboardPage />);
+
+    await waitFor(() => {
+      // Check for occupancy rate specifically by looking for "Occupancy Rate" text nearby
+      const occupancyText = screen.getByText('Occupancy Rate');
+      const parent = occupancyText.closest('div');
+      expect(parent).toHaveTextContent('50%');
+    });
+  });
+
+  it('should show high collection rate (>= 90%)', async () => {
+    mockApiFetch.mockResolvedValue({
+      totalProperties: 10,
+      totalUnits: 20,
+      occupancyRate: 0.8,
+      rentDueThisMonth: 10000,
+      rentCollectedThisMonth: 9500,
+      openWorkOrders: 2,
+    });
+
+    renderWithProviders(<DashboardPage />);
+
+    await waitFor(() => {
+      // Check for collection rate specifically by looking for "Collection Rate" text nearby
+      const collectionText = screen.getByText('Collection Rate');
+      const parent = collectionText.closest('div');
+      expect(parent).toHaveTextContent('95%');
+    });
+  });
+
+  it('should show medium collection rate (70-89%)', async () => {
+    mockApiFetch.mockResolvedValue({
+      totalProperties: 10,
+      totalUnits: 20,
+      occupancyRate: 0.8,
+      rentDueThisMonth: 10000,
+      rentCollectedThisMonth: 7500,
+      openWorkOrders: 2,
+    });
+
+    renderWithProviders(<DashboardPage />);
+
+    await waitFor(() => {
+      // Check for collection rate specifically by looking for "Collection Rate" text nearby
+      const collectionText = screen.getByText('Collection Rate');
+      const parent = collectionText.closest('div');
+      expect(parent).toHaveTextContent('75%');
+    });
+  });
+
+  it('should show all payments collected message when rent due is 0', async () => {
+    mockApiFetch.mockResolvedValue({
+      totalProperties: 10,
+      totalUnits: 20,
+      occupancyRate: 0.8,
+      rentDueThisMonth: 0,
+      rentCollectedThisMonth: 0,
+      openWorkOrders: 2,
+    });
+
+    renderWithProviders(<DashboardPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/all payments collected/i)).toBeInTheDocument();
+    });
+  });
 });
 

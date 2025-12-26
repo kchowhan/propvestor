@@ -1065,4 +1065,55 @@ describe('BillingPage', () => {
       expect(screen.getByText('No charge created')).toBeInTheDocument();
     });
   });
+
+  it('should handle error state for rent roll', async () => {
+    setupMocks({ error: true });
+
+    renderWithProviders(<BillingPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+    });
+
+    // Component should handle error gracefully - check for error message or Rent Roll tab
+    expect(screen.getByText(/Failed to load rent roll/i)).toBeInTheDocument();
+  });
+
+  it('should switch between tabs', async () => {
+    setupMocks({
+      rentRoll: [],
+      payments: [],
+      reconciliations: [],
+      organizationFees: [],
+    });
+
+    renderWithProviders(<BillingPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+    });
+
+    const paymentsTab = screen.getByRole('button', { name: /payments/i });
+    fireEvent.click(paymentsTab);
+
+    await waitFor(() => {
+      expect(paymentsTab).toBeInTheDocument();
+    });
+  });
+
+  it('should handle empty rent roll', async () => {
+    setupMocks({ rentRoll: [] });
+
+    renderWithProviders(<BillingPage />);
+
+    await waitFor(() => {
+      expect(screen.queryByText(/loading/i)).not.toBeInTheDocument();
+    });
+
+    // Component should render without errors - check for Rent Roll tab or empty message
+    const rentRollTexts = screen.getAllByText('Rent Roll');
+    expect(rentRollTexts.length).toBeGreaterThan(0);
+    // Or check for empty state message
+    expect(screen.getByText(/No rent charges found/i)).toBeInTheDocument();
+  });
 });

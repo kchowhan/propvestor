@@ -50,4 +50,25 @@ describe('ErrorBoundary', () => {
 
     expect(screen.getByText('No error')).toBeInTheDocument();
   });
+
+  it('should display error message', () => {
+    render(
+      <ErrorBoundary>
+        <ThrowError shouldThrow={true} />
+      </ErrorBoundary>
+    );
+
+    expect(screen.getByText(/Test error/i)).toBeInTheDocument();
+  });
+
+  it('should display reload button', () => {
+    render(
+      <ErrorBoundary>
+        <ThrowError shouldThrow={true} />
+      </ErrorBoundary>
+    );
+
+    const reloadButton = screen.getByText('Reload Page');
+    expect(reloadButton).toBeInTheDocument();
+  });
 });

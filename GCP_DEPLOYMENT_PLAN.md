@@ -118,7 +118,7 @@ gcloud iam service-accounts create propvestor-build \
 ```bash
 # Create Cloud SQL PostgreSQL instance
 gcloud sql instances create propvestor-db \
-  --database-version=POSTGRES_16 \
+  --database-version=POSTGRES_17 \
   --tier=db-f1-micro \
   --region=$REGION \
   --root-password=CHANGE_ME_STRONG_PASSWORD \

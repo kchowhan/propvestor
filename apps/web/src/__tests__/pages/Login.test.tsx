@@ -159,5 +159,87 @@ describe('LoginPage', () => {
       expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
     });
   });
+
+  it('should handle registration without verification notice', async () => {
+    const user = userEvent.setup();
+    mockRegister.mockResolvedValue({
+      user: { email: 'test@example.com' },
+      // No verification message
+    } as any);
+    renderWithProviders(<LoginPage />);
+
+    // Switch to register
+    await user.click(screen.getByText(/register/i));
+
+    // Fill form
+    await user.type(screen.getByLabelText(/full name/i), 'Test User');
+    await user.type(screen.getByLabelText(/email/i), 'test@example.com');
+    await user.type(screen.getByLabelText(/password/i), 'password123');
+    await user.type(screen.getByLabelText(/organization name/i), 'Test Org');
+
+    // Submit
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    await waitFor(() => {
+      expect(mockRegister).toHaveBeenCalled();
+      // Should not show verification notice if message doesn't include 'verification'
+      expect(screen.queryByText(/Check Your Email/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it('should display error message on registration failure', async () => {
+    const user = userEvent.setup();
+    mockRegister.mockRejectedValue(new Error('Registration failed'));
+    renderWithProviders(<LoginPage />);
+
+    // Switch to register
+    await user.click(screen.getByText(/register/i));
+
+    // Fill form
+    await user.type(screen.getByLabelText(/full name/i), 'Test User');
+    await user.type(screen.getByLabelText(/email/i), 'test@example.com');
+    await user.type(screen.getByLabelText(/password/i), 'password123');
+    await user.type(screen.getByLabelText(/organization name/i), 'Test Org');
+
+    // Submit
+    await user.click(screen.getByRole('button', { name: /create account/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/registration failed/i)).toBeInTheDocument();
+    });
+  });
+
+  it('should switch back to login from register mode', async () => {
+    const user = userEvent.setup();
+    renderWithProviders(<LoginPage />);
+
+    // Switch to register
+    await user.click(screen.getByText(/register/i));
+    expect(screen.getByLabelText(/full name/i)).toBeInTheDocument();
+
+    // Switch back to login
+    const switchButton = screen.getByText(/sign in/i);
+    await user.click(switchButton);
+
+    await waitFor(() => {
+      expect(screen.queryByLabelText(/full name/i)).not.toBeInTheDocument();
+      expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
+    });
+  });
+
+  it('should redirect when token is set', async () => {
+    // Mock useAuth to return a token
+    jest.spyOn(require('../../context/AuthContext'), 'useAuth').mockReturnValue({
+      login: mockLogin,
+      register: mockRegister,
+      token: 'test-token', // Token is set
+    });
+
+    renderWithProviders(<LoginPage />);
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/dashboard');
+    });
+  });
 });
 
