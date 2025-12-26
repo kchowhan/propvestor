@@ -1,6 +1,16 @@
-import { vi } from 'vitest';
+import { vi, beforeEach, afterEach } from 'vitest';
+import { cleanupRedis } from './redis-cleanup.js';
 
 // Global Stripe mock - used by all tests
+
+// Global Redis cleanup - ensures all tests start with clean Redis state
+beforeEach(async () => {
+  await cleanupRedis();
+});
+
+afterEach(async () => {
+  await cleanupRedis();
+});
 export const mockStripeWebhooks = {
   constructEvent: vi.fn(),
 };

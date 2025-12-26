@@ -15,10 +15,16 @@ export const cleanupRedis = async (): Promise<void> => {
       return;
     }
 
-    // Clear all rate limit keys
+    // Clear all rate limit keys (both global and custom patterns)
     const rateLimitKeys = await client.keys('ratelimit:*');
     if (rateLimitKeys.length > 0) {
       await client.del(rateLimitKeys);
+    }
+
+    // Clear subscription limit cache keys
+    const subscriptionKeys = await client.keys('subscription-limits:*');
+    if (subscriptionKeys.length > 0) {
+      await client.del(subscriptionKeys);
     }
 
     // Clear any other test-related keys (add more patterns as needed)

@@ -1,13 +1,23 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
 import { createApp } from '../app.js';
 import { env } from '../config/env.js';
 import { AppError } from '../lib/errors.js';
+import { cleanupRedis } from './setup/redis-cleanup.js';
 
 const app = createApp();
 
 describe('Middleware', () => {
+  beforeEach(async () => {
+    // Clean up Redis keys before each test to prevent rate limiting interference
+    await cleanupRedis();
+  });
+
+  afterEach(async () => {
+    // Clean up Redis keys after each test
+    await cleanupRedis();
+  });
   describe('requireAuth', () => {
     it('should allow request with valid token', async () => {
       const token = jwt.sign(
