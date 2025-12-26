@@ -3,7 +3,7 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ChatOverlay } from '../../components/ChatOverlay';
 
 // Mock scrollIntoView
-Element.prototype.scrollIntoView = jest.fn();
+(global as any).Element.prototype.scrollIntoView = jest.fn();
 
 const mockApiFetch = jest.fn();
 jest.mock('../../api/client', () => ({
@@ -21,7 +21,7 @@ jest.mock('../../context/AuthContext', () => ({
 describe('ChatOverlay', () => {
   beforeEach(() => {
     jest.clearAllMocks();
-    Element.prototype.scrollIntoView = jest.fn();
+    (global as any).Element.prototype.scrollIntoView = jest.fn();
   });
 
   it('should render closed by default', () => {
