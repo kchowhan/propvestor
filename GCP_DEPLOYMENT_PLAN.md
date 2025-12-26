@@ -92,7 +92,8 @@ gcloud services enable \
   cloudscheduler.googleapis.com \
   compute.googleapis.com \
   containerregistry.googleapis.com \
-  artifactregistry.googleapis.com
+  artifactregistry.googleapis.com \
+  servicenetworking.googleapis.com  # Required for VPC peering (Cloud SQL private IP, Memorystore Redis)
 ```
 
 ### 1.3 Set Up Service Accounts

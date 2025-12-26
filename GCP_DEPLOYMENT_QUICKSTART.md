@@ -23,7 +23,8 @@ gcloud projects create $PROJECT_ID
 gcloud config set project $PROJECT_ID
 gcloud services enable cloudbuild.googleapis.com run.googleapis.com \
   sqladmin.googleapis.com storage-component.googleapis.com \
-  secretmanager.googleapis.com cloudscheduler.googleapis.com
+  secretmanager.googleapis.com cloudscheduler.googleapis.com \
+  servicenetworking.googleapis.com  # Required for VPC peering (Cloud SQL private IP, Memorystore)
 ```
 
 ### 2. Create Service Accounts
