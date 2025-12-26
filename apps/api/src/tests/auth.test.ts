@@ -6,6 +6,7 @@ import { createApp } from '../app.js';
 import { prisma } from '../lib/prisma.js';
 import { env } from '../config/env.js';
 import { createTestUser, createTestOrganization, createTestMembership, cleanupTestData } from './setup.js';
+import { cleanupRedis } from './setup/redis-cleanup.js';
 
 const app = createApp();
 
@@ -15,10 +16,12 @@ describe('Auth Routes', () => {
   let testMembership: any;
 
   beforeEach(async () => {
+    await cleanupRedis(); // Clear Redis keys before each test
     await cleanupTestData();
   });
 
   afterEach(async () => {
+    await cleanupRedis(); // Clear Redis keys after each test
     await cleanupTestData();
   });
 

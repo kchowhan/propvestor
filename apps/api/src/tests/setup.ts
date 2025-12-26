@@ -4,6 +4,7 @@ import { PrismaClient } from '@prisma/client';
 export { prisma } from '../lib/prisma.js';
 
 import { prisma } from '../lib/prisma.js';
+import { cleanupRedis } from './setup/redis-cleanup.js';
 
 export const createTestUser = async (data?: {
   email?: string;
@@ -85,6 +86,8 @@ export const createTestSubscription = async (
 
 // Helper function to clean up all test data in the correct order
 export const cleanupTestData = async () => {
+  // Clean up Redis keys first (before database cleanup)
+  await cleanupRedis();
   // Delete in order of dependencies (children first, then parents)
   // Wrap each delete in try-catch to handle cases where records don't exist
   

@@ -5,6 +5,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     setupFiles: ['./src/tests/setup/stripe-mock.ts'],
+    globalSetup: ['./src/tests/setup/global-setup.ts'],
     pool: 'forks',
     poolOptions: {
       forks: {
