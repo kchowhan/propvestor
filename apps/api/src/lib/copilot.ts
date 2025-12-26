@@ -1,6 +1,6 @@
 import { prisma } from './prisma.js';
 
-export type OpsAssistantResult = {
+export type CopilotResult = {
   intent: string;
   reply: string;
   data?: unknown;
@@ -11,7 +11,7 @@ type IntentMatch = {
   id: string;
   description: string;
   match: (text: string) => boolean;
-  handle: (orgId: string, text: string) => Promise<Omit<OpsAssistantResult, 'intent' | 'suggestions'>>;
+  handle: (orgId: string, text: string) => Promise<Omit<CopilotResult, 'intent' | 'suggestions'>>;
 };
 
 const DEFAULT_SUGGESTIONS = [
@@ -484,7 +484,7 @@ const intents: IntentMatch[] = [
 
 const isHelpRequest = (text: string) => /help|what can you do|capabilities|commands/.test(text);
 
-export const runOpsAssistant = async (orgId: string, message: string): Promise<OpsAssistantResult> => {
+export const runCopilot = async (orgId: string, message: string): Promise<CopilotResult> => {
   const text = message.toLowerCase().trim();
 
   if (isHelpRequest(text)) {
@@ -518,3 +518,4 @@ export const runOpsAssistant = async (orgId: string, message: string): Promise<O
     suggestions: DEFAULT_SUGGESTIONS,
   };
 };
+

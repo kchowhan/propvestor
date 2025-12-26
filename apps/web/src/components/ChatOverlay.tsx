@@ -20,7 +20,7 @@ type ChatResponse = {
 const initialMessage: ChatMessage = {
   id: 'welcome',
   role: 'assistant',
-  content: "Hi! I'm your ops assistant. Ask me for KPIs, work orders, delinquent charges, or expiring leases.",
+  content: "Hi! I'm your copilot. Ask me for KPIs, work orders, delinquent charges, or expiring leases.",
 };
 
 export const ChatOverlay = () => {
@@ -176,7 +176,7 @@ export const ChatOverlay = () => {
         type="button"
         className="btn btn-primary rounded-full shadow-lg"
         onClick={() => setIsOpen((prev) => !prev)}
-        aria-label="Open ops assistant"
+        aria-label="Open copilot"
       >
         {isOpen ? 'Hide Copilot' : 'AI Copilot'}
       </button>

@@ -140,6 +140,11 @@ export const cleanupTestData = async () => {
   try { await prisma.organizationFee.deleteMany(); } catch {}
   
   // HOA Management - delete in dependency order
+  try { await prisma.violationLetter.deleteMany(); } catch {}
+  try { await prisma.violation.deleteMany(); } catch {}
+  try { await prisma.homeownerPayment.deleteMany(); } catch {}
+  try { await prisma.homeownerPaymentMethod.deleteMany(); } catch {}
+  try { await prisma.hOAFee.deleteMany(); } catch {}
   try { await prisma.boardMember.deleteMany(); } catch {}
   try { await prisma.homeowner.deleteMany(); } catch {}
   try { await prisma.association.deleteMany(); } catch {}

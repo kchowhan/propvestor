@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { AppError } from '../lib/errors.js';
-import { runOpsAssistant } from '../lib/ops-assistant.js';
+import { runCopilot } from '../lib/copilot.js';
 import { requireAuth } from '../middleware/auth.js';
 import { parseBody } from '../validators/common.js';
 
@@ -18,7 +18,7 @@ chatRouter.post('/', requireAuth, async (req, res, next) => {
     }
 
     const { message } = parseBody(chatRequestSchema, req.body);
-    const result = await runOpsAssistant(req.auth.organizationId, message);
+    const result = await runCopilot(req.auth.organizationId, message);
 
     res.json({ data: result });
   } catch (err) {

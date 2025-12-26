@@ -171,5 +171,163 @@ describe('Homeowner Portal Routes', () => {
       expect(response.status).toBe(401);
     });
   });
+
+  describe('GET /api/homeowner-portal/fees', () => {
+    it('should get homeowner fees', async () => {
+      const fee = await prisma.hOAFee.create({
+        data: {
+          associationId: testAssociation.id,
+          homeownerId: testHomeowner.id,
+          type: 'MONTHLY_DUES',
+          description: 'Monthly HOA fee',
+          amount: 200.0,
+          dueDate: new Date(),
+          status: 'PENDING',
+        },
+      });
+
+      const response = await request(app)
+        .get('/api/homeowner-portal/fees')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(response.body.data[0].id).toBe(fee.id);
+    });
+
+    it('should return 401 without token', async () => {
+      const response = await request(app).get('/api/homeowner-portal/fees');
+
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe('GET /api/homeowner-portal/payments', () => {
+    it('should get homeowner payments', async () => {
+      const fee = await prisma.hOAFee.create({
+        data: {
+          associationId: testAssociation.id,
+          homeownerId: testHomeowner.id,
+          type: 'MONTHLY_DUES',
+          description: 'Monthly HOA fee',
+          amount: 200.0,
+          dueDate: new Date(),
+          status: 'PENDING',
+        },
+      });
+
+      const payment = await prisma.homeownerPayment.create({
+        data: {
+          associationId: testAssociation.id,
+          homeownerId: testHomeowner.id,
+          hoaFeeId: fee.id,
+          amount: 200.0,
+          receivedDate: new Date(),
+          method: 'ONLINE_PROCESSOR' as any,
+        },
+      });
+
+      const response = await request(app)
+        .get('/api/homeowner-portal/payments')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(response.body.data[0].id).toBe(payment.id);
+    });
+
+    it('should return 401 without token', async () => {
+      const response = await request(app).get('/api/homeowner-portal/payments');
+
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe('GET /api/homeowner-portal/maintenance-requests', () => {
+    it('should get homeowner maintenance requests', async () => {
+      const pmUser = await createTestUser();
+      await prisma.organizationMembership.create({
+        data: {
+          userId: pmUser.id,
+          organizationId: testOrg.id,
+          role: 'OWNER',
+        },
+      });
+
+      const workOrder = await prisma.workOrder.create({
+        data: {
+          organizationId: testOrg.id,
+          propertyId: testProperty.id,
+          unitId: testUnit.id,
+          title: 'Test Maintenance Request',
+          description: 'Test description',
+          priority: 'NORMAL',
+          status: 'OPEN',
+          requestedByHomeownerId: testHomeowner.id,
+        },
+      });
+
+      const response = await request(app)
+        .get('/api/homeowner-portal/maintenance-requests')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(response.body.data[0].id).toBe(workOrder.id);
+    });
+
+    it('should return 401 without token', async () => {
+      const response = await request(app).get('/api/homeowner-portal/maintenance-requests');
+
+      expect(response.status).toBe(401);
+    });
+  });
+
+  describe('GET /api/violations (homeowner portal)', () => {
+    it('should get homeowner violations', async () => {
+      const pmUser = await createTestUser();
+      await prisma.organizationMembership.create({
+        data: {
+          userId: pmUser.id,
+          organizationId: testOrg.id,
+          role: 'OWNER',
+        },
+      });
+
+      const violation = await prisma.violation.create({
+        data: {
+          associationId: testAssociation.id,
+          homeownerId: testHomeowner.id,
+          type: 'NOISE',
+          severity: 'MINOR',
+          description: 'Test violation',
+          createdByUserId: pmUser.id,
+        },
+      });
+
+      const homeownerToken = jwt.sign(
+        { homeownerId: testHomeowner.id, associationId: testAssociation.id },
+        env.JWT_SECRET
+      );
+
+      const response = await request(app)
+        .get('/api/violations?homeownerId=current')
+        .set('Authorization', `Bearer ${homeownerToken}`);
+
+      expect(response.status).toBe(200);
+      expect(Array.isArray(response.body.data)).toBe(true);
+      expect(response.body.data.length).toBeGreaterThanOrEqual(1);
+      expect(response.body.data[0].id).toBe(violation.id);
+    });
+
+    it('should return 401 without token', async () => {
+      const response = await request(app).get('/api/homeowner-portal/violations');
+
+      expect(response.status).toBe(401);
+    });
+  });
 });
 

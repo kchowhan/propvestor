@@ -173,17 +173,19 @@ export default function UnifiedLogin() {
             </button>
           </form>
 
-          <div className="mt-6 text-center space-y-2">
+          <div className="mt-6 text-center space-y-3">
             <p className="text-sm text-slate-600">
-              Don't have an account?{' '}
-              <Link href="/homeowner/register" className="text-primary-600 hover:underline">
+              Don't have an account?
+            </p>
+            <div className="flex flex-col gap-2">
+              <Link href="/homeowner/register" className="text-sm text-primary-600 hover:text-primary-700 hover:underline font-medium">
                 Register as Homeowner
               </Link>
-              {' or '}
-              <Link href="/login" className="text-primary-600 hover:underline">
+              <span className="text-xs text-slate-400">or</span>
+              <Link href="/register" className="text-sm text-primary-600 hover:text-primary-700 hover:underline font-medium">
                 Sign up as Property Manager
               </Link>
-            </p>
+            </div>
           </div>
         </div>
       </div>

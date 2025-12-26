@@ -263,5 +263,152 @@ describe('Subscription Middleware', () => {
       }
     });
   });
+
+  describe('requireActiveSubscription middleware', () => {
+    it('should allow access when no subscription exists (free tier)', async () => {
+      const { requireActiveSubscription } = await import('../../middleware/subscription.js');
+      const req: any = {
+        auth: { organizationId: testOrg.id },
+      };
+      const res: any = {};
+      let nextCalled = false;
+      let nextError: any = null;
+      const next = (error?: any) => {
+        nextCalled = true;
+        nextError = error;
+      };
+
+      await requireActiveSubscription(req, res, next);
+
+      expect(nextCalled).toBe(true);
+      expect(nextError).toBeUndefined();
+    });
+
+    it('should allow access with active subscription', async () => {
+      await prisma.subscription.create({
+        data: {
+          organizationId: testOrg.id,
+          planId: freePlan.id,
+          status: 'ACTIVE',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      const { requireActiveSubscription } = await import('../../middleware/subscription.js');
+      const req: any = {
+        auth: { organizationId: testOrg.id },
+      };
+      const res: any = {};
+      let nextCalled = false;
+      const next = () => {
+        nextCalled = true;
+      };
+
+      await requireActiveSubscription(req, res, next);
+
+      expect(nextCalled).toBe(true);
+    });
+
+    it('should block access with expired subscription', async () => {
+      await prisma.subscription.create({
+        data: {
+          organizationId: testOrg.id,
+          planId: freePlan.id,
+          status: 'EXPIRED',
+          currentPeriodStart: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+          currentPeriodEnd: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      const { requireActiveSubscription } = await import('../../middleware/subscription.js');
+      const req: any = {
+        auth: { organizationId: testOrg.id },
+      };
+      const res: any = {};
+      let nextError: any = null;
+      const next = (error?: any) => {
+        nextError = error;
+      };
+
+      await requireActiveSubscription(req, res, next);
+
+      expect(nextError).toBeDefined();
+      expect(nextError.status).toBe(403);
+      expect(nextError.code).toBe('SUBSCRIPTION_REQUIRED');
+    });
+  });
+
+  describe('requireFeature middleware', () => {
+    it('should allow access to free features without subscription', async () => {
+      const { requireFeature } = await import('../../middleware/subscription.js');
+      const middleware = requireFeature('properties');
+      
+      const req: any = {
+        auth: { organizationId: testOrg.id },
+      };
+      const res: any = {};
+      let nextCalled = false;
+      const next = () => {
+        nextCalled = true;
+      };
+
+      await middleware(req, res, next);
+
+      expect(nextCalled).toBe(true);
+    });
+
+    it('should block access to premium features without subscription', async () => {
+      const { requireFeature } = await import('../../middleware/subscription.js');
+      const middleware = requireFeature('reports');
+      
+      const req: any = {
+        auth: { organizationId: testOrg.id },
+      };
+      const res: any = {};
+      let nextError: any = null;
+      const next = (error?: any) => {
+        nextError = error;
+      };
+
+      await middleware(req, res, next);
+
+      expect(nextError).toBeDefined();
+      expect(nextError.status).toBe(403);
+      expect(nextError.code).toBe('FEATURE_NOT_AVAILABLE');
+    });
+  });
+
+  describe('getSubscriptionInfo', () => {
+    it('should return subscription info for organization with subscription', async () => {
+      await prisma.subscription.create({
+        data: {
+          organizationId: testOrg.id,
+          planId: freePlan.id,
+          status: 'ACTIVE',
+          currentPeriodStart: new Date(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        },
+      });
+
+      const { getSubscriptionInfo } = await import('../../middleware/subscription.js');
+      const info = await getSubscriptionInfo(testOrg.id);
+
+      expect(info).toBeDefined();
+      expect(info.subscription).toBeDefined();
+      expect(info.limits).toBeDefined();
+      expect(info.hasActiveSubscription).toBe(true);
+    });
+
+    it('should return subscription info for organization without subscription', async () => {
+      const { getSubscriptionInfo } = await import('../../middleware/subscription.js');
+      const info = await getSubscriptionInfo(testOrg.id);
+
+      expect(info).toBeDefined();
+      expect(info.subscription).toBeNull();
+      expect(info.limits).toBeDefined();
+      expect(info.hasActiveSubscription).toBe(false);
+    });
+  });
 });
 

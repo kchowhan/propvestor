@@ -179,7 +179,7 @@ describe('Homeowner Auth Routes', () => {
     });
   });
 
-  describe('POST /api/homeowner-auth/login', () => {
+  describe('POST /api/auth/login (unified login - homeowner)', () => {
     it('should login homeowner with valid credentials', async () => {
       const passwordHash = await bcrypt.hash('password123', 10);
       const homeowner = await prisma.homeowner.create({
@@ -193,7 +193,7 @@ describe('Homeowner Auth Routes', () => {
       });
 
       const response = await request(app)
-        .post('/api/homeowner-auth/login')
+        .post('/api/auth/login')
         .send({
           email: 'john@example.com',
           password: 'password123',
@@ -202,6 +202,7 @@ describe('Homeowner Auth Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.token).toBeDefined();
+      expect(response.body.userType).toBe('homeowner');
       expect(response.body.homeowner.id).toBe(homeowner.id);
       expect(response.body.homeowner.email).toBe('john@example.com');
       expect(response.body.association).toBeDefined();
@@ -220,7 +221,7 @@ describe('Homeowner Auth Routes', () => {
       });
 
       const response = await request(app)
-        .post('/api/homeowner-auth/login')
+        .post('/api/auth/login')
         .send({
           email: 'john@example.com',
           password: 'password123',
@@ -228,6 +229,7 @@ describe('Homeowner Auth Routes', () => {
 
       expect(response.status).toBe(200);
       expect(response.body.token).toBeDefined();
+      expect(response.body.userType).toBe('homeowner');
     });
 
     it('should return 401 for invalid password', async () => {
@@ -243,7 +245,7 @@ describe('Homeowner Auth Routes', () => {
       });
 
       const response = await request(app)
-        .post('/api/homeowner-auth/login')
+        .post('/api/auth/login')
         .send({
           email: 'john@example.com',
           password: 'wrongpassword',
@@ -255,7 +257,7 @@ describe('Homeowner Auth Routes', () => {
 
     it('should return 401 for non-existent email', async () => {
       const response = await request(app)
-        .post('/api/homeowner-auth/login')
+        .post('/api/auth/login')
         .send({
           email: 'nonexistent@example.com',
           password: 'password123',
@@ -268,17 +270,17 @@ describe('Homeowner Auth Routes', () => {
       await prisma.homeowner.create({
         data: {
           associationId: testAssociation.id,
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john@example.com',
+          firstName: 'NoPassword',
+          lastName: 'User',
+          email: 'nopassword@example.com',
           // No passwordHash
         },
       });
 
       const response = await request(app)
-        .post('/api/homeowner-auth/login')
+        .post('/api/auth/login')
         .send({
-          email: 'john@example.com',
+          email: 'nopassword@example.com',
           password: 'password123',
         });
 
@@ -291,18 +293,18 @@ describe('Homeowner Auth Routes', () => {
       await prisma.homeowner.create({
         data: {
           associationId: testAssociation.id,
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john@example.com',
+          firstName: 'Archived',
+          lastName: 'User',
+          email: 'archived@example.com',
           passwordHash,
           archivedAt: new Date(),
         },
       });
 
       const response = await request(app)
-        .post('/api/homeowner-auth/login')
+        .post('/api/auth/login')
         .send({
-          email: 'john@example.com',
+          email: 'archived@example.com',
           password: 'password123',
         });
 

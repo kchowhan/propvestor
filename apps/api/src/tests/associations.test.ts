@@ -66,7 +66,7 @@ describe('Associations Routes', () => {
       expect(association2Data.name).toBe('Ocean View HOA List Test');
     });
 
-    it('should filter by isActive', async () => {
+    it('should filter by isActive=true', async () => {
       await prisma.association.create({
         data: {
           organizationId: testOrg.id,
@@ -90,6 +90,138 @@ describe('Associations Routes', () => {
       expect(response.status).toBe(200);
       expect(response.body.data).toHaveLength(1);
       expect(response.body.data[0].name).toBe('Active HOA');
+    });
+
+    it('should filter by isActive=false', async () => {
+      await prisma.association.create({
+        data: {
+          organizationId: testOrg.id,
+          name: 'Active HOA',
+          isActive: true,
+        },
+      });
+
+      await prisma.association.create({
+        data: {
+          organizationId: testOrg.id,
+          name: 'Inactive HOA',
+          isActive: false,
+        },
+      });
+
+      const response = await request(app)
+        .get('/api/associations?isActive=false')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data).toHaveLength(1);
+      expect(response.body.data[0].name).toBe('Inactive HOA');
+    });
+
+    it('should include property counts from homeowners with units', async () => {
+      const association = await prisma.association.create({
+        data: {
+          organizationId: testOrg.id,
+          name: 'HOA with Properties',
+        },
+      });
+
+      const property = await prisma.property.create({
+        data: {
+          organizationId: testOrg.id,
+          name: 'Test Property',
+          addressLine1: '123 Main St',
+          city: 'Test City',
+          state: 'CA',
+          postalCode: '12345',
+          country: 'USA',
+          type: 'MULTI_FAMILY',
+        },
+      });
+
+      const unit1 = await prisma.unit.create({
+        data: {
+          propertyId: property.id,
+          name: 'Unit 1',
+        },
+      });
+
+      const unit2 = await prisma.unit.create({
+        data: {
+          propertyId: property.id,
+          name: 'Unit 2',
+        },
+      });
+
+      await prisma.homeowner.create({
+        data: {
+          associationId: association.id,
+          unitId: unit1.id,
+          firstName: 'John',
+          lastName: 'Doe',
+          email: 'john-props@example.com',
+        },
+      });
+
+      await prisma.homeowner.create({
+        data: {
+          associationId: association.id,
+          unitId: unit2.id,
+          firstName: 'Jane',
+          lastName: 'Smith',
+          email: 'jane-props@example.com',
+        },
+      });
+
+      const response = await request(app)
+        .get('/api/associations')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      const associationData = response.body.data.find((a: any) => a.id === association.id);
+      expect(associationData).toBeDefined();
+      expect(associationData.propertyCount).toBe(1); // Both homeowners share same property
+    });
+
+    it('should include property counts from homeowners with direct property', async () => {
+      const association = await prisma.association.create({
+        data: {
+          organizationId: testOrg.id,
+          name: 'HOA with Direct Properties',
+        },
+      });
+
+      const property = await prisma.property.create({
+        data: {
+          organizationId: testOrg.id,
+          name: 'Test Property',
+          addressLine1: '123 Main St',
+          city: 'Test City',
+          state: 'CA',
+          postalCode: '12345',
+          country: 'USA',
+          type: 'SINGLE_FAMILY',
+        },
+      });
+
+      await prisma.homeowner.create({
+        data: {
+          associationId: association.id,
+          propertyId: property.id,
+          firstName: 'John',
+          lastName: 'Doe',
+          email: 'john-direct@example.com',
+        },
+      });
+
+      const response = await request(app)
+        .get('/api/associations')
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      const associationData = response.body.data.find((a: any) => a.id === association.id);
+      expect(associationData).toBeDefined();
+      expect(associationData.propertyCount).toBe(1);
     });
 
     it('should include counts for homeowners and board members', async () => {
@@ -281,6 +413,98 @@ describe('Associations Routes', () => {
 
       expect(response.status).toBe(404);
     });
+
+    it('should include properties and units from homeowners with units', async () => {
+      const association = await prisma.association.create({
+        data: {
+          organizationId: testOrg.id,
+          name: 'HOA with Units',
+        },
+      });
+
+      const property = await prisma.property.create({
+        data: {
+          organizationId: testOrg.id,
+          name: 'Test Property',
+          addressLine1: '123 Main St',
+          city: 'Test City',
+          state: 'CA',
+          postalCode: '12345',
+          country: 'USA',
+          type: 'MULTI_FAMILY',
+        },
+      });
+
+      const unit = await prisma.unit.create({
+        data: {
+          propertyId: property.id,
+          name: 'Unit 1',
+          bedrooms: 2,
+          bathrooms: 1,
+          squareFeet: 1000,
+        },
+      });
+
+      await prisma.homeowner.create({
+        data: {
+          associationId: association.id,
+          unitId: unit.id,
+          firstName: 'John',
+          lastName: 'Doe',
+          email: 'john-units@example.com',
+        },
+      });
+
+      const response = await request(app)
+        .get(`/api/associations/${association.id}`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.properties).toBeDefined();
+      expect(response.body.data.units).toBeDefined();
+      expect(response.body.data.properties.length).toBeGreaterThan(0);
+      expect(response.body.data.units.length).toBeGreaterThan(0);
+    });
+
+    it('should include properties from homeowners with direct property', async () => {
+      const association = await prisma.association.create({
+        data: {
+          organizationId: testOrg.id,
+          name: 'HOA with Direct Property',
+        },
+      });
+
+      const property = await prisma.property.create({
+        data: {
+          organizationId: testOrg.id,
+          name: 'Test Property',
+          addressLine1: '123 Main St',
+          city: 'Test City',
+          state: 'CA',
+          postalCode: '12345',
+          country: 'USA',
+          type: 'SINGLE_FAMILY',
+        },
+      });
+
+      await prisma.homeowner.create({
+        data: {
+          associationId: association.id,
+          propertyId: property.id,
+          firstName: 'John',
+          lastName: 'Doe',
+          email: 'john-direct-prop@example.com',
+        },
+      });
+
+      const response = await request(app)
+        .get(`/api/associations/${association.id}`)
+        .set('Authorization', `Bearer ${token}`);
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.properties).toBeDefined();
+      expect(response.body.data.properties.length).toBeGreaterThan(0);
+    });
   });
 
   describe('PUT /api/associations/:id', () => {
@@ -338,6 +562,29 @@ describe('Associations Routes', () => {
         .send({ name: 'Updated' });
 
       expect(response.status).toBe(404);
+    });
+
+    it('should update with null values', async () => {
+      const association = await prisma.association.create({
+        data: {
+          organizationId: testOrg.id,
+          name: 'Test HOA',
+          city: 'San Francisco',
+          phone: '415-555-1234',
+        },
+      });
+
+      const response = await request(app)
+        .put(`/api/associations/${association.id}`)
+        .set('Authorization', `Bearer ${token}`)
+        .send({
+          city: null,
+          phone: null,
+        });
+
+      expect(response.status).toBe(200);
+      expect(response.body.data.city).toBeNull();
+      expect(response.body.data.phone).toBeNull();
     });
   });
 
