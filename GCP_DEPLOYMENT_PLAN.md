@@ -866,7 +866,7 @@ echo -n "https://app.yourdomain.com" | gcloud secrets versions add cors-origin \
 
 # Redeploy backend with new CORS origin
 gcloud builds submit --config=cloudbuild-backend.yaml \
-  --substitutions=_REGION=us-central1,_CLOUDSQL_CONNECTION_NAME=${PROJECT_ID}:us-central1:propvestor-db,_DB_PASSWORD=$(gcloud secrets versions access latest --secret=db-password),_GCS_BUCKET_NAME=propvestor-documents-prod,_VPC_CONNECTOR=propvestor-connector,_IMAGE_TAG=$(git rev-parse --short HEAD)
+  --substitutions=_REGION=us-central1,_CLOUDSQL_CONNECTION_NAME=${PROJECT_ID}:us-central1:propvestor-db,_DB_PASSWORD=$(gcloud secrets versions access latest --secret=db-password),_GCS_BUCKET_NAME=propvestor-documents-prod,_VPC_CONNECTOR=propvestor-connector
 
 # Update marketing site with new app URL
 gcloud builds submit --config=cloudbuild-marketing.yaml \
@@ -1135,7 +1135,7 @@ jobs:
       - name: 'Submit to Cloud Build'
         run: |
           gcloud builds submit --config=cloudbuild-backend.yaml \
-            --substitutions=_REGION=${{ env.REGION }},_CLOUDSQL_CONNECTION_NAME=${{ env.PROJECT_ID }}:${{ env.REGION }}:propvestor-db,_GCS_BUCKET_NAME=propvestor-documents-prod,_VPC_CONNECTOR=propvestor-connector,_IMAGE_TAG=${{ github.sha }}
+            --substitutions=_REGION=${{ env.REGION }},_CLOUDSQL_CONNECTION_NAME=${{ env.PROJECT_ID }}:${{ env.REGION }}:propvestor-db,_GCS_BUCKET_NAME=propvestor-documents-prod,_VPC_CONNECTOR=propvestor-connector
           # Note: _DB_PASSWORD is not needed here as it's handled by the Cloud Build file's substitution
           # However, if you need to pass it explicitly, use: _DB_PASSWORD=$(gcloud secrets versions access latest --secret=db-password)
 ```

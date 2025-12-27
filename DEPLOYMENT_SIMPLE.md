@@ -117,7 +117,7 @@ If you need to deploy manually:
 # Backend
 # Note: _DB_PASSWORD must be passed explicitly
 gcloud builds submit --config=cloudbuild-backend.yaml \
-  --substitutions=_REGION=us-central1,_CLOUDSQL_CONNECTION_NAME=$(gcloud config get-value project):us-central1:propvestor-db,_DB_PASSWORD=$(gcloud secrets versions access latest --secret=db-password),_GCS_BUCKET_NAME=propvestor-documents-prod,_VPC_CONNECTOR=propvestor-connector,_IMAGE_TAG=$(git rev-parse --short HEAD)
+  --substitutions=_REGION=us-central1,_CLOUDSQL_CONNECTION_NAME=$(gcloud config get-value project):us-central1:propvestor-db,_DB_PASSWORD=$(gcloud secrets versions access latest --secret=db-password),_GCS_BUCKET_NAME=propvestor-documents-prod,_VPC_CONNECTOR=propvestor-connector
 
 # Frontend
 gcloud builds submit --config=cloudbuild-frontend.yaml \

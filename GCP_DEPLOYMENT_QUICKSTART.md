@@ -183,7 +183,7 @@ read_file
 # Deploy backend
 # Note: _DB_PASSWORD must be passed explicitly as Cloud Build substitutions cannot execute shell commands
 gcloud builds submit --config=cloudbuild-backend.yaml \
-  --substitutions=_REGION=$REGION,_CLOUDSQL_CONNECTION_NAME=${PROJECT_ID}:${REGION}:propvestor-db,_DB_PASSWORD=$(gcloud secrets versions access latest --secret=db-password),_GCS_BUCKET_NAME=propvestor-documents-prod,_VPC_CONNECTOR=propvestor-connector,_IMAGE_TAG=$(git rev-parse --short HEAD)
+  --substitutions=_REGION=$REGION,_CLOUDSQL_CONNECTION_NAME=${PROJECT_ID}:${REGION}:propvestor-db,_DB_PASSWORD=$(gcloud secrets versions access latest --secret=db-password),_GCS_BUCKET_NAME=propvestor-documents-prod,_VPC_CONNECTOR=propvestor-connector
 
 # Get backend URL
 BACKEND_URL=$(gcloud run services describe propvestor-api \
