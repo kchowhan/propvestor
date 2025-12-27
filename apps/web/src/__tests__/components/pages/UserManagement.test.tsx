@@ -126,10 +126,14 @@ describe('UserManagementPage', () => {
     }, { timeout: 2000 });
 
     const emailInput = screen.getByPlaceholderText('User email');
-    const submitButton = screen.getByRole('button', { name: /add.*user/i });
+    // Get submit button specifically (not the tab button)
+    const buttons = screen.getAllByRole('button', { name: /add.*user/i });
+    const submitButton = buttons.find(btn => btn.getAttribute('type') === 'submit');
 
     fireEvent.change(emailInput, { target: { value: 'existing@example.com' } });
-    fireEvent.click(submitButton);
+    if (submitButton) {
+      fireEvent.click(submitButton);
+    }
 
     await waitFor(() => {
       expect(mockApiFetch).toHaveBeenCalledWith(
