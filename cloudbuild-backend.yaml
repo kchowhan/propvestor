@@ -1,6 +1,6 @@
 steps:
   # Build the container image
-  # Use $BUILD_ID if _IMAGE_TAG is 'latest', otherwise use _IMAGE_TAG
+  # Uses $BUILD_ID (built-in Cloud Build variable) for unique image tags
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -80,10 +80,6 @@ substitutions:
   # VPC connector name - required for Memorystore Redis access
   # Set to empty string '' if not using Redis
   _VPC_CONNECTOR: propvestor-connector
-  # Image tag - defaults to 'latest' if not provided
-  # For local builds, pass: _IMAGE_TAG=$(git rev-parse --short HEAD)
-  # For CI/CD, pass: _IMAGE_TAG=${{ github.sha }} or use $SHORT_SHA
-  _IMAGE_TAG: 'latest'
 
 options:
   machineType: 'E2_HIGHCPU_8'
