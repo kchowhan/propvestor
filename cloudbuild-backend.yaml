@@ -6,7 +6,7 @@ steps:
       - '-f'
       - 'apps/api/Dockerfile'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/propvestor-api:$SHORT_SHA'
+      - 'gcr.io/$PROJECT_ID/propvestor-api:${_IMAGE_TAG}'
       - '-t'
       - 'gcr.io/$PROJECT_ID/propvestor-api:latest'
       - '.'
@@ -15,7 +15,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/propvestor-api:$SHORT_SHA'
+      - 'gcr.io/$PROJECT_ID/propvestor-api:${_IMAGE_TAG}'
 
   - name: 'gcr.io/cloud-builders/docker'
     args:
@@ -30,7 +30,7 @@ steps:
       - 'deploy'
       - 'propvestor-api'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/propvestor-api:$SHORT_SHA'
+      - 'gcr.io/$PROJECT_ID/propvestor-api:${_IMAGE_TAG}'
       - '--region'
       - '${_REGION}'
       - '--platform'
@@ -77,11 +77,14 @@ substitutions:
   # VPC connector name - required for Memorystore Redis access
   # Set to empty string '' if not using Redis
   _VPC_CONNECTOR: propvestor-connector
+  # Image tag - defaults to BUILD_ID if not provided, or use SHORT_SHA if available
+  # When submitting from local directory, BUILD_ID is always available
+  _IMAGE_TAG: '${BUILD_ID}'
 
 options:
   machineType: 'E2_HIGHCPU_8'
   logging: CLOUD_LOGGING_ONLY
 
 images:
-  - 'gcr.io/$PROJECT_ID/propvestor-api:$SHORT_SHA'
+  - 'gcr.io/$PROJECT_ID/propvestor-api:${_IMAGE_TAG}'
   - 'gcr.io/$PROJECT_ID/propvestor-api:latest'
