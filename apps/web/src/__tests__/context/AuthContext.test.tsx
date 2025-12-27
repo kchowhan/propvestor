@@ -16,12 +16,64 @@ jest.mock('next/navigation', () => ({
   }),
 }));
 
+// Setup localStorage mock before tests - use a shared store to avoid conflicts
+if (!(window as any).__localStorageStore) {
+  (window as any).__localStorageStore = {};
+}
+const localStorageStore: Record<string, string> = (window as any).__localStorageStore;
+
+const localStorageMock = {
+  getItem: jest.fn((key: string) => localStorageStore[key] || null),
+  setItem: jest.fn((key: string, value: string) => {
+    localStorageStore[key] = value.toString();
+  }),
+  removeItem: jest.fn((key: string) => {
+    delete localStorageStore[key];
+  }),
+  clear: jest.fn(() => {
+    Object.keys(localStorageStore).forEach(key => delete localStorageStore[key]);
+  }),
+};
+
+// Only define if not already defined to avoid conflicts
+if (!window.localStorage || !(window.localStorage as any).__isMock) {
+  Object.defineProperty(window, 'localStorage', {
+    value: localStorageMock,
+    writable: true,
+    configurable: true,
+  });
+  (localStorageMock as any).__isMock = true;
+}
+
 describe('AuthContext', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // Clear the store first
+    Object.keys(localStorageStore).forEach(key => delete localStorageStore[key]);
+    // Re-set mock implementations (don't use clearAllMocks as it breaks the implementations)
+    localStorageMock.getItem.mockImplementation((key: string) => localStorageStore[key] || null);
+    localStorageMock.setItem.mockImplementation((key: string, value: string) => {
+      localStorageStore[key] = value.toString();
+    });
+    localStorageMock.removeItem.mockImplementation((key: string) => {
+      delete localStorageStore[key];
+    });
+    localStorageMock.clear.mockImplementation(() => {
+      Object.keys(localStorageStore).forEach(key => delete localStorageStore[key]);
+    });
+    // Set default session hint for most tests
+    localStorageMock.setItem('has_pm_session', 'true');
+    // Clear API mocks
+    mockApiFetch.mockClear();
+  });
+
+  afterEach(() => {
+    // Clean up store
+    Object.keys(localStorageStore).forEach(key => delete localStorageStore[key]);
   });
 
   it('should provide auth context', () => {
+    // For this test, simulate no session hint (no localStorage)
+    localStorageMock.removeItem('has_pm_session');
     mockApiFetch.mockRejectedValueOnce(new Error('Unauthorized'));
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <AuthProvider>{children}</AuthProvider>
@@ -35,6 +87,7 @@ describe('AuthContext', () => {
   });
 
   it('should load session from cookies', async () => {
+    // Session hint should already be set by beforeEach
     mockApiFetch.mockResolvedValue({
       user: { id: '1', name: 'Test', email: 'test@example.com' },
       organization: { id: '1', name: 'Test Org', slug: 'test' },
@@ -54,6 +107,7 @@ describe('AuthContext', () => {
   });
 
   it('should login successfully', async () => {
+    // Session hint should already be set by beforeEach
     mockApiFetch
       .mockRejectedValueOnce(new Error('Unauthorized'))
       .mockResolvedValueOnce({
@@ -100,6 +154,7 @@ describe('AuthContext', () => {
   });
 
   it('should register successfully', async () => {
+    // Session hint should already be set by beforeEach
     mockApiFetch
       .mockRejectedValueOnce(new Error('Unauthorized'))
       .mockResolvedValueOnce({
@@ -130,6 +185,7 @@ describe('AuthContext', () => {
   });
 
   it('should switch organization successfully', async () => {
+    // Session hint should already be set by beforeEach
     mockApiFetch
       .mockResolvedValueOnce({
         user: { id: '1', name: 'Test', email: 'test@example.com' },
@@ -175,6 +231,7 @@ describe('AuthContext', () => {
   });
 
   it('should create organization successfully', async () => {
+    // Session hint should already be set by beforeEach
     mockApiFetch
       .mockResolvedValueOnce({
         user: { id: '1', name: 'Test', email: 'test@example.com' },

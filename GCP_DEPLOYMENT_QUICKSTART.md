@@ -164,6 +164,11 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
   --role="roles/storage.objectCreator"
 
+# Artifact Registry permissions (required for pushing Docker images to GCR)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
+  --role="roles/artifactregistry.writer"
+
 # Also grant permissions to Compute Engine default service account
 # (sometimes used by Cloud Build for source uploads and logging)
 gcloud projects add-iam-policy-binding $PROJECT_ID \
