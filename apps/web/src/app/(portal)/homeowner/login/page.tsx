@@ -20,6 +20,19 @@ export default function HomeownerLoginPage() {
   const [selectedHomeownerId, setSelectedHomeownerId] = useState('');
   const [loadingHomeowners, setLoadingHomeowners] = useState(false);
 
+  // Redirect regular users to unified login (unless they're super admin using impersonation)
+  useEffect(() => {
+    // Wait a bit to check auth state, then redirect if not super admin
+    const timer = setTimeout(() => {
+      // Only redirect if not in superadmin mode and not already logged in as super admin
+      // This allows super admins to use the impersonation feature
+      if (!showSuperadminMode && (!userToken || !user?.isSuperAdmin)) {
+        router.replace('/login');
+      }
+    }, 100);
+    return () => clearTimeout(timer);
+  }, [showSuperadminMode, userToken, user, router]);
+
   // Load homeowners for superadmin selection
   useEffect(() => {
     if (showSuperadminMode && userToken && user?.isSuperAdmin) {

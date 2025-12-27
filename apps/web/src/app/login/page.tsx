@@ -49,13 +49,23 @@ export default function UnifiedLogin() {
 
       if (data.userType === 'homeowner') {
         if (data.homeowner && data.association) {
-          router.replace('/homeowner/dashboard');
+          // Set localStorage hint to trigger auth context reload on next page
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('has_ho_session', 'true');
+          }
+          // Redirect with full page reload to ensure auth context picks up the session
+          window.location.href = '/homeowner/dashboard';
         } else {
           throw new Error('Invalid response from server: missing homeowner data');
         }
       } else if (data.userType === 'property-manager') {
         if (data.user) {
-          router.replace('/dashboard');
+          // Set localStorage hint to trigger auth context reload on next page
+          if (typeof window !== 'undefined') {
+            localStorage.setItem('has_pm_session', 'true');
+          }
+          // Redirect with full page reload to ensure auth context picks up the session
+          window.location.href = '/dashboard';
         } else {
           throw new Error('Invalid response from server: missing user data');
         }
