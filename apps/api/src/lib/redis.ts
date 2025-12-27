@@ -24,4 +24,20 @@ export const getRedisClient = async (): Promise<RedisClientType | null> => {
   return connectPromise;
 };
 
+/**
+ * Close the Redis client connection
+ * Should be called during test teardown to allow the process to exit
+ */
+export const closeRedisClient = async (): Promise<void> => {
+  if (client) {
+    try {
+      await client.quit();
+    } catch (error) {
+      // Ignore errors during cleanup
+    }
+    client = null;
+    connectPromise = null;
+  }
+};
+
 export const isRedisEnabled = (): boolean => Boolean(env.REDIS_URL);

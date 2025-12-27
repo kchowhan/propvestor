@@ -6,6 +6,7 @@ export default defineConfig({
     environment: 'node',
     setupFiles: ['./src/tests/setup/stripe-mock.ts'],
     globalSetup: ['./src/tests/setup/global-setup.ts'],
+    globalTeardown: ['./src/tests/setup/global-teardown.ts'],
     pool: 'forks',
     poolOptions: {
       forks: {
