@@ -76,11 +76,15 @@ describe('UserManagementPage', () => {
     // Fill in the form
     const nameInput = screen.getByPlaceholderText('Name');
     const emailInput = screen.getByPlaceholderText('Email');
-    const submitButton = screen.getByRole('button', { name: /create user/i });
+    // Get submit button specifically (not the tab button)
+    const buttons = screen.getAllByRole('button', { name: /create user/i });
+    const submitButton = buttons.find(btn => btn.getAttribute('type') === 'submit');
 
     fireEvent.change(nameInput, { target: { value: 'New User' } });
     fireEvent.change(emailInput, { target: { value: 'new@example.com' } });
-    fireEvent.click(submitButton);
+    if (submitButton) {
+      fireEvent.click(submitButton);
+    }
 
     await waitFor(() => {
       expect(mockApiFetch).toHaveBeenCalledWith(
