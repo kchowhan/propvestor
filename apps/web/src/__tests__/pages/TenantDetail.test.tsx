@@ -231,8 +231,10 @@ describe('TenantDetailPage', () => {
       fireEvent.click(screeningTab);
       
       // Look for request screening button (don't wait for it - it may not exist)
-      const requestButton = screen.queryByText(/request.*screening/i);
-      if (requestButton && !requestButton.closest('[disabled]')) {
+      // Use queryAllByText to handle multiple matches, then find the button
+      const requestButtons = screen.queryAllByText(/request.*screening/i);
+      const requestButton = requestButtons.find((btn: any) => btn.tagName === 'BUTTON' && !btn.closest('[disabled]'));
+      if (requestButton) {
         fireEvent.click(requestButton);
       }
     }

@@ -374,7 +374,7 @@ describe('ViolationsPage', () => {
                                screen.queryAllByRole('combobox')[0];
     if (associationSelect) {
       fireEvent.change(associationSelect, { target: { value: '1' } });
-      expect(associationSelect).toHaveValue('1');
+      expect(associationSelect).toHaveValue('1'); // Select values are strings
     }
 
     await waitFor(() => {
