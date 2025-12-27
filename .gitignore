@@ -40,3 +40,4 @@ pnpm-debug.log*
 
 # OS files
 Thumbs.db
+github-actions-key.json
