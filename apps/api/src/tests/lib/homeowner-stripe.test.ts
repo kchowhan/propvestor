@@ -11,6 +11,11 @@ vi.mock('../../lib/prisma.js', () => ({
     },
     homeownerPaymentMethod: {
       findMany: vi.fn(),
+      findUnique: vi.fn(),
+      update: vi.fn(),
+    },
+    hOAFee: {
+      findUnique: vi.fn(),
     },
   },
 }));
@@ -164,6 +169,178 @@ describe('homeowner-stripe', () => {
       const result = await listHomeownerPaymentMethods('homeowner-1');
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('deleteHomeownerPaymentMethod', () => {
+    it('should delete payment method successfully', async () => {
+      const mockPaymentMethod = {
+        id: 'pm-1',
+        homeownerId: 'homeowner-1',
+        stripePaymentMethodId: 'pm_stripe1',
+      };
+
+      (prisma.homeownerPaymentMethod.findUnique as any).mockResolvedValue(mockPaymentMethod);
+      (prisma.homeowner.findUnique as any).mockResolvedValue({
+        id: 'homeowner-1',
+        email: 'homeowner@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        associationId: 'assoc-1',
+        association: { organizationId: 'org-1' },
+      });
+      const mockStripe = {
+        customers: {
+          create: vi.fn().mockResolvedValue({ id: 'cus_123' }),
+        },
+        paymentMethods: {
+          detach: vi.fn().mockResolvedValue({}),
+        },
+      };
+      (getStripeClient as any).mockReturnValue(mockStripe);
+      (prisma.homeownerPaymentMethod.update as any) = vi.fn().mockResolvedValue({});
+
+      const { deleteHomeownerPaymentMethod } = await import('../../lib/homeowner-stripe.js');
+      await deleteHomeownerPaymentMethod('pm_stripe1');
+
+      expect(mockStripe.paymentMethods.detach).toHaveBeenCalledWith('pm_stripe1');
+      expect(prisma.homeownerPaymentMethod.update).toHaveBeenCalled();
+    });
+
+    it('should handle already detached payment method', async () => {
+      const mockPaymentMethod = {
+        id: 'pm-1',
+        homeownerId: 'homeowner-1',
+        stripePaymentMethodId: 'pm_stripe1',
+      };
+
+      (prisma.homeownerPaymentMethod.findUnique as any).mockResolvedValue(mockPaymentMethod);
+      (prisma.homeowner.findUnique as any).mockResolvedValue({
+        id: 'homeowner-1',
+        email: 'homeowner@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        associationId: 'assoc-1',
+        association: { organizationId: 'org-1' },
+      });
+      const mockStripe = {
+        customers: {
+          create: vi.fn().mockResolvedValue({ id: 'cus_123' }),
+        },
+        paymentMethods: {
+          detach: vi.fn().mockRejectedValue({ code: 'resource_missing' }),
+        },
+      };
+      (getStripeClient as any).mockReturnValue(mockStripe);
+      (prisma.homeownerPaymentMethod.update as any) = vi.fn().mockResolvedValue({});
+
+      const { deleteHomeownerPaymentMethod } = await import('../../lib/homeowner-stripe.js');
+      await deleteHomeownerPaymentMethod('pm_stripe1');
+
+      expect(prisma.homeownerPaymentMethod.update).toHaveBeenCalled();
+    });
+
+    it('should throw error if payment method not found', async () => {
+      (prisma.homeownerPaymentMethod.findUnique as any).mockResolvedValue(null);
+
+      const { deleteHomeownerPaymentMethod } = await import('../../lib/homeowner-stripe.js');
+      await expect(deleteHomeownerPaymentMethod('pm_stripe1')).rejects.toThrow(AppError);
+    });
+  });
+
+  describe('processHomeownerPayment', () => {
+    it('should process payment successfully', async () => {
+      const mockFee = {
+        id: 'fee-1',
+        homeownerId: 'homeowner-1',
+        associationId: 'assoc-1',
+        homeowner: { id: 'homeowner-1' },
+        association: { organizationId: 'org-1' },
+      };
+
+      const mockPaymentMethod = {
+        id: 'pm-1',
+        homeownerId: 'homeowner-1',
+        stripePaymentMethodId: 'pm_stripe1',
+        isActive: true,
+        homeowner: { id: 'homeowner-1' },
+      };
+
+      (prisma.hOAFee.findUnique as any).mockResolvedValue(mockFee);
+      (prisma.homeownerPaymentMethod.findUnique as any).mockResolvedValue(mockPaymentMethod);
+      (prisma.homeowner.findUnique as any).mockResolvedValue({
+        id: 'homeowner-1',
+        email: 'homeowner@example.com',
+        firstName: 'John',
+        lastName: 'Doe',
+        associationId: 'assoc-1',
+        association: { organizationId: 'org-1' },
+      });
+      const mockStripe = {
+        customers: {
+          create: vi.fn().mockResolvedValue({ id: 'cus_123' }),
+        },
+        paymentIntents: {
+          create: vi.fn().mockResolvedValue({
+            id: 'pi_123',
+            status: 'succeeded',
+            client_secret: 'pi_123_secret',
+          }),
+        },
+      };
+      (getStripeClient as any).mockReturnValue(mockStripe);
+
+      const { processHomeownerPayment } = await import('../../lib/homeowner-stripe.js');
+      const result = await processHomeownerPayment('fee-1', 'pm_stripe1', 100.50);
+
+      expect(result.paymentIntentId).toBe('pi_123');
+      expect(result.status).toBe('succeeded');
+      expect(mockStripe.paymentIntents.create).toHaveBeenCalled();
+    });
+
+    it('should throw error if fee not found', async () => {
+      (prisma.hOAFee.findUnique as any).mockResolvedValue(null);
+
+      const { processHomeownerPayment } = await import('../../lib/homeowner-stripe.js');
+      await expect(processHomeownerPayment('fee-1', 'pm_stripe1', 100)).rejects.toThrow(AppError);
+    });
+
+    it('should throw error if payment method not found', async () => {
+      (prisma.hOAFee.findUnique as any).mockResolvedValue({
+        id: 'fee-1',
+        homeownerId: 'homeowner-1',
+        associationId: 'assoc-1',
+        homeowner: { id: 'homeowner-1' },
+        association: { organizationId: 'org-1' },
+      });
+      (prisma.homeownerPaymentMethod.findUnique as any).mockResolvedValue(null);
+
+      const { processHomeownerPayment } = await import('../../lib/homeowner-stripe.js');
+      await expect(processHomeownerPayment('fee-1', 'pm_stripe1', 100)).rejects.toThrow(AppError);
+    });
+
+    it('should throw error if payment method belongs to different homeowner', async () => {
+      const mockFee = {
+        id: 'fee-1',
+        homeownerId: 'homeowner-1',
+        associationId: 'assoc-1',
+        homeowner: { id: 'homeowner-1' },
+        association: { organizationId: 'org-1' },
+      };
+
+      const mockPaymentMethod = {
+        id: 'pm-1',
+        homeownerId: 'homeowner-2', // Different homeowner
+        stripePaymentMethodId: 'pm_stripe1',
+        isActive: true,
+        homeowner: { id: 'homeowner-2' },
+      };
+
+      (prisma.hOAFee.findUnique as any).mockResolvedValue(mockFee);
+      (prisma.homeownerPaymentMethod.findUnique as any).mockResolvedValue(mockPaymentMethod);
+
+      const { processHomeownerPayment } = await import('../../lib/homeowner-stripe.js');
+      await expect(processHomeownerPayment('fee-1', 'pm_stripe1', 100)).rejects.toThrow(AppError);
     });
   });
 });
