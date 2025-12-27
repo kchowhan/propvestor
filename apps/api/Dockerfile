@@ -34,7 +34,11 @@ RUN npm ci --workspace apps/api --omit=dev
 # Copy built files and Prisma schema
 COPY --from=builder /app/apps/api/dist ./apps/api/dist
 COPY --from=builder /app/apps/api/prisma ./apps/api/prisma
-COPY --from=builder /app/apps/api/node_modules/.prisma ./apps/api/node_modules/.prisma
+
+# Copy Prisma client - with npm workspaces, it's generated in root node_modules/.prisma
+# We need to ensure @prisma/client is available, so copy the generated client
+RUN mkdir -p ./node_modules
+COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 
 WORKDIR /app/apps/api
 
