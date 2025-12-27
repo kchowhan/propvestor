@@ -153,6 +153,14 @@ This document lists all pending items that need to be implemented or configured 
 - [ ] Allow fallback to property-manager login when homeowner match fails.
 - [ ] Add tests for ambiguous homeowner emails and fallback behavior.
 
+**Note**: While login is unified at `/auth/login`, we still maintain separate auth contexts (`AuthContext` and `HomeownerAuthContext`) because:
+- Homeowners and Property Managers have different data structures (homeowner vs user/organization)
+- They use different session cookies (`HOMEOWNER_SESSION_COOKIE_NAME` vs regular session cookie)
+- They have different permissions and access different routes
+- The unified login endpoint returns different response structures based on `userType`
+
+The 401 errors on the login page are now suppressed (expected when not authenticated).
+
 ---
 
 ## 🟢 Nice to Have - Missing Features

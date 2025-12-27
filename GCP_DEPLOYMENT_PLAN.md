@@ -524,7 +524,7 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
   --role="roles/storage.objectCreator"
 
 # Also grant permissions to Compute Engine default service account
-# (sometimes used by Cloud Build for source uploads)
+# (sometimes used by Cloud Build for source uploads and logging)
 gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
   --role="roles/storage.objectViewer"
@@ -532,7 +532,14 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
 gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
   --role="roles/storage.objectCreator"
+
+# Grant Logs Writer permission (required for Cloud Build logging)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+  --role="roles/logging.logWriter"
 ```
+<｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
+read_file
 <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
 run_terminal_cmd
 

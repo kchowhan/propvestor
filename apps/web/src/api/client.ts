@@ -44,7 +44,12 @@ export const apiFetch = async (path: string, options: FetchOptions = {}) => {
       if (errorData) {
         (error as any).errorData = errorData;
       }
-      console.error(`API Error [${res.status}]:`, url, errorMessage, errorData);
+      // Only log non-401 and non-429 errors
+      // 401 is expected when not authenticated
+      // 429 should be rare now that session checks are exempt, but suppress to avoid noise
+      if (res.status !== 401 && res.status !== 429) {
+        console.error(`API Error [${res.status}]:`, url, errorMessage, errorData);
+      }
       throw error;
     }
 
@@ -57,15 +62,26 @@ export const apiFetch = async (path: string, options: FetchOptions = {}) => {
       return data; // Return full object with data and pagination
     }
     return data.data ?? data;
-  } catch (error) {
+  } catch (error: any) {
     // Handle network errors (connection refused, CORS, etc.)
     if (error instanceof TypeError && error.message.includes('fetch')) {
       const networkError = new Error(`Unable to connect to server. Please ensure the API is running at ${API_URL}`);
       console.error('Network error:', networkError.message, error);
       throw networkError;
     }
-    // Re-throw other errors
-    console.error('API fetch error:', path, error);
+    // Don't log 401 or 429 errors
+    // 401 is expected when not authenticated
+    // 429 should be rare now that session checks are exempt, but suppress to avoid noise
+    const isExpectedError = error?.errorData?.error?.code === 'UNAUTHORIZED' || 
+                            error?.errorData?.error?.code === 'LIMIT_EXCEEDED' ||
+                            error?.message?.includes('401') ||
+                            error?.message?.includes('429') ||
+                            error?.message?.includes('Missing authorization header') ||
+                            error?.message?.includes('Unauthorized') ||
+                            error?.message?.includes('Rate limit exceeded');
+    if (!isExpectedError) {
+      console.error('API fetch error:', path, error);
+    }
     throw error;
   }
 };

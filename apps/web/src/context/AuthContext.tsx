@@ -44,6 +44,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState<boolean>(true);
 
   const loadSession = useCallback(async () => {
+    // Check localStorage hint to avoid unnecessary requests
+    // This is just an optimization - the actual auth is via httpOnly cookies
+    const hasSessionHint = typeof window !== 'undefined' && localStorage.getItem('has_pm_session') === 'true';
+    if (!hasSessionHint) {
+      setToken(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       const data = await apiFetch('/auth/me') as AuthMeResponse;
       setUser(data.user);
@@ -51,9 +60,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setOrganizations(data.organizations || []);
       setCurrentRole(data.currentRole || null);
       setToken(SESSION_TOKEN);
-    } catch (err) {
-      console.error('Failed to load session:', err);
-      setToken(null);
+      // Update hint on success
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('has_pm_session', 'true');
+      }
+    } catch (err: any) {
+      // Silently handle 401 (not logged in or expired session) - this is expected
+      const is401 = err?.errorData?.error?.code === 'UNAUTHORIZED' || 
+                    err?.message?.includes('401') ||
+                    err?.message?.includes('Missing authorization header') ||
+                    err?.message?.includes('Unauthorized') ||
+                    err?.message?.includes('Invalid or expired token');
+      if (is401) {
+        setToken(null);
+        // Clear hint on 401 (session expired or not logged in)
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('has_pm_session');
+        }
+      } else {
+        console.error('Failed to load session:', err);
+        setToken(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -76,6 +103,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setUser(data.user);
         setOrganization(data.organization);
         setOrganizations(data.organizations || []);
+        // Set localStorage hint
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('has_pm_session', 'true');
+        }
         // Get current role from /auth/me after login
         const meData = await apiFetch('/auth/me') as AuthMeResponse;
         setCurrentRole(meData.currentRole || null);
@@ -165,6 +196,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setOrganization(null);
     setOrganizations([]);
     setCurrentRole(null);
+    // Clear localStorage hint
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('has_pm_session');
+    }
   }, []);
 
   const value = useMemo(

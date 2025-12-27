@@ -133,44 +133,42 @@ authRouter.post('/login', async (req, res, next) => {
       },
     });
 
-    // If homeowner exists, try homeowner login (don't fall through to property manager)
+    // If homeowner exists, try homeowner login first
+    // If homeowner login fails, fall back to property manager login
+    // This handles cases where someone might have both homeowner and property manager accounts
     if (homeowner) {
-      if (!homeowner.passwordHash) {
-        throw new AppError(401, 'UNAUTHORIZED', 'Password not set. Please contact your association administrator.');
-      }
+      if (homeowner.passwordHash && !homeowner.archivedAt) {
+        const matches = await bcrypt.compare(data.password, homeowner.passwordHash);
+        if (matches) {
+          // Homeowner login successful
+          const signHomeownerToken = (payload: { homeownerId: string; associationId: string }) =>
+            jwt.sign(payload, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN } as any);
+          const token = signHomeownerToken({
+            homeownerId: homeowner.id,
+            associationId: homeowner.associationId,
+          });
 
-      if (homeowner.archivedAt) {
-        throw new AppError(403, 'FORBIDDEN', 'Your account has been archived. Please contact your association administrator.');
-      }
-
-      const matches = await bcrypt.compare(data.password, homeowner.passwordHash);
-      if (matches) {
-        // Homeowner login successful
-        const signHomeownerToken = (payload: { homeownerId: string; associationId: string }) =>
-          jwt.sign(payload, env.JWT_SECRET, { expiresIn: env.JWT_EXPIRES_IN } as any);
-        const token = signHomeownerToken({
-          homeownerId: homeowner.id,
-          associationId: homeowner.associationId,
-        });
-
-        res.cookie(HOMEOWNER_SESSION_COOKIE_NAME, token, getSessionCookieOptions());
-        return res.json({
-          token,
-          userType: 'homeowner',
-          homeowner: {
-            id: homeowner.id,
-            firstName: homeowner.firstName,
-            lastName: homeowner.lastName,
-            email: homeowner.email,
-            emailVerified: homeowner.emailVerified,
-            status: homeowner.status,
-            accountBalance: homeowner.accountBalance,
-          },
-          association: homeowner.association,
-        });
+          res.cookie(HOMEOWNER_SESSION_COOKIE_NAME, token, getSessionCookieOptions());
+          return res.json({
+            token,
+            userType: 'homeowner',
+            homeowner: {
+              id: homeowner.id,
+              firstName: homeowner.firstName,
+              lastName: homeowner.lastName,
+              email: homeowner.email,
+              emailVerified: homeowner.emailVerified,
+              status: homeowner.status,
+              accountBalance: homeowner.accountBalance,
+            },
+            association: homeowner.association,
+          });
+        }
+        // Homeowner password doesn't match - fall through to try property manager
+        // Don't throw error yet, let property manager login attempt happen
       } else {
-        // Homeowner exists but password is wrong - don't try property manager
-        throw new AppError(401, 'UNAUTHORIZED', 'Invalid email or password.');
+        // Homeowner exists but password not set or archived - fall through to try property manager
+        // This allows property managers to login even if there's a homeowner record with issues
       }
     }
 

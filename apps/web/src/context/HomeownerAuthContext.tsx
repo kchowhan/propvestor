@@ -57,14 +57,41 @@ export const HomeownerAuthProvider = ({ children }: { children: ReactNode }) => 
   const [loading, setLoading] = useState<boolean>(true);
 
   const loadSession = useCallback(async () => {
+    // Check localStorage hint to avoid unnecessary requests
+    // This is just an optimization - the actual auth is via httpOnly cookies
+    const hasSessionHint = typeof window !== 'undefined' && localStorage.getItem('has_ho_session') === 'true';
+    if (!hasSessionHint) {
+      setToken(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       const data = await apiFetch('/homeowner-auth/me');
       setHomeowner(data.homeowner);
       setAssociation(data.association);
       setToken(SESSION_TOKEN);
-    } catch (err) {
-      console.error('Failed to load homeowner session:', err);
-      setToken(null);
+      // Update hint on success
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('has_ho_session', 'true');
+      }
+    } catch (err: any) {
+      // Silently handle 401 (not logged in or expired session) - this is expected
+      const is401 = err?.errorData?.error?.code === 'UNAUTHORIZED' || 
+                    err?.message?.includes('401') ||
+                    err?.message?.includes('Missing authorization header') ||
+                    err?.message?.includes('Unauthorized') ||
+                    err?.message?.includes('Invalid or expired token');
+      if (is401) {
+        setToken(null);
+        // Clear hint on 401 (session expired or not logged in)
+        if (typeof window !== 'undefined') {
+          localStorage.removeItem('has_ho_session');
+        }
+      } else {
+        console.error('Failed to load homeowner session:', err);
+        setToken(null);
+      }
     } finally {
       setLoading(false);
     }
@@ -87,6 +114,10 @@ export const HomeownerAuthProvider = ({ children }: { children: ReactNode }) => 
         setToken(SESSION_TOKEN);
         setHomeowner(data.homeowner);
         setAssociation(data.association);
+        // Set localStorage hint
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('has_ho_session', 'true');
+        }
       } else {
         console.error('Homeowner login response missing token:', data);
         throw new Error('Invalid response from server: missing homeowner');
@@ -147,6 +178,10 @@ export const HomeownerAuthProvider = ({ children }: { children: ReactNode }) => 
     setToken(null);
     setHomeowner(null);
     setAssociation(null);
+    // Clear localStorage hint
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('has_ho_session');
+    }
   }, []);
 
   const refreshData = useCallback(async () => {

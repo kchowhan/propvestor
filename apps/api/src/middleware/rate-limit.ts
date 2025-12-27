@@ -138,6 +138,13 @@ export const rateLimit = async (
   res: Response,
   next: NextFunction
 ) => {
+  // Exempt session check endpoints from rate limiting
+  // These are called frequently on page loads and don't perform operations
+  const path = req.path || '';
+  if (path === '/auth/me' || path === '/homeowner-auth/me') {
+    return next();
+  }
+
   const key = getRateLimitKey(req);
   const now = Date.now();
   const redisKey = `ratelimit:global:${key}`;
