@@ -24,7 +24,8 @@ gcloud config set project $PROJECT_ID
 gcloud services enable cloudbuild.googleapis.com run.googleapis.com \
   sqladmin.googleapis.com storage-component.googleapis.com \
   secretmanager.googleapis.com cloudscheduler.googleapis.com \
-  servicenetworking.googleapis.com  # Required for VPC peering (Cloud SQL private IP, Memorystore)
+  servicenetworking.googleapis.com \
+  artifactregistry.googleapis.com  # Required for Docker image storage (replaces deprecated GCR)
 ```
 
 ### 2. Create Service Accounts
@@ -126,7 +127,21 @@ for secret in jwt-secret db-password cors-origin stripe-secret-key stripe-publis
 done
 ```
 
-### 5. Create Storage Bucket
+### 5. Set Up Artifact Registry (Docker Image Storage)
+
+```bash
+# Create Artifact Registry repository for Docker images
+# This replaces the deprecated Google Container Registry (GCR)
+gcloud artifacts repositories create docker \
+  --repository-format=docker \
+  --location=$REGION \
+  --description="Docker repository for PropVestor container images"
+
+# Verify repository was created
+gcloud artifacts repositories list --location=$REGION
+```
+
+### 6. Create Storage Bucket
 
 ```bash
 gsutil mb -p $PROJECT_ID -c STANDARD -l $REGION gs://propvestor-documents-prod
@@ -135,7 +150,7 @@ gsutil iam ch serviceAccount:propvestor-backend@${PROJECT_ID}.iam.gserviceaccoun
   gs://propvestor-documents-prod
 ```
 
-### 6. Grant Cloud Build Permissions
+### 7. Grant Cloud Build Permissions
 
 ```bash
 PROJECT_NUMBER=$(gcloud projects describe $PROJECT_ID --format="value(projectNumber)")
@@ -164,8 +179,21 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
   --role="roles/storage.objectCreator"
 
-# Artifact Registry permissions (required for pushing Docker images to GCR)
+# Storage Admin (required for GCR legacy support and Artifact Registry)
 gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
+  --role="roles/storage.admin"
+
+# Artifact Registry permissions (required for pushing Docker images)
+# Note: Artifact Registry replaces the deprecated Google Container Registry (GCR)
+# Grant project-level permission
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
+  --role="roles/artifactregistry.writer"
+
+# Grant repository-level permission (required for some Artifact Registry configurations)
+gcloud artifacts repositories add-iam-policy-binding docker \
+  --location=$REGION \
   --member="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
   --role="roles/artifactregistry.writer"
 
@@ -189,7 +217,7 @@ run_terminal_cmd
 <｜tool▁calls▁begin｜><｜tool▁call▁begin｜>
 read_file
 
-### 7. Deploy Backend
+### 8. Deploy Backend
 
 ```bash
 # Deploy backend
@@ -204,7 +232,7 @@ BACKEND_URL=$(gcloud run services describe propvestor-api \
 echo "Backend URL: $BACKEND_URL"
 ```
 
-### 8. Run Database Migrations
+### 9. Run Database Migrations
 
 ```bash
 # Option 1: Using Cloud SQL Proxy (local)
@@ -216,7 +244,7 @@ echo "Backend URL: $BACKEND_URL"
 # Execute: gcloud run jobs execute propvestor-migrate --region=$REGION
 ```
 
-### 9. Deploy Frontend
+### 10. Deploy Frontend
 
 ```bash
 # Update cloudbuild-frontend.yaml with backend URL
@@ -230,7 +258,7 @@ FRONTEND_URL=$(gcloud run services describe propvestor-web \
 echo "Frontend URL: $FRONTEND_URL"
 ```
 
-### 9.5 Deploy Marketing Site
+### 10.5 Deploy Marketing Site
 
 ```bash
 # Deploy marketing site
@@ -244,7 +272,7 @@ MARKETING_URL=$(gcloud run services describe propvestor-marketing \
 echo "Marketing URL: $MARKETING_URL"
 ```
 
-### 10. Set Up Custom Domain (Optional)
+### 11. Set Up Custom Domain (Optional)
 
 ```bash
 # Map domains

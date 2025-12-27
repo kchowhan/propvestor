@@ -33,7 +33,7 @@ gcloud secrets create jwt-secret --data-file=-
 
 **What they do**:
 1. **Build** your Docker image from your code
-2. **Push** the image to Google Container Registry
+2. **Push** the image to Artifact Registry (replaces deprecated Google Container Registry)
 3. **Deploy** the image to Cloud Run with all configuration
 
 **These files automate the "deployment pipeline"** - turning your code into a running service.
@@ -49,7 +49,7 @@ When triggered, it automatically:
    ↓
 2. Tag image with commit SHA and "latest"
    ↓
-3. Push image to Container Registry
+3. Push image to Artifact Registry
    ↓
 4. Deploy to Cloud Run with:
    - Environment variables (DATABASE_URL, etc.)
@@ -161,11 +161,11 @@ When Cloud Build runs `cloudbuild-backend.yaml`:
    - Installs dependencies, compiles TypeScript, generates Prisma client
 
 2. **Tags the image**:
-   - `gcr.io/PROJECT_ID/propvestor-api:abc123` (commit SHA)
-   - `gcr.io/PROJECT_ID/propvestor-api:latest`
+   - `${REGION}-docker.pkg.dev/PROJECT_ID/docker/propvestor-api:abc123` (commit SHA)
+   - `${REGION}-docker.pkg.dev/PROJECT_ID/docker/propvestor-api:latest`
 
 3. **Pushes to registry**:
-   - Uploads Docker image to Google Container Registry
+   - Uploads Docker image to Artifact Registry (replaces deprecated Google Container Registry)
 
 4. **Deploys to Cloud Run**:
    - Creates/updates Cloud Run service

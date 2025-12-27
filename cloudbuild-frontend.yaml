@@ -8,21 +8,21 @@ steps:
       - '--build-arg'
       - 'NEXT_PUBLIC_API_URL=${_API_URL}'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/propvestor-web:$SHORT_SHA'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-web:$SHORT_SHA'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/propvestor-web:latest'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-web:latest'
       - '.'
 
   # Push the container image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/propvestor-web:$SHORT_SHA'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-web:$SHORT_SHA'
 
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/propvestor-web:latest'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-web:latest'
 
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -32,7 +32,7 @@ steps:
       - 'deploy'
       - 'propvestor-web'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/propvestor-web:$SHORT_SHA'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-web:$SHORT_SHA'
       - '--region'
       - '${_REGION}'
       - '--platform'
@@ -57,6 +57,7 @@ steps:
 
 substitutions:
   _REGION: us-central1
+  _ARTIFACT_REGISTRY_REPO: docker
   _API_URL: https://propvestor-api-XXXXX.run.app/api
 
 options:
@@ -64,5 +65,5 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 images:
-  - 'gcr.io/$PROJECT_ID/propvestor-web:$SHORT_SHA'
-  - 'gcr.io/$PROJECT_ID/propvestor-web:latest'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-web:$SHORT_SHA'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-web:latest'

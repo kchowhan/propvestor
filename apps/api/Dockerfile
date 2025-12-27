@@ -24,6 +24,9 @@ RUN npm run build
 # Production image
 FROM node:20.18-alpine
 
+# Install OpenSSL and required libraries for Prisma
+RUN apk add --no-cache openssl libc6-compat
+
 WORKDIR /app
 
 # Copy package files and install production dependencies only

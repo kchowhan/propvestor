@@ -7,22 +7,29 @@ steps:
       - '-f'
       - 'apps/api/Dockerfile'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/propvestor-api:$BUILD_ID'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-api:$BUILD_ID'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/propvestor-api:latest'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-api:latest'
       - '.'
+
+  # Configure Docker authentication for Artifact Registry
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - 'gcloud auth configure-docker ${_REGION}-docker.pkg.dev --quiet'
 
   # Push the container image with BUILD_ID tag
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/propvestor-api:$BUILD_ID'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-api:$BUILD_ID'
 
   # Push latest tag
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/propvestor-api:latest'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-api:latest'
 
   # Deploy container image to Cloud Run
   # Use BUILD_ID tag for deployment (always unique)
@@ -33,7 +40,7 @@ steps:
       - 'deploy'
       - 'propvestor-api'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/propvestor-api:$BUILD_ID'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-api:$BUILD_ID'
       - '--region'
       - '${_REGION}'
       - '--platform'
@@ -70,6 +77,7 @@ steps:
 
 substitutions:
   _REGION: us-central1
+  _ARTIFACT_REGISTRY_REPO: docker
   _CLOUDSQL_CONNECTION_NAME: ${PROJECT_ID}:${REGION}:propvestor-db
   # Note: _DB_PASSWORD must be passed explicitly when running gcloud builds submit
   # It cannot be resolved from secrets in the substitutions section
@@ -86,5 +94,5 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 images:
-  - 'gcr.io/$PROJECT_ID/propvestor-api:$BUILD_ID'
-  - 'gcr.io/$PROJECT_ID/propvestor-api:latest'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-api:$BUILD_ID'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-api:latest'

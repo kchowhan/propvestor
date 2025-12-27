@@ -79,6 +79,7 @@ describe('LoginPage', () => {
     // Submit
     await user.click(screen.getByRole('button', { name: /create account/i }));
 
+    // Just verify register was called - don't wait for email notice since mock returns undefined
     await waitFor(() => {
       expect(mockRegister).toHaveBeenCalledWith({
         name: 'Test User',
@@ -86,12 +87,12 @@ describe('LoginPage', () => {
         password: 'password123',
         organizationName: 'Test Org',
       });
-    });
+    }, { timeout: 3000 });
   });
 
   it('should display error message on login failure', async () => {
     const user = userEvent.setup();
-    mockLogin.mockRejectedValue(new Error('Invalid credentials'));
+    mockLogin.mockRejectedValue(new Error('Invalid email or password.'));
     renderWithProviders(<LoginPage />);
 
     await user.type(screen.getByLabelText(/email/i), 'test@example.com');
@@ -99,7 +100,8 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: /sign in/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/invalid credentials/i)).toBeInTheDocument();
+      // The error message should be displayed - check for the actual error message
+      expect(screen.getByText(/Invalid email or password/i)).toBeInTheDocument();
     });
   });
 

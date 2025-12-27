@@ -16,54 +16,38 @@ jest.mock('next/navigation', () => ({
   }),
 }));
 
-// Setup localStorage mock before tests - use a shared store to avoid conflicts
-if (!(window as any).__localStorageStore) {
-  (window as any).__localStorageStore = {};
-}
-const localStorageStore: Record<string, string> = (window as any).__localStorageStore;
+// Import shared localStorage mock
+import { localStorageMock } from '../setup/localStorage-mock';
 
-const localStorageMock = {
-  getItem: jest.fn((key: string) => localStorageStore[key] || null),
-  setItem: jest.fn((key: string, value: string) => {
-    localStorageStore[key] = value.toString();
-  }),
-  removeItem: jest.fn((key: string) => {
-    delete localStorageStore[key];
-  }),
-  clear: jest.fn(() => {
-    Object.keys(localStorageStore).forEach(key => delete localStorageStore[key]);
-  }),
-};
-
-// Only define if not already defined to avoid conflicts
-if (!window.localStorage || !(window.localStorage as any).__isMock) {
-  Object.defineProperty(window, 'localStorage', {
-    value: localStorageMock,
-    writable: true,
-    configurable: true,
-  });
-  (localStorageMock as any).__isMock = true;
-}
+const localStorageStore = localStorageMock._store;
 
 describe('AuthContext', () => {
   beforeEach(() => {
+    // Ensure window.localStorage is our mock (redefine to ensure it's always our mock)
+    
+    // Ensure window.localStorage is our mock (redefine to ensure it's always our mock)
+    Object.defineProperty(window, 'localStorage', {
+      value: localStorageMock,
+      writable: true,
+      configurable: true,
+    });
     // Clear the store first
     Object.keys(localStorageStore).forEach(key => delete localStorageStore[key]);
-    // Re-set mock implementations (don't use clearAllMocks as it breaks the implementations)
-    localStorageMock.getItem.mockImplementation((key: string) => localStorageStore[key] || null);
-    localStorageMock.setItem.mockImplementation((key: string, value: string) => {
-      localStorageStore[key] = value.toString();
-    });
-    localStorageMock.removeItem.mockImplementation((key: string) => {
-      delete localStorageStore[key];
-    });
-    localStorageMock.clear.mockImplementation(() => {
-      Object.keys(localStorageStore).forEach(key => delete localStorageStore[key]);
-    });
-    // Set default session hint for most tests
-    localStorageMock.setItem('has_pm_session', 'true');
-    // Clear API mocks
+    // Don't reset mock implementations - they always read from store
+    // Just clear call history
+    localStorageMock.getItem.mockClear();
+    localStorageMock.setItem.mockClear();
+    localStorageMock.removeItem.mockClear();
+    localStorageMock.clear.mockClear();
+    // Set default session hint for most tests - set directly in store
+    localStorageStore['has_pm_session'] = 'true';
+    // Verify it's set and accessible through the mock
+    expect(localStorageStore['has_pm_session']).toBe('true');
+    const retrieved = window.localStorage.getItem('has_pm_session');
+    expect(retrieved).toBe('true');
+    // Clear API mocks and reset implementation
     mockApiFetch.mockClear();
+    mockApiFetch.mockReset();
   });
 
   afterEach(() => {
@@ -86,47 +70,39 @@ describe('AuthContext', () => {
     expect(result.current.user).toBeNull();
   });
 
-  it('should load session from cookies', async () => {
-    // Session hint should already be set by beforeEach
-    mockApiFetch.mockResolvedValue({
-      user: { id: '1', name: 'Test', email: 'test@example.com' },
-      organization: { id: '1', name: 'Test Org', slug: 'test' },
-      currentRole: 'OWNER',
-      organizations: [],
-    });
-
-    const wrapper = ({ children }: { children: React.ReactNode }) => (
-      <AuthProvider>{children}</AuthProvider>
-    );
-
-    const { result } = renderHook(() => useAuth(), { wrapper });
-
-    await waitFor(() => {
-      expect(result.current.token).toBe('cookie');
-    });
-  });
-
   it('should login successfully', async () => {
-    // Session hint should already be set by beforeEach
+    // Session hint is set by beforeEach, so component will try to load session first
+    // First call: /auth/me (initial session load) - fails with 401
+    // Second call: /auth/login (actual login) - succeeds
+    // Third call: /auth/me (get current role after login) - succeeds
+    const unauthorizedError = new Error('Unauthorized');
+    (unauthorizedError as any).errorData = { error: { code: 'UNAUTHORIZED' } };
     mockApiFetch
-      .mockRejectedValueOnce(new Error('Unauthorized'))
-      .mockResolvedValueOnce({
-        user: { id: '1', name: 'Test', email: 'test@example.com' },
-        organization: { id: '1', name: 'Test Org', slug: 'test' },
-        organizations: [],
-      })
+      .mockRejectedValueOnce(unauthorizedError) // Initial session load fails
       .mockResolvedValueOnce({
         user: { id: '1', name: 'Test', email: 'test@example.com' },
         organization: { id: '1', name: 'Test Org', slug: 'test' },
         currentRole: 'OWNER',
         organizations: [],
-      });
+      }) // Login succeeds
+      .mockResolvedValueOnce({
+        user: { id: '1', name: 'Test', email: 'test@example.com' },
+        organization: { id: '1', name: 'Test Org', slug: 'test' },
+        currentRole: 'OWNER',
+        organizations: [],
+      }); // /auth/me call after login to get current role
 
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <AuthProvider>{children}</AuthProvider>
     );
 
     const { result } = renderHook(() => useAuth(), { wrapper });
+
+    // Wait for initial session load to complete (will fail with 401)
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.token).toBeNull(); // No token after failed session load
+    });
 
     await act(async () => {
       await result.current.login('test@example.com', 'password123');
@@ -135,38 +111,71 @@ describe('AuthContext', () => {
     await waitFor(() => {
       expect(result.current.token).toBe('cookie');
       expect(result.current.user).toBeDefined();
+      expect(result.current.currentRole).toBe('OWNER');
     });
   });
 
   it('should logout and clear token', async () => {
-    mockApiFetch.mockRejectedValueOnce(new Error('Unauthorized'));
+    // Session hint is set by beforeEach, so component will try to load session first
+    // First call: /auth/me (initial session load) - fails with 401
+    // Second call: /auth/logout (logout) - succeeds
+    const unauthorizedError = new Error('Unauthorized');
+    (unauthorizedError as any).errorData = { error: { code: 'UNAUTHORIZED' } };
+    mockApiFetch
+      .mockRejectedValueOnce(unauthorizedError) // Initial session load fails
+      .mockResolvedValueOnce({}); // Logout API call succeeds
+
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <AuthProvider>{children}</AuthProvider>
     );
 
     const { result } = renderHook(() => useAuth(), { wrapper });
+
+    // Wait for initial session load to complete (will fail with 401)
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.token).toBeNull(); // No token after failed session load
+    });
 
     act(() => {
       result.current.logout();
     });
 
-    expect(result.current.token).toBeNull();
+    // Wait for logout to complete
+    await waitFor(() => {
+      expect(result.current.token).toBeNull();
+      expect(result.current.user).toBeNull();
+      expect(result.current.organization).toBeNull();
+    });
+
+    expect(mockApiFetch).toHaveBeenCalledWith('/auth/logout', { method: 'POST' });
+    expect(window.localStorage.removeItem).toHaveBeenCalledWith('has_pm_session');
   });
 
   it('should register successfully', async () => {
-    // Session hint should already be set by beforeEach
+    // Session hint is set by beforeEach, so component will try to load session first
+    // First call: /auth/me (initial session load) - fails with 401
+    // Second call: /auth/register (actual registration) - succeeds (no /auth/me needed)
+    const unauthorizedError = new Error('Unauthorized');
+    (unauthorizedError as any).errorData = { error: { code: 'UNAUTHORIZED' } };
     mockApiFetch
-      .mockRejectedValueOnce(new Error('Unauthorized'))
+      .mockRejectedValueOnce(unauthorizedError) // Initial session load fails
       .mockResolvedValueOnce({
         user: { id: '1', name: 'Test', email: 'test@example.com' },
         organization: { id: '1', name: 'Test Org', slug: 'test' },
-      });
+      }); // Registration succeeds (register doesn't call /auth/me)
 
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <AuthProvider>{children}</AuthProvider>
     );
 
     const { result } = renderHook(() => useAuth(), { wrapper });
+
+    // Wait for initial session load to complete (will fail with 401)
+    await waitFor(() => {
+      expect(result.current.loading).toBe(false);
+      expect(result.current.token).toBeNull(); // No token after failed session load
+    });
 
     await act(async () => {
       await result.current.register({
@@ -181,11 +190,15 @@ describe('AuthContext', () => {
       expect(result.current.token).toBe('cookie');
       expect(result.current.user).toBeDefined();
       expect(result.current.organization).toBeDefined();
+      expect(result.current.currentRole).toBe('OWNER');
     });
   });
 
   it('should switch organization successfully', async () => {
-    // Session hint should already be set by beforeEach
+    // Session hint is set by beforeEach, so component will try to load session first
+    // First call: /auth/me (initial session load) - succeeds with first org
+    // Second call: /organizations/{id}/switch (switch org) - succeeds
+    // Third call: /auth/me (reload session with new org) - succeeds with second org
     mockApiFetch
       .mockResolvedValueOnce({
         user: { id: '1', name: 'Test', email: 'test@example.com' },
@@ -195,10 +208,10 @@ describe('AuthContext', () => {
           { id: '1', name: 'Test Org', slug: 'test', role: 'OWNER' },
           { id: '2', name: 'Other Org', slug: 'other', role: 'ADMIN' },
         ],
-      })
+      }) // Initial session load
       .mockResolvedValueOnce({
         organization: { id: '2', name: 'Other Org', slug: 'other' },
-      })
+      }) // Switch organization
       .mockResolvedValueOnce({
         user: { id: '1', name: 'Test', email: 'test@example.com' },
         organization: { id: '2', name: 'Other Org', slug: 'other' },
@@ -207,7 +220,7 @@ describe('AuthContext', () => {
           { id: '1', name: 'Test Org', slug: 'test', role: 'OWNER' },
           { id: '2', name: 'Other Org', slug: 'other', role: 'ADMIN' },
         ],
-      });
+      }); // Reload session with new org
 
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <AuthProvider>{children}</AuthProvider>
@@ -231,19 +244,22 @@ describe('AuthContext', () => {
   });
 
   it('should create organization successfully', async () => {
-    // Session hint should already be set by beforeEach
+    // Session hint is set by beforeEach, so component will try to load session first
+    // First call: /auth/me (initial session load) - succeeds
+    // Second call: /organizations (create org) - succeeds
+    // Third call: /auth/me (reload organizations list) - succeeds
+    // Fourth call: /auth/switch-organization (switch to new org) - succeeds
+    // Fifth call: /auth/me (reload session with new org) - succeeds
     mockApiFetch
       .mockResolvedValueOnce({
         user: { id: '1', name: 'Test', email: 'test@example.com' },
         organization: { id: '1', name: 'Test Org', slug: 'test' },
         currentRole: 'OWNER',
         organizations: [{ id: '1', name: 'Test Org', slug: 'test', role: 'OWNER' }],
-      })
+      }) // Initial session load
       .mockResolvedValueOnce({
-        id: '2',
-        name: 'New Org',
-        slug: 'new-org',
-      })
+        data: { id: '2', name: 'New Org', slug: 'new-org' },
+      }) // Create organization (returns { data: { id, name, slug } })
       .mockResolvedValueOnce({
         user: { id: '1', name: 'Test', email: 'test@example.com' },
         organization: { id: '1', name: 'Test Org', slug: 'test' },
@@ -252,7 +268,19 @@ describe('AuthContext', () => {
           { id: '1', name: 'Test Org', slug: 'test', role: 'OWNER' },
           { id: '2', name: 'New Org', slug: 'new-org', role: 'OWNER' },
         ],
-      });
+      }) // /auth/me to reload organizations list
+      .mockResolvedValueOnce({
+        organization: { id: '2', name: 'New Org', slug: 'new-org' },
+      }) // Switch organization
+      .mockResolvedValueOnce({
+        user: { id: '1', name: 'Test', email: 'test@example.com' },
+        organization: { id: '2', name: 'New Org', slug: 'new-org' },
+        currentRole: 'OWNER',
+        organizations: [
+          { id: '1', name: 'Test Org', slug: 'test', role: 'OWNER' },
+          { id: '2', name: 'New Org', slug: 'new-org', role: 'OWNER' },
+        ],
+      }); // /auth/me after switch to reload session
 
     const wrapper = ({ children }: { children: React.ReactNode }) => (
       <AuthProvider>{children}</AuthProvider>
@@ -260,8 +288,10 @@ describe('AuthContext', () => {
 
     const { result } = renderHook(() => useAuth(), { wrapper });
 
+    // Wait for initial session load to complete
     await waitFor(() => {
       expect(result.current.token).toBe('cookie');
+      expect(result.current.loading).toBe(false);
     });
 
     await act(async () => {
@@ -270,6 +300,8 @@ describe('AuthContext', () => {
 
     await waitFor(() => {
       expect(result.current.organizations.length).toBeGreaterThan(1);
+      expect(result.current.organization?.id).toBe('2');
+      expect(result.current.organization?.name).toBe('New Org');
     });
   });
 });

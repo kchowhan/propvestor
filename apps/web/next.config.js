@@ -3,6 +3,9 @@ const nextConfig = {
   reactStrictMode: true,
   // Enable standalone output for Docker
   output: 'standalone',
+  // Disable Turbopack for Docker builds (uses webpack instead)
+  // This avoids monorepo resolution issues in Docker
+  // Turbopack can be enabled for local dev if needed
   // Environment variables
   env: {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:4000/api',

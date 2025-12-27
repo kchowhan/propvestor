@@ -3,6 +3,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render } from '@testing-library/react';
 import React from 'react';
 
+// Set up global localStorage mock
+import './src/__tests__/setup/localStorage-mock';
+
 // Create a test QueryClient with default options
 export const createTestQueryClient = () => new QueryClient({
   defaultOptions: {

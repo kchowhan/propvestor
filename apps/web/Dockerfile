@@ -18,15 +18,15 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY apps/web ./apps/web
-COPY package.json ./
-
-WORKDIR /app/apps/web
+COPY package.json package-lock.json* ./
 
 # Set environment variables for build
 ARG NEXT_PUBLIC_API_URL
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
 
-# Build Next.js
+# Build Next.js from the web app directory
+# Use npm run from workspace to ensure proper resolution
+WORKDIR /app/apps/web
 RUN npm run build
 
 # Production image, copy all the files and run next

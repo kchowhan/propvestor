@@ -98,7 +98,25 @@ gcloud services enable \
   servicenetworking.googleapis.com  # Required for VPC peering (Cloud SQL private IP, Memorystore Redis)
 ```
 
-### 1.3 Set Up Service Accounts
+### 1.3 Set Up Artifact Registry (Docker Image Storage)
+
+```bash
+# Create Artifact Registry repository for Docker images
+# This replaces the deprecated Google Container Registry (GCR)
+# Must be created before deploying images
+gcloud artifacts repositories create docker \
+  --repository-format=docker \
+  --location=$REGION \
+  --description="Docker repository for PropVestor container images"
+
+# Verify repository was created
+gcloud artifacts repositories list --location=$REGION
+```
+
+**Note:** Artifact Registry is the recommended replacement for Google Container Registry (GCR), which is being deprecated. All Docker images will be stored in Artifact Registry using the format:
+`${REGION}-docker.pkg.dev/${PROJECT_ID}/docker/IMAGE_NAME:TAG`
+
+### 1.4 Set Up Service Accounts
 
 ```bash
 # Create service account for Cloud Run backend
@@ -377,6 +395,15 @@ gsutil iam ch serviceAccount:propvestor-backend@${PROJECT_ID}.iam.gserviceaccoun
 
 ## Phase 5: Backend Deployment (Cloud Run)
 
+**Note:** Artifact Registry should already be set up in Phase 1.3. If you skipped that step, create the repository now:
+
+```bash
+gcloud artifacts repositories create docker \
+  --repository-format=docker \
+  --location=$REGION \
+  --description="Docker repository for PropVestor container images"
+```
+
 ### 5.1 Prepare Dockerfile
 
 The existing Dockerfile at `apps/api/Dockerfile` should work, but ensure it:
@@ -391,27 +418,28 @@ Create `cloudbuild-backend.yaml`:
 ```yaml
 steps:
   # Build the container image
+  # Uses Artifact Registry (replaces deprecated GCR)
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
       - '-f'
       - 'apps/api/Dockerfile'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/propvestor-api:$SHORT_SHA'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-api:$SHORT_SHA'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/propvestor-api:latest'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-api:latest'
       - '.'
 
   # Push the container image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/propvestor-api:$SHORT_SHA'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-api:$SHORT_SHA'
 
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/propvestor-api:latest'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-api:latest'
 
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -421,7 +449,7 @@ steps:
       - 'deploy'
       - 'propvestor-api'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/propvestor-api:$SHORT_SHA'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-api:$SHORT_SHA'
       - '--region'
       - '${_REGION}'
       - '--platform'
@@ -470,8 +498,8 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 images:
-  - 'gcr.io/$PROJECT_ID/propvestor-api:$SHORT_SHA'
-  - 'gcr.io/$PROJECT_ID/propvestor-api:latest'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-api:$SHORT_SHA'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-api:latest'
 ```
 
 ### 5.3 Store Additional Secrets
@@ -523,8 +551,21 @@ gcloud projects add-iam-policy-binding $PROJECT_ID \
   --member="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
   --role="roles/storage.objectCreator"
 
-# Artifact Registry permissions (required for pushing Docker images to GCR)
+# Storage Admin (required for GCR legacy support and Artifact Registry)
 gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
+  --role="roles/storage.admin"
+
+# Artifact Registry permissions (required for pushing Docker images)
+# Note: Artifact Registry replaces the deprecated Google Container Registry (GCR)
+# Grant project-level permission
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
+  --role="roles/artifactregistry.writer"
+
+# Grant repository-level permission (required for some Artifact Registry configurations)
+gcloud artifacts repositories add-iam-policy-binding docker \
+  --location=$REGION \
   --member="serviceAccount:${PROJECT_NUMBER}@cloudbuild.gserviceaccount.com" \
   --role="roles/artifactregistry.writer"
 
@@ -591,7 +632,7 @@ npm run prisma:migrate
 # Option 2: Run migrations in Cloud Run job (recommended)
 # Create a Cloud Run job for migrations
 gcloud run jobs create propvestor-migrate \
-  --image=gcr.io/$PROJECT_ID/propvestor-api:latest \
+  --image=${REGION}-docker.pkg.dev/${PROJECT_ID}/docker/propvestor-api:latest \
   --region=us-central1 \
   --service-account=propvestor-backend@${PROJECT_ID}.iam.gserviceaccount.com \
   --add-cloudsql-instances=${PROJECT_ID}:us-central1:propvestor-db \
@@ -603,19 +644,20 @@ gcloud run jobs create propvestor-migrate \
 gcloud run jobs execute propvestor-migrate --region=us-central1
 ```
 
-## Phase 6: Frontend Deployment (Cloud Run)
+## Phase 7: Frontend Deployment (Cloud Run)
 
-### 6.1 Update Next.js Configuration
+### 7.1 Update Next.js Configuration
 
 Ensure `apps/web/next.config.js` has standalone output (already configured).
 
-### 6.2 Create Cloud Build Configuration
+### 7.2 Create Cloud Build Configuration
 
 Create `cloudbuild-frontend.yaml`:
 
 ```yaml
 steps:
   # Build the container image
+  # Uses Artifact Registry (replaces deprecated GCR)
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -624,21 +666,21 @@ steps:
       - '--build-arg'
       - 'NEXT_PUBLIC_API_URL=${_API_URL}'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/propvestor-web:$SHORT_SHA'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-web:$SHORT_SHA'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/propvestor-web:latest'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-web:latest'
       - '.'
 
   # Push the container image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/propvestor-web:$SHORT_SHA'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-web:$SHORT_SHA'
 
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/propvestor-web:latest'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-web:latest'
 
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -648,7 +690,7 @@ steps:
       - 'deploy'
       - 'propvestor-web'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/propvestor-web:$SHORT_SHA'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-web:$SHORT_SHA'
       - '--region'
       - '${_REGION}'
       - '--platform'
@@ -673,6 +715,7 @@ steps:
 
 substitutions:
   _REGION: us-central1
+  _ARTIFACT_REGISTRY_REPO: docker
   _API_URL: https://propvestor-api-XXXXX.run.app/api
 
 options:
@@ -680,13 +723,13 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 images:
-  - 'gcr.io/$PROJECT_ID/propvestor-web:$SHORT_SHA'
-  - 'gcr.io/$PROJECT_ID/propvestor-web:latest'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-web:$SHORT_SHA'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-web:latest'
 ```
 
 **Note**: Update `_API_URL` with your actual backend URL after backend deployment.
 
-### 6.3 Deploy Frontend
+### 7.3 Deploy Frontend
 
 ```bash
 # Get backend URL first
@@ -708,19 +751,20 @@ gcloud builds triggers create github \
   --substitutions="_REGION=us-central1,_API_URL=${BACKEND_URL}/api"
 ```
 
-## Phase 6.5: Marketing Site Deployment (Cloud Run)
+## Phase 7.5: Marketing Site Deployment (Cloud Run)
 
-### 6.5.1 Update Next.js Configuration
+### 7.5.1 Update Next.js Configuration
 
 Ensure `apps/marketing/next.config.js` has standalone output (already configured).
 
-### 6.5.2 Create Cloud Build Configuration
+### 7.5.2 Create Cloud Build Configuration
 
 Create `cloudbuild-marketing.yaml`:
 
 ```yaml
 steps:
   # Build the container image
+  # Uses Artifact Registry (replaces deprecated GCR)
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'build'
@@ -729,21 +773,21 @@ steps:
       - '--build-arg'
       - 'NEXT_PUBLIC_APP_URL=${_APP_URL}'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/propvestor-marketing:$SHORT_SHA'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-marketing:$SHORT_SHA'
       - '-t'
-      - 'gcr.io/$PROJECT_ID/propvestor-marketing:latest'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-marketing:latest'
       - '.'
 
   # Push the container image
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/propvestor-marketing:$SHORT_SHA'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-marketing:$SHORT_SHA'
 
   - name: 'gcr.io/cloud-builders/docker'
     args:
       - 'push'
-      - 'gcr.io/$PROJECT_ID/propvestor-marketing:latest'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-marketing:latest'
 
   # Deploy container image to Cloud Run
   - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
@@ -753,7 +797,7 @@ steps:
       - 'deploy'
       - 'propvestor-marketing'
       - '--image'
-      - 'gcr.io/$PROJECT_ID/propvestor-marketing:$SHORT_SHA'
+      - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-marketing:$SHORT_SHA'
       - '--region'
       - '${_REGION}'
       - '--platform'
@@ -778,6 +822,7 @@ steps:
 
 substitutions:
   _REGION: us-central1
+  _ARTIFACT_REGISTRY_REPO: docker
   _APP_URL: https://app.propvestor.com
 
 options:
@@ -785,13 +830,13 @@ options:
   logging: CLOUD_LOGGING_ONLY
 
 images:
-  - 'gcr.io/$PROJECT_ID/propvestor-marketing:$SHORT_SHA'
-  - 'gcr.io/$PROJECT_ID/propvestor-marketing:latest'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-marketing:$SHORT_SHA'
+  - '${_REGION}-docker.pkg.dev/$PROJECT_ID/${_ARTIFACT_REGISTRY_REPO}/propvestor-marketing:latest'
 ```
 
 **Note**: Update `_APP_URL` with your actual frontend application URL.
 
-### 6.5.3 Deploy Marketing Site
+### 7.5.3 Deploy Marketing Site
 
 ```bash
 # Get frontend URL (for linking from marketing site)
@@ -813,7 +858,7 @@ gcloud builds triggers create github \
   --substitutions="_REGION=us-central1,_APP_URL=${FRONTEND_URL}"
 ```
 
-### 6.5.4 Marketing Site Configuration
+### 7.5.4 Marketing Site Configuration
 
 The marketing site uses `NEXT_PUBLIC_APP_URL` to link to the main application. This should point to your frontend URL (e.g., `https://app.propvestor.com`).
 
@@ -828,7 +873,7 @@ The marketing site uses `NEXT_PUBLIC_APP_URL` to link to the main application. T
 - **Memory**: 512Mi
 - **CPU**: 1
 
-## Phase 7: Custom Domain Setup (Optional)
+## Phase 8: Custom Domain Setup (Optional)
 
 ### 7.1 Map Custom Domain to Cloud Run
 
@@ -885,7 +930,7 @@ gcloud builds submit --config=cloudbuild-marketing.yaml \
   --substitutions="_APP_URL=https://app.yourdomain.com"
 ```
 
-## Phase 8: Cloud Scheduler Setup
+## Phase 9: Cloud Scheduler Setup
 
 ### 8.1 Create Scheduler Job
 
@@ -911,7 +956,7 @@ gcloud scheduler jobs create http propvestor-daily-tasks \
   --oidc-token-audience=${BACKEND_URL}
 ```
 
-## Phase 9: Monitoring and Logging
+## Phase 10: Monitoring and Logging
 
 ### 9.1 Set Up Cloud Monitoring
 
@@ -981,7 +1026,7 @@ gcloud monitoring uptime-checks create propvestor-marketing-health \
   --resource-labels=host=${MARKETING_URL#https://}
 ```
 
-## Phase 10: Security Hardening
+## Phase 11: Security Hardening
 
 ### 10.1 Enable VPC Connector (for Private Cloud SQL and Redis)
 
@@ -1051,7 +1096,7 @@ gcloud compute security-policies rules create 1000 \
   --enforce-on-key=IP
 ```
 
-## Phase 11: Backup and Disaster Recovery
+## Phase 12: Backup and Disaster Recovery
 
 ### 11.1 Database Backups
 
@@ -1083,7 +1128,7 @@ gcloud sql import sql propvestor-db \
   --database=propvestor
 ```
 
-## Phase 12: Cost Optimization
+## Phase 13: Cost Optimization
 
 ### 12.1 Resource Sizing
 
@@ -1112,7 +1157,7 @@ gcloud billing budgets create \
   --threshold-rule=percent=100
 ```
 
-## Phase 13: CI/CD Pipeline Setup
+## Phase 14: CI/CD Pipeline Setup
 
 ### 13.1 GitHub Actions Alternative
 
@@ -1161,7 +1206,7 @@ Create separate Cloud Build configs for staging and production:
 
 Use different Cloud SQL instances and secrets for each environment.
 
-## Phase 14: Post-Deployment Checklist
+## Phase 15: Post-Deployment Checklist
 
 ### 14.1 Verification Steps
 
@@ -1201,7 +1246,7 @@ ab -n 1000 -c 10 https://api.yourdomain.com/api/health
 - [ ] Cloud Armor rules configured
 - [ ] Regular security updates scheduled
 
-## Phase 15: Maintenance and Updates
+## Phase 16: Maintenance and Updates
 
 ### 15.1 Update Process
 
