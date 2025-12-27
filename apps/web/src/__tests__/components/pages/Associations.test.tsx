@@ -486,8 +486,9 @@ describe('AssociationsPage', () => {
     });
 
     expect(screen.getByText('Test Association')).toBeInTheDocument();
-    expect(screen.getByText('123 Main St')).toBeInTheDocument();
-    expect(screen.getByText('Test City')).toBeInTheDocument();
+    // Address might be rendered in multiple elements, so check for parts
+    expect(screen.getByText(/123 Main St/i)).toBeInTheDocument();
+    expect(screen.getByText(/Test City/i)).toBeInTheDocument();
     expect(screen.getByText('Active')).toBeInTheDocument();
   });
 

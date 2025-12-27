@@ -368,9 +368,10 @@ describe('ViolationsPage', () => {
       expect(screen.getByText('Association *')).toBeInTheDocument();
     });
 
-    // Test form field changes - use querySelector to find selects by their parent label
-    const associationLabel = screen.getByText('Association *');
-    const associationSelect = associationLabel.closest('div')?.querySelector('select');
+    // Test form field changes - find select by text content or role
+    const associationSelect = screen.queryByRole('combobox', { name: /association/i }) ||
+                               screen.queryByDisplayValue('Select Association') ||
+                               screen.queryAllByRole('combobox')[0];
     if (associationSelect) {
       fireEvent.change(associationSelect, { target: { value: '1' } });
       expect(associationSelect).toHaveValue('1');

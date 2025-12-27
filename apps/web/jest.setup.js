@@ -71,3 +71,7 @@ jest.mock('@stripe/stripe-js', () => ({
   })),
 }));
 
+// Mock window.alert and window.confirm
+global.alert = jest.fn();
+global.confirm = jest.fn(() => true);
+

@@ -230,13 +230,11 @@ describe('TenantDetailPage', () => {
     if (screeningTab) {
       fireEvent.click(screeningTab);
       
-      await waitFor(() => {
-        // Look for request screening button
-        const requestButton = screen.queryByText(/request.*screening/i);
-        if (requestButton && !requestButton.closest('[disabled]')) {
-          fireEvent.click(requestButton);
-        }
-      }, { timeout: 2000 });
+      // Look for request screening button (don't wait for it - it may not exist)
+      const requestButton = screen.queryByText(/request.*screening/i);
+      if (requestButton && !requestButton.closest('[disabled]')) {
+        fireEvent.click(requestButton);
+      }
     }
   });
 
@@ -270,13 +268,11 @@ describe('TenantDetailPage', () => {
     if (screeningTab) {
       fireEvent.click(screeningTab);
       
-      await waitFor(() => {
-        // Look for adverse action button
-        const adverseButton = screen.queryByText(/adverse.*action/i);
-        if (adverseButton && !adverseButton.closest('[disabled]')) {
-          fireEvent.click(adverseButton);
-        }
-      }, { timeout: 2000 });
+      // Look for adverse action button (don't wait for it - it may not exist)
+      const adverseButton = screen.queryByText(/adverse.*action/i);
+      if (adverseButton && !adverseButton.closest('[disabled]')) {
+        fireEvent.click(adverseButton);
+      }
     }
   });
 
@@ -308,13 +304,11 @@ describe('TenantDetailPage', () => {
     if (screeningTab) {
       fireEvent.click(screeningTab);
       
-      await waitFor(() => {
-        // Look for next page button
-        const nextButton = screen.queryByRole('button', { name: /next/i });
-        if (nextButton && !nextButton.hasAttribute('disabled')) {
-          fireEvent.click(nextButton);
-        }
-      }, { timeout: 2000 });
+      // Look for next page button (don't wait for it - it may not exist)
+      const nextButton = screen.queryByRole('button', { name: /next/i });
+      if (nextButton && !nextButton.hasAttribute('disabled')) {
+        fireEvent.click(nextButton);
+      }
     }
   });
 
@@ -346,13 +340,11 @@ describe('TenantDetailPage', () => {
     if (paymentsTab) {
       fireEvent.click(paymentsTab);
       
-      await waitFor(() => {
-        // Look for next page button
-        const nextButton = screen.queryByRole('button', { name: /next/i });
-        if (nextButton && !nextButton.hasAttribute('disabled')) {
-          fireEvent.click(nextButton);
-        }
-      }, { timeout: 2000 });
+      // Look for next page button (don't wait for it - it may not exist)
+      const nextButton = screen.queryByRole('button', { name: /next/i });
+      if (nextButton && !nextButton.hasAttribute('disabled')) {
+        fireEvent.click(nextButton);
+      }
     }
   });
 
