@@ -374,9 +374,9 @@ describe('ViolationsPage', () => {
                                screen.queryAllByRole('combobox')[0];
     if (associationSelect) {
       fireEvent.change(associationSelect, { target: { value: '1' } });
-      // Select values are strings, but check both string and number
-      const value = associationSelect.getAttribute('value') || (associationSelect as HTMLSelectElement).value;
-      expect(value === '1' || value === 1).toBe(true);
+      // Select values are strings - check the actual value
+      const selectElement = associationSelect as HTMLSelectElement;
+      expect(selectElement.value).toBe('1');
     }
 
     await waitFor(() => {
